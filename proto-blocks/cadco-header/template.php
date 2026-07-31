@@ -221,9 +221,15 @@ $panel_id = static function (string $key): string {
                         <div class="flex min-w-[240px] flex-col gap-3 border-gray-300 px-10 py-8 sm:border-l sm:first:border-l-0" data-proto-repeater-item>
                             <a data-proto-field="cardLink"
                                class="inline-flex items-center gap-2 text-[16px] font-bold leading-none text-cadco-blue no-underline hover:underline"
-                               href="<?php echo esc_url($cardLink['url'] ?? '#'); ?>">
-                                <span><?php echo esc_html($cardLink['text'] ?? ''); ?></span>
-                                <svg class="h-4 w-4" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                               href="<?php echo esc_url($cardLink['url'] ?? '#'); ?>"
+                            ><?php /* The label is a direct text node, not wrapped in a span: the
+                                      editor swaps a link field's text nodes for its own editable
+                                      text but preserves child *elements*, so a span around the
+                                      label survived alongside the injected one and the title
+                                      rendered twice. An inline icon is fine — it is an element
+                                      with no text of its own. */ ?>
+                                <?php echo esc_html($cardLink['text'] ?? ''); ?>
+                                <svg class="h-4 w-4 shrink-0" viewBox="0 0 20 20" fill="none" aria-hidden="true">
                                     <path d="M3 10h13M12 5.5L16.5 10 12 14.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
                                 </svg>
                             </a>
