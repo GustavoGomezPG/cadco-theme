@@ -113,37 +113,23 @@ function cadco_parse_nav_blocks(array $blocks): array
 /**
  * Resolve the supporting line shown under a mini-menu card's title.
  *
- * Core stores a `description` on every navigation item but does not currently
- * expose a field for it in the Navigation editor, so authoring happens where the
- * content lives instead: a linked page's excerpt, or a linked term's
- * description. The stored attribute still wins when something has set it, so a
- * future core field (or a programmatically built menu) takes precedence.
+ * The menu item's own Description field, and nothing else. Core exposes it in
+ * the Navigation editor under the link's settings — "The description will be
+ * displayed in the menu if the current theme supports it" — and this theme
+ * supports it, so the text sits with the menu item it belongs to.
+ *
+ * Deliberately without a fallback to the linked page's excerpt: a second source
+ * would mean the same card could be edited in two places and the two could
+ * disagree, which is the problem the menu-driven header exists to avoid.
+ *
+ * Newlines collapse to spaces because the editor's textarea preserves the
+ * wrapping the author sees while typing, and that is not meaningful here.
  */
 function cadco_resolve_nav_description(array $attrs): string
 {
-    $stored = trim((string) ($attrs['description'] ?? ''));
-    if ('' !== $stored) {
-        return $stored;
-    }
+    $description = (string) ($attrs['description'] ?? '');
 
-    $kind = $attrs['kind'] ?? '';
-    $id   = isset($attrs['id']) ? (int) $attrs['id'] : 0;
-
-    if ($id <= 0) {
-        return '';
-    }
-
-    if ('post-type' === $kind) {
-        $post = get_post($id);
-        return $post instanceof WP_Post ? trim((string) $post->post_excerpt) : '';
-    }
-
-    if ('taxonomy' === $kind) {
-        $term = get_term($id);
-        return $term instanceof WP_Term ? trim(wp_strip_all_tags($term->description)) : '';
-    }
-
-    return '';
+    return trim((string) preg_replace('/\s+/u', ' ', $description));
 }
 
 /**
