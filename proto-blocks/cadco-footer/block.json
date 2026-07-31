@@ -1,0 +1,58 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/block.json",
+  "apiVersion": 3,
+  "name": "proto-blocks/cadco-footer",
+  "title": "Cadco Footer",
+  "category": "proto",
+  "icon": "align-full-width",
+  "description": "Site footer: logo, link columns, a closing call to action, and a legal row.",
+  "keywords": ["footer", "links", "legal"],
+  "supports": {
+    "html": false,
+    "anchor": false,
+    "customClassName": true,
+    "align": ["full"],
+    "multiple": false
+  },
+  "protoBlocks": {
+    "version": "1.0",
+    "template": "template.php",
+    "useTailwind": true,
+    "fields": {
+      "logo": {
+        "type": "image",
+        "label": "Logo"
+      },
+      "columns": {
+        "type": "repeater",
+        "label": "Link columns",
+        "min": 0,
+        "max": 5,
+        "itemLabel": "heading",
+        "collapsible": true,
+        "fields": {
+          "heading": { "type": "text", "tagName": "span", "label": "Column heading" },
+          "links": { "type": "wysiwyg", "label": "Links" }
+        }
+      },
+      "ctaHeading": {
+        "type": "text",
+        "tagName": "p",
+        "label": "Closing heading"
+      },
+      "cta": {
+        "type": "link",
+        "label": "Call to action"
+      },
+      "copyright": {
+        "type": "text",
+        "tagName": "span",
+        "label": "Copyright"
+      },
+      "legal": {
+        "type": "link",
+        "label": "Legal link"
+      }
+    }
+  }
+}

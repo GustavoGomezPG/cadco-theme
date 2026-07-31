@@ -52,7 +52,6 @@ body {
   min-width: 0;
 }
 
-.wp-site-blocks > footer,
 .wp-site-blocks main {
   box-sizing: border-box;        /* keep padding inside the 1440 / 100% width */
   width: 100%;
@@ -61,12 +60,14 @@ body {
   padding-inline: clamp(1rem, 4vw, 2.5rem); /* default side gutters */
 }
 
-/* The header is deliberately full-bleed: its bar colour has to reach both edges
-   of the viewport, so it must not be capped or inset here. Capping it would let
-   the page background show through as gutters either side of the bar.
-   The header block caps and pads its own inner container instead, so content
-   still lines up with the 1440px column used by main and the footer. */
-.wp-site-blocks > header {
+/* The header and footer are deliberately full-bleed: their background colour has
+   to reach both edges of the viewport, so they must not be capped or inset here.
+   Capping them would let the page background show through as gutters either
+   side of the black band. Both blocks cap and pad their own inner container
+   instead, so their content still lines up with the 1440px column used by
+   <main>. */
+.wp-site-blocks > header,
+.wp-site-blocks > footer {
   box-sizing: border-box;
   width: 100%;
 }

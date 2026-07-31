@@ -1,0 +1,59 @@
+/*
+ * Cadco footer — the rules Tailwind utilities cannot reach.
+ *
+ * Each column's link list is authored in a wysiwyg field, so its markup comes
+ * from the editor rather than from the template. Utilities can't be placed on
+ * those elements, so the list is styled here through its container.
+ */
+
+.cadco-footer-links ul,
+.cadco-footer-links ol {
+    margin: 0.875rem 0 0;
+    padding: 0;
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 0.8125rem;
+}
+
+.cadco-footer-links li {
+    margin: 0;
+}
+
+.cadco-footer-links a {
+    color: rgba(255, 255, 255, 0.78);
+    text-decoration: none;
+    transition: color 120ms ease;
+}
+
+.cadco-footer-links a:hover,
+.cadco-footer-links a:focus-visible {
+    color: #ffffff;
+    text-decoration: underline;
+}
+
+/*
+ * Sub-heading inside a column.
+ *
+ * The design stacks two groups in the second column — Resources, then Support
+ * below it. Rather than spend a second pair of fields on the exception, a
+ * column's wysiwyg may carry another group: a paragraph containing only bold
+ * text reads as that group's heading and is styled to match the column heading
+ * above it, with the gap the design puts between the two groups.
+ */
+.cadco-footer-links p {
+    margin: 3.5rem 0 0;
+}
+
+.cadco-footer-links p strong {
+    display: block;
+    font-size: 1rem;
+    font-weight: 700;
+    color: #ffffff;
+}
+
+/* An empty logo still renders (so it stays selectable in the editor) but must
+   not leave a broken-image box on the front end. */
+.cadco-footer img[hidden] {
+    display: none;
+}
