@@ -46,7 +46,7 @@
     height: 0;
 }
 
-.cadco-panel:not(.is-preview) {
+.cadco-panel {
     display: none;
 }
 
@@ -153,15 +153,11 @@
 }
 
 /*
- * Editor preview.
+ * There is deliberately no editor-preview rule opening the panels.
  *
- * The panels are rendered open and stacked while editing, because a repeater
- * inside a display:none panel cannot be edited. This undoes both the closed
- * resting state and the absolute positioning that makes them dropdowns on the
- * front end, so they sit in the flow instead of overlapping each other.
+ * They used to render open and stacked while editing, because a repeater inside
+ * a display:none panel cannot be edited. The columns and cards now come from the
+ * navigation menu, so the panels hold nothing editable and an open one only made
+ * the header tall enough to bury the rest of a template. The menu is edited in
+ * the Navigation editor, which is the one place it should be expanded.
  */
-.cadco-panel.is-preview {
-    display: block;
-    position: static;
-    margin-top: 1px;
-}

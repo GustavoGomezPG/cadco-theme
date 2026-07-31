@@ -178,18 +178,17 @@ $panel_id = static function (string $key): string {
         </div>
     <?php endif; ?>
 
-    <?php // ---------- Design A: full-width mega menu ---------- ?>
+    <?php /* ---------- Design A: full-width mega menu ----------
+             Closed in the editor as well as on the front end. It used to render
+             expanded because the columns were repeater fields that could not be
+             edited inside a display:none panel. They come from the navigation
+             menu now, so there is nothing here to reach, and leaving it open only
+             made the header tall enough to bury the rest of a template. */ ?>
     <div
         id="<?php echo esc_attr($panel_id($megaAttachTo)); ?>"
-        class="cadco-panel <?php echo $is_preview ? "is-preview" : ""; ?> absolute inset-x-0 top-full w-full bg-panel text-ink"
+        class="cadco-panel absolute inset-x-0 top-full w-full bg-panel text-ink"
         data-cadco-panel
     >
-        <?php if ($is_preview) : ?>
-            <p class="m-0 bg-cadco-blue px-6 py-2 text-[13px] font-bold text-white">
-                <?php esc_html_e('Design A — mega menu (shown expanded while editing)', 'cadco-theme'); ?>
-            </p>
-        <?php endif; ?>
-
         <?php /* Columns come from the menu, not from the block: a child of the
                  attached item is a column, its own children are that column's
                  links, and the child's URL is where See All goes. The catalogue
@@ -219,18 +218,12 @@ $panel_id = static function (string $key): string {
         </div>
     </div>
 
-    <?php // ---------- Design B: compact card menu ---------- ?>
+    <?php // ---------- Design B: compact card menu (closed in the editor too) ---------- ?>
     <div
         id="<?php echo esc_attr($panel_id($miniAttachTo)); ?>"
-        class="cadco-panel <?php echo $is_preview ? "is-preview" : ""; ?> absolute inset-x-0 top-full w-full"
+        class="cadco-panel absolute inset-x-0 top-full w-full"
         data-cadco-panel
     >
-        <?php if ($is_preview) : ?>
-            <p class="m-0 bg-cadco-blue px-6 py-2 text-[13px] font-bold text-white">
-                <?php esc_html_e('Design B — mini menu (shown expanded while editing)', 'cadco-theme'); ?>
-            </p>
-        <?php endif; ?>
-
         <div class="mx-auto w-full max-w-[1440px] px-6 lg:px-10">
             <div class="ml-auto w-fit overflow-hidden rounded-lg bg-panel text-ink shadow-soft">
                 <?php /* Cards come from the menu too: one per child of the attached
