@@ -77,7 +77,9 @@ $panel_id = static function (string $key): string {
         <a class="flex shrink-0 items-center" href="<?php echo esc_url(home_url('/')); ?>">
             <img
                 data-proto-field="logo"
-                class="h-9 w-auto max-w-[120px] object-contain lg:h-14 lg:max-w-none"
+<?php /* Sized by width on mobile so the mark is a predictable 110px whatever
+                     aspect ratio the uploaded logo has; height leads on desktop. */ ?>
+                class="h-auto w-[110px] object-contain lg:h-14 lg:w-auto"
                 src="<?php echo esc_url($logo['url'] ?? ''); ?>"
                 alt="<?php echo esc_attr($logo['alt'] ?? get_bloginfo('name')); ?>"
             />
