@@ -85,7 +85,12 @@ $panel_id = static function (string $key): string {
 
         <?php // Navigation, read from the site's navigation menu. Desktop only —
         // the mobile menu below renders its own markup from the same data. ?>
-        <nav class="cadco-nav hidden flex-1 items-center justify-center lg:flex" aria-label="<?php esc_attr_e('Main', 'cadco-theme'); ?>" data-cadco-nav>
+        <?php /* Right-anchored, not centred: the design groups the links with the
+                 search and call to action at the right of the bar rather than
+                 floating them in the space left over beside the logo. The extra
+                 right margin, on top of the bar's own gap, gives the ~72px the
+                 design leaves between the last link and the search icon. */ ?>
+        <nav class="cadco-nav hidden flex-1 items-center justify-end lg:mr-10 lg:flex" aria-label="<?php esc_attr_e('Main', 'cadco-theme'); ?>" data-cadco-nav>
             <ul class="flex list-none items-center gap-16 p-0 m-0">
                 <?php foreach ($navItems as $item) :
                     $label   = $item['label'] ?? '';
@@ -232,7 +237,12 @@ $panel_id = static function (string $key): string {
                          cadco_resolve_nav_description(). */ ?>
                 <div class="grid grid-cols-1 sm:grid-cols-2">
                     <?php foreach ($miniCards as $card) : ?>
-                        <div class="flex min-w-[240px] flex-col gap-3 border-gray-300 px-10 py-8 sm:border-l sm:first:border-l-0">
+                        <?php /* Capped at the design's 278px card. Without it the card
+                                 grows to fit the description on one line, which pushed the
+                                 panel out to 783px and left it reaching into the middle of
+                                 the header instead of sitting under the menu. The cap makes
+                                 the description wrap to two lines, as designed. */ ?>
+                        <div class="flex min-w-[240px] flex-col gap-3 border-gray-300 px-10 py-8 sm:max-w-[278px] sm:border-l sm:first:border-l-0">
                             <a class="inline-flex items-center gap-2 text-[16px] font-bold leading-none text-cadco-blue no-underline hover:underline"
                                href="<?php echo esc_url($card['url']); ?>"
                             >
