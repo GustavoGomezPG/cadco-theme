@@ -330,18 +330,50 @@
 
     // ---- Mobile accordions ----------------------------------------------
 
+    /**
+     * Let every open ancestor panel size to its content again.
+     *
+     * A panel is overflow:hidden at whatever height its tween left it, so when
+     * a nested accordion expands inside one, the new content would be clipped.
+     * Releasing the ancestors to height:auto lets the outer panel grow with the
+     * inner one instead.
+     */
+    function releaseAncestors(el) {
+      var node = el.parentElement;
+
+      while (node && node !== root) {
+        if (node.matches('[data-cadco-acc-panel]')) {
+          var owner = node.closest('[data-cadco-acc]');
+          if (owner && owner.classList.contains('is-open')) {
+            node.style.height = 'auto';
+          }
+        }
+        node = node.parentElement;
+      }
+    }
+
     root.querySelectorAll('[data-cadco-acc]').forEach(function (section) {
-      var toggle = section.querySelector('[data-cadco-acc-toggle]');
-      var panel = section.querySelector('[data-cadco-acc-panel]');
+      // Each accordion owns the toggle and panel that are its *own* direct
+      // children. querySelector would reach into a nested accordion and wire a
+      // parent's button to a child's panel.
+      var toggle = section.querySelector(':scope > [data-cadco-acc-toggle]');
+      var panel = section.querySelector(':scope > [data-cadco-acc-panel]');
       if (!toggle || !panel) return;
 
       toggle.addEventListener('click', function () {
         var gsap = gsapOrNull();
         var willOpen = !section.classList.contains('is-open');
 
-        // One section at a time, so the menu never becomes a long scroll.
+        // One section at a time, so the menu never becomes a long scroll — but
+        // only among siblings. Accordions nest (a top-level item, then a
+        // category inside it), and closing every open accordion would collapse
+        // the parent the moment a child was opened.
         if (willOpen) {
-          root.querySelectorAll('[data-cadco-acc].is-open').forEach(function (other) {
+          var siblings = section.parentElement
+            ? section.parentElement.querySelectorAll(':scope > [data-cadco-acc].is-open')
+            : [];
+
+          siblings.forEach(function (other) {
             if (other === section) return;
             other.classList.remove('is-open');
             var otherToggle = other.querySelector('[data-cadco-acc-toggle]');
@@ -372,7 +404,17 @@
           height: willOpen ? 'auto' : 0,
           duration: 0.26,
           ease: 'power2.inOut',
+          onComplete: function () {
+            // Settle on auto rather than the measured pixel value, so this
+            // panel keeps growing if something inside it expands later.
+            if (willOpen) panel.style.height = 'auto';
+            releaseAncestors(panel);
+          },
         });
+
+        // Release immediately as well, so an outer panel grows *during* the
+        // inner tween rather than clipping it until the tween finishes.
+        releaseAncestors(panel);
       });
     });
 

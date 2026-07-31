@@ -288,16 +288,35 @@ $panel_id = static function (string $key): string {
                             <div id="cadco-acc-<?php echo esc_attr($section); ?>" class="cadco-acc__panel" data-cadco-acc-panel>
                                 <div class="px-5 pb-5">
                                     <?php if ($isMega) : ?>
-                                        <?php foreach ($megaColumns as $column) :
+                                        <?php // Each category collapses too — anything with nesting is a
+                                        // collapse, so the section opens to a short list of categories
+                                        // rather than every product link at once. ?>
+                                        <?php foreach ($megaColumns as $index => $column) :
                                             $seeAll = $column['seeAll'] ?? [];
+                                            $subId  = 'cadco-acc-' . $section . '-' . (int) $index;
                                             ?>
-                                            <div class="border-t border-white/10 pt-4 first:border-t-0 first:pt-0">
-                                                <a class="block py-2 text-[15px] font-bold text-white no-underline hover:underline"
-                                                   href="<?php echo esc_url($seeAll['url'] ?? '#'); ?>">
-                                                    <?php echo esc_html($column['heading'] ?? ''); ?>
-                                                </a>
-                                                <div class="cadco-mobile-links text-[15px] text-white/70">
-                                                    <?php echo wp_kses_post($column['links'] ?? ''); ?>
+                                            <div class="border-t border-white/10 first:border-t-0" data-cadco-acc>
+                                                <button type="button"
+                                                        class="flex w-full cursor-pointer items-center justify-between gap-3 border-0 bg-transparent py-3 text-left text-[15px] font-bold text-white transition-colors hover:text-white/75"
+                                                        aria-expanded="false"
+                                                        aria-controls="<?php echo esc_attr($subId); ?>"
+                                                        data-cadco-acc-toggle>
+                                                    <span><?php echo esc_html($column['heading'] ?? ''); ?></span>
+                                                    <svg class="cadco-acc__chevron h-4 w-4 shrink-0 text-white/60" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                                                        <path d="M5.5 7.5L10 12l4.5-4.5" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
+                                                    </svg>
+                                                </button>
+
+                                                <div id="<?php echo esc_attr($subId); ?>" class="cadco-acc__panel" data-cadco-acc-panel>
+                                                    <div class="pb-4">
+                                                        <div class="cadco-mobile-links text-[15px] text-white/70">
+                                                            <?php echo wp_kses_post($column['links'] ?? ''); ?>
+                                                        </div>
+                                                        <a class="mt-3 inline-flex items-center rounded-md bg-cadco-blue px-4 py-2 text-[14px] font-bold leading-none text-white no-underline transition-colors hover:bg-[#00395a]"
+                                                           href="<?php echo esc_url($seeAll['url'] ?? '#'); ?>">
+                                                            <?php echo esc_html($seeAll['text'] ?? 'See All'); ?>
+                                                        </a>
+                                                    </div>
                                                 </div>
                                             </div>
                                         <?php endforeach; ?>
