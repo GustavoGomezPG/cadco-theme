@@ -78,10 +78,8 @@ $panel_id = static function (string $key): string {
             />
         </a>
 
-        <?php // Navigation, read from the site's navigation menu.
-        // One nav element for both layouts: below lg it is repositioned by CSS
-        // into a drawer rather than duplicated, so the mega/mini panel ids stay
-        // unique and the triggers keep working in both. ?>
+        <?php // Navigation, read from the site's navigation menu. Desktop only —
+        // the mobile menu below renders its own markup from the same data. ?>
         <nav class="cadco-nav hidden flex-1 items-center justify-center lg:flex" aria-label="<?php esc_attr_e('Main', 'cadco-theme'); ?>" data-cadco-nav>
             <ul class="flex list-none items-center gap-16 p-0 m-0">
                 <?php foreach ($navItems as $item) :
@@ -137,7 +135,7 @@ $panel_id = static function (string $key): string {
             </button>
 
             <a data-proto-field="cta"
-               class="inline-flex items-center rounded-md bg-cadco-blue px-2 py-2 text-[12px] font-bold leading-none text-white no-underline transition-colors hover:bg-[#00395a] lg:px-6 lg:py-4 lg:text-[16px]"
+               class="hidden items-center rounded-md bg-cadco-blue px-6 py-4 text-[16px] font-bold leading-none text-white no-underline transition-colors hover:bg-[#00395a] lg:inline-flex"
                href="<?php echo esc_url($cta['url'] ?? '#'); ?>"
                <?php echo ! empty($cta['target']) ? 'target="' . esc_attr($cta['target']) . '"' : ''; ?>
             ><?php echo esc_html($cta['text'] ?? 'Contact Cadco'); ?></a>
@@ -235,6 +233,102 @@ $panel_id = static function (string $key): string {
                         </div>
                     <?php endforeach; ?>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <?php // ---------- Mobile menu: overlay card with collapsible sections ----
+    // Its own markup rather than the desktop nav repositioned by CSS. The
+    // desktop panels are wide, four-column layouts that do not fold sensibly
+    // into a phone, and squeezing them in produced a 22-link wall. Here each
+    // top-level item that owns a panel becomes a collapsible section instead.
+    //
+    // The logo and call to action are re-rendered from the same attributes
+    // rather than carrying data-proto-field a second time: two elements bound
+    // to one field would give the editor two bindings for it. Editing either
+    // field still updates both, because both are rendered from the same value.
+    ?>
+    <div class="cadco-mobile absolute inset-x-0 top-0 z-50 p-2 lg:hidden" data-cadco-mobile hidden>
+        <div class="overflow-hidden rounded-xl bg-header shadow-2xl ring-1 ring-white/10">
+
+            <div class="flex items-center justify-between px-5 py-4">
+                <img class="h-8 w-auto max-w-[120px] object-contain"
+                     src="<?php echo esc_url($logo['url'] ?? ''); ?>"
+                     alt="<?php echo esc_attr($logo['alt'] ?? get_bloginfo('name')); ?>" />
+                <button type="button"
+                        class="-mr-2 flex items-center rounded-md border-0 bg-transparent p-2 text-white transition-colors hover:bg-white/10 cursor-pointer"
+                        aria-label="<?php esc_attr_e('Close menu', 'cadco-theme'); ?>"
+                        data-cadco-mobile-close>
+                    <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                        <path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/>
+                    </svg>
+                </button>
+            </div>
+
+            <nav class="border-t border-white/10" aria-label="<?php esc_attr_e('Mobile', 'cadco-theme'); ?>">
+                <?php foreach ($navItems as $item) :
+                    $label   = $item['label'] ?? '';
+                    $isMega  = $hasMega && $label === $megaAttachTo;
+                    $isMini  = $hasMini && $label === $miniAttachTo;
+                    $section = sanitize_title($label);
+                    ?>
+                    <?php if ($isMega || $isMini) : ?>
+                        <div class="border-b border-white/10 last:border-b-0" data-cadco-acc>
+                            <button type="button"
+                                    class="flex w-full cursor-pointer items-center justify-between border-0 bg-transparent px-5 py-4 text-left text-[17px] font-medium text-white transition-colors hover:bg-white/5"
+                                    aria-expanded="false"
+                                    aria-controls="cadco-acc-<?php echo esc_attr($section); ?>"
+                                    data-cadco-acc-toggle>
+                                <span><?php echo esc_html($label); ?></span>
+                                <svg class="cadco-acc__chevron h-5 w-5 shrink-0 text-white/70" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                                    <path d="M5.5 7.5L10 12l4.5-4.5" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                            </button>
+
+                            <div id="cadco-acc-<?php echo esc_attr($section); ?>" class="cadco-acc__panel" data-cadco-acc-panel>
+                                <div class="px-5 pb-5">
+                                    <?php if ($isMega) : ?>
+                                        <?php foreach ($megaColumns as $column) :
+                                            $seeAll = $column['seeAll'] ?? [];
+                                            ?>
+                                            <div class="border-t border-white/10 pt-4 first:border-t-0 first:pt-0">
+                                                <a class="block py-2 text-[15px] font-bold text-white no-underline hover:underline"
+                                                   href="<?php echo esc_url($seeAll['url'] ?? '#'); ?>">
+                                                    <?php echo esc_html($column['heading'] ?? ''); ?>
+                                                </a>
+                                                <div class="cadco-mobile-links text-[15px] text-white/70">
+                                                    <?php echo wp_kses_post($column['links'] ?? ''); ?>
+                                                </div>
+                                            </div>
+                                        <?php endforeach; ?>
+                                    <?php else : ?>
+                                        <?php foreach ($miniCards as $card) :
+                                            $cardLink = $card['cardLink'] ?? [];
+                                            ?>
+                                            <a class="block rounded-lg px-3 py-3 -mx-3 no-underline transition-colors hover:bg-white/5"
+                                               href="<?php echo esc_url($cardLink['url'] ?? '#'); ?>">
+                                                <span class="block text-[15px] font-bold text-white"><?php echo esc_html($cardLink['text'] ?? ''); ?></span>
+                                                <span class="mt-1 block text-[14px] leading-snug text-white/60"><?php echo esc_html($card['description'] ?? ''); ?></span>
+                                            </a>
+                                        <?php endforeach; ?>
+                                    <?php endif; ?>
+                                </div>
+                            </div>
+                        </div>
+                    <?php else : ?>
+                        <a class="block border-b border-white/10 px-5 py-4 text-[17px] font-medium text-white no-underline transition-colors last:border-b-0 hover:bg-white/5"
+                           href="<?php echo esc_url($item['url'] ?? '#'); ?>">
+                            <?php echo esc_html($label); ?>
+                        </a>
+                    <?php endif; ?>
+                <?php endforeach; ?>
+            </nav>
+
+            <div class="border-t border-white/10 p-5">
+                <a class="flex w-full items-center justify-center rounded-md bg-cadco-blue px-4 py-4 text-[16px] font-bold leading-none text-white no-underline transition-colors hover:bg-[#00395a]"
+                   href="<?php echo esc_url($cta['url'] ?? '#'); ?>">
+                    <?php echo esc_html($cta['text'] ?? 'Contact Cadco'); ?>
+                </a>
             </div>
         </div>
     </div>

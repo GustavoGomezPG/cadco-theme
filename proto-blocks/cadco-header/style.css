@@ -65,82 +65,62 @@
 }
 
 /* ------------------------------------------------------------------------
-   Mobile (below the lg breakpoint, 1024px).
+   Mobile menu.
 
-   The Figma only covers desktop, so this is a conventional interpretation:
-   the bar keeps the logo, search and a hamburger, and the same <nav> element
-   is repositioned into a full-width drawer beneath it. Repositioning rather
-   than rendering a second nav keeps the mega/mini panel ids unique — two navs
-   would mean two elements sharing an id, which breaks both the triggers and
-   the aria-controls relationship.
+   An overlay card rather than the desktop nav squeezed into a column: the
+   desktop panels are wide four-column layouts that do not fold sensibly into a
+   phone. Each top-level item that owns a panel is a collapsible section here.
+
+   Open/close and the accordion heights are animated by GSAP in view.js, so CSS
+   only declares the closed resting state.
    ------------------------------------------------------------------------- */
-@media (max-width: 1023px) {
-    .cadco-header.is-menu-open .cadco-nav {
-        display: flex;
-        position: absolute;
-        top: 100%;
-        left: 0;
-        right: 0;
-        flex-direction: column;
-        align-items: stretch;
-        background: var(--color-header, #111);
-        padding: 0.5rem 1.5rem 1.5rem;
-        border-top: 1px solid rgba(255, 255, 255, 0.12);
-        max-height: calc(100vh - 74px);
-        overflow-y: auto;
-    }
-
-    .cadco-header.is-menu-open .cadco-nav > ul {
-        flex-direction: column;
-        align-items: stretch;
-        gap: 0;
-        width: 100%;
-    }
-
-    .cadco-header.is-menu-open .cadco-nav a {
-        padding-block: 1rem;
-    }
-
-    /* Panels sit inline under their item on mobile instead of dropping over
-       the page, so the drawer reads as one scrollable list. No negative margin:
-       pulling the panel out to the drawer edges made it wider than the drawer
-       and pushed the whole page into horizontal overflow. */
-    .cadco-header.is-menu-open .cadco-panel {
-        position: static;
-        width: 100%;
-        margin-inline: 0;
-    }
-
-    /* Inline in the drawer, a closed panel must take no space at all —
-       visibility:hidden alone would still reserve its full height and leave a
-       large gap between menu items. */
-    .cadco-header .cadco-panel:not(.is-open):not(.is-preview) {
-        display: none;
-    }
-
-    .cadco-header.is-menu-open .cadco-panel .grid {
-        grid-template-columns: 1fr;
-    }
-
-    /* The CTA is relocated into the drawer by view.js on mobile, so give it
-       room and let it span the drawer width. */
-    .cadco-cta--in-drawer {
-        display: flex;
-        justify-content: center;
-        width: 100%;
-        margin-top: 1rem;
-        padding-block: 0.9rem !important;
-        font-size: 15px !important;
-    }
-
-    /* Hamburger becomes a close icon while the drawer is open. */
-    .cadco-header.is-menu-open .cadco-burger__mid { opacity: 0; }
-    .cadco-header.is-menu-open .cadco-burger__top { transform: translateY(6px) rotate(45deg); transform-origin: center; }
-    .cadco-header.is-menu-open .cadco-burger__bot { transform: translateY(-6px) rotate(-45deg); transform-origin: center; }
-    .cadco-burger__top,
-    .cadco-burger__mid,
-    .cadco-burger__bot { transition: transform 180ms ease, opacity 180ms ease; }
+.cadco-acc__panel {
+    overflow: hidden;
+    height: 0;
 }
+
+.cadco-acc__chevron {
+    transition: transform 200ms ease;
+}
+
+.cadco-acc.is-open .cadco-acc__chevron {
+    transform: rotate(180deg);
+}
+
+/* The mega columns' link lists are authored as wysiwyg markup, so they are
+   styled through their container here as on desktop. */
+.cadco-mobile-links ul,
+.cadco-mobile-links ol {
+    margin: 0.25rem 0 0;
+    padding: 0;
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+}
+
+.cadco-mobile-links li {
+    margin: 0;
+}
+
+.cadco-mobile-links a {
+    display: block;
+    padding: 0.5rem 0;
+    color: rgba(255, 255, 255, 0.72);
+    text-decoration: none;
+}
+
+.cadco-mobile-links a:hover,
+.cadco-mobile-links a:focus-visible {
+    color: #ffffff;
+}
+
+/* Hamburger becomes a close icon while the menu is open. */
+.cadco-header.is-menu-open .cadco-burger__mid { opacity: 0; }
+.cadco-header.is-menu-open .cadco-burger__top { transform: translateY(6px) rotate(45deg); transform-origin: center; }
+.cadco-header.is-menu-open .cadco-burger__bot { transform: translateY(-6px) rotate(-45deg); transform-origin: center; }
+.cadco-burger__top,
+.cadco-burger__mid,
+.cadco-burger__bot { transition: transform 180ms ease, opacity 180ms ease; }
 
 /*
  * Editor preview.

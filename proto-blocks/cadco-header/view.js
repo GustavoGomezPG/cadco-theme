@@ -220,8 +220,8 @@
       var panel = panelFor(trigger);
       if (!panel) return;
 
-      // Hover is a desktop affordance only. Below the breakpoint the panels sit
-      // inline in the drawer, where hover-open would fight tap-to-expand.
+      // Hover is a desktop affordance only. The mobile menu is a separate card
+      // with its own accordions, so these desktop panels never open below lg.
       trigger.addEventListener('mouseenter', function () {
         if (isMobile.matches) return;
         cancelClose();
@@ -262,69 +262,119 @@
       });
     });
 
-    // ---- Mobile drawer ---------------------------------------------------
+    // ---- Mobile menu -----------------------------------------------------
 
     var menuToggle = root.querySelector('[data-cadco-menu-toggle]');
-    var nav = root.querySelector('[data-cadco-nav]');
-    var cta = root.querySelector('[data-proto-field="cta"]');
-    var ctaHome = cta ? cta.parentElement : null;
+    var mobile = root.querySelector('[data-cadco-mobile]');
+    var mobileClose = root.querySelector('[data-cadco-mobile-close]');
+
+    function menuIsOpen() {
+      return root.classList.contains('is-menu-open');
+    }
 
     function closeMenu() {
-      if (!root.classList.contains('is-menu-open')) return;
+      if (!mobile || !menuIsOpen()) return;
+      var gsap = gsapOrNull();
+
       root.classList.remove('is-menu-open');
       if (menuToggle) menuToggle.setAttribute('aria-expanded', 'false');
-    }
 
-    /**
-     * Move the call to action into the drawer on mobile and back to the bar on
-     * desktop. The same node is relocated rather than a second one rendered:
-     * two elements carrying data-proto-field="cta" would give the editor two
-     * bindings for a single field.
-     */
-    function placeCta() {
-      if (!cta || !nav || !ctaHome) return;
-
-      if (isMobile.matches) {
-        if (cta.parentElement !== nav) {
-          nav.appendChild(cta);
-          cta.classList.add('cadco-cta--in-drawer');
-        }
-      } else if (cta.parentElement !== ctaHome) {
-        ctaHome.appendChild(cta);
-        cta.classList.remove('cadco-cta--in-drawer');
+      if (!gsap || prefersReducedMotion()) {
+        mobile.hidden = true;
+        return;
       }
+
+      gsap.killTweensOf(mobile);
+      gsap.to(mobile, {
+        opacity: 0,
+        scale: 0.96,
+        duration: 0.14,
+        ease: 'power2.in',
+        transformOrigin: 'top right',
+        onComplete: function () { mobile.hidden = true; },
+      });
     }
 
-    placeCta();
-    isMobile.addEventListener('change', function () {
-      placeCta();
-      closeMenu();
-      closeAll();
+    function openMenu() {
+      if (!mobile) return;
+      var gsap = gsapOrNull();
+
       closeSearch();
-    });
+      root.classList.add('is-menu-open');
+      if (menuToggle) menuToggle.setAttribute('aria-expanded', 'true');
+      mobile.hidden = false;
 
-    if (menuToggle && nav) {
+      if (!gsap || prefersReducedMotion()) return;
+
+      gsap.killTweensOf(mobile);
+      gsap.fromTo(
+        mobile,
+        { opacity: 0, scale: 0.96 },
+        { opacity: 1, scale: 1, duration: 0.2, ease: 'power2.out', transformOrigin: 'top right' }
+      );
+    }
+
+    if (menuToggle) {
       menuToggle.addEventListener('click', function () {
-        var willOpen = !root.classList.contains('is-menu-open');
-        root.classList.toggle('is-menu-open', willOpen);
-        menuToggle.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
+        if (menuIsOpen()) {
+          closeMenu();
+        } else {
+          openMenu();
+        }
+      });
+    }
 
-        if (!willOpen) {
-          closeAll();
+    if (mobileClose) {
+      mobileClose.addEventListener('click', closeMenu);
+    }
+
+    // ---- Mobile accordions ----------------------------------------------
+
+    root.querySelectorAll('[data-cadco-acc]').forEach(function (section) {
+      var toggle = section.querySelector('[data-cadco-acc-toggle]');
+      var panel = section.querySelector('[data-cadco-acc-panel]');
+      if (!toggle || !panel) return;
+
+      toggle.addEventListener('click', function () {
+        var gsap = gsapOrNull();
+        var willOpen = !section.classList.contains('is-open');
+
+        // One section at a time, so the menu never becomes a long scroll.
+        if (willOpen) {
+          root.querySelectorAll('[data-cadco-acc].is-open').forEach(function (other) {
+            if (other === section) return;
+            other.classList.remove('is-open');
+            var otherToggle = other.querySelector('[data-cadco-acc-toggle]');
+            var otherPanel = other.querySelector('[data-cadco-acc-panel]');
+            if (otherToggle) otherToggle.setAttribute('aria-expanded', 'false');
+            if (!otherPanel) return;
+            if (gsap && !prefersReducedMotion()) {
+              gsap.killTweensOf(otherPanel);
+              gsap.to(otherPanel, { height: 0, duration: 0.2, ease: 'power2.inOut' });
+            } else {
+              otherPanel.style.height = '0px';
+            }
+          });
+        }
+
+        section.classList.toggle('is-open', willOpen);
+        toggle.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
+
+        if (!gsap || prefersReducedMotion()) {
+          panel.style.height = willOpen ? 'auto' : '0px';
           return;
         }
 
-        var gsap = gsapOrNull();
-        if (!gsap || prefersReducedMotion()) return;
-
-        gsap.fromTo(nav, { opacity: 0, y: -8 }, { opacity: 1, y: 0, duration: 0.24, ease: 'power2.out' });
-        gsap.fromTo(
-          nav.querySelectorAll('li'),
-          { opacity: 0, x: -12 },
-          { opacity: 1, x: 0, duration: 0.28, ease: 'power2.out', stagger: 0.05, delay: 0.04 }
-        );
+        gsap.killTweensOf(panel);
+        // height:'auto' lets GSAP measure the natural height, so a section can
+        // grow with its content without a pixel value being guessed here.
+        gsap.to(panel, {
+          height: willOpen ? 'auto' : 0,
+          duration: 0.26,
+          ease: 'power2.inOut',
+        });
       });
-    }
+    });
 
     // ---- Dismissal -------------------------------------------------------
 
