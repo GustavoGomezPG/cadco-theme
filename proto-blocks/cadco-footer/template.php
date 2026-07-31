@@ -67,27 +67,35 @@ $legalText = $legal['text'] ?? '';
                      group (Support, under Resources in the design) carries it as a
                      bold line inside that same wysiwyg — styled as a sub-heading in
                      style.css — rather than costing the author another field. */ ?>
-            <div
-                class="grid grid-cols-2 gap-8 sm:grid-cols-3 lg:col-span-3 lg:gap-8"
-                data-proto-repeater="columns"
-            >
-                <?php foreach ($columns as $column) : ?>
-                    <div data-proto-repeater-item class="min-w-0">
-                        <span
-                            data-proto-field="heading"
-                            class="block text-base font-bold text-white"
-                        ><?php echo esc_html($column['heading'] ?? ''); ?></span>
-                        <div
-                            data-proto-field="links"
-                            class="cadco-footer-links text-[18px] leading-[1.43]"
-                        ><?php echo wp_kses_post($column['links'] ?? ''); ?></div>
-                    </div>
-                <?php endforeach; ?>
+            <?php /* The column span lives on this wrapper, not on the repeater itself.
+                     Once the repeater becomes editable the editor wraps it in a div of
+                     its own, and that wrapper — not ours — becomes the grid child, so a
+                     span on the repeater is stranded a level down and the three link
+                     columns collapse into one track's width. Spanning from outside the
+                     repeater keeps the grid child ours in both contexts. */ ?>
+            <div class="lg:col-span-3">
+                <div
+                    class="grid grid-cols-2 gap-8 sm:grid-cols-3 lg:gap-8"
+                    data-proto-repeater="columns"
+                >
+                    <?php foreach ($columns as $column) : ?>
+                        <div data-proto-repeater-item class="min-w-0">
+                            <span
+                                data-proto-field="heading"
+                                class="block text-base font-bold text-white"
+                            ><?php echo esc_html($column['heading'] ?? ''); ?></span>
+                            <div
+                                data-proto-field="links"
+                                class="cadco-footer-links text-[18px] leading-[1.43]"
+                            ><?php echo wp_kses_post($column['links'] ?? ''); ?></div>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
             </div>
 
             <?php /* Closing call to action. */ ?>
             <div class="lg:col-span-1">
-<?php /* m-0: the theme gives paragraphs a block margin, which would drop this
+                <?php /* m-0: the theme gives paragraphs a block margin, which would drop this
                          heading below the link-column headings it has to line up with. */ ?>
                 <p
                     data-proto-field="ctaHeading"
