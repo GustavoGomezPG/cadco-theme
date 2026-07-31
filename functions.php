@@ -74,13 +74,20 @@ add_action('wp_enqueue_scripts', function () {
     if (!proto_taxi_is_enabled()) {
         unset($libs['taxi-e'], $libs['taxi'], $libs['taxi-init']);
     }
+    $enqueued = [];
     foreach ($libs as $handle => $lib) {
         $path = $dir . '/' . $lib['file'];
         if (!file_exists($path)) { continue; }
         wp_enqueue_script('proto-' . $handle, $url . '/' . $lib['file'], $lib['deps'], $lib['version'] . '.' . filemtime($path), true);
+        $enqueued[$handle] = true;
     }
     // Unwrap the @unseenco/e default export so window.E is the emitter directly.
-    wp_add_inline_script('proto-taxi-e', "if(window.E&&window.E.__esModule&&window.E.default){window.E=window.E.default}");
+    // Gated on the handle actually being enqueued: attaching inline script to a
+    // handle that was skipped (file missing, or Taxi disabled) is a silent no-op
+    // that would leave window.E wrapped and proto-taxi.js's E.on() throwing.
+    if (!empty($enqueued['taxi-e'])) {
+        wp_add_inline_script('proto-taxi-e', "if(window.E&&window.E.__esModule&&window.E.default){window.E=window.E.default}");
+    }
 });
 
 // Once-per-session intro overlay.

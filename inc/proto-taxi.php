@@ -24,7 +24,8 @@ function proto_taxi_is_enabled(): bool
  *
  * Proto-Blocks registers every block's view.js as `proto-blocks-{name}`
  * (Registrar.php:185), so the prefix covers all blocks. The deny list is
- * applied after, and wins.
+ * checked first and returns early, so a denied handle can never be marked
+ * however it matches the allow rule.
  */
 function proto_taxi_reload_handles(): array
 {
@@ -53,9 +54,22 @@ function proto_taxi_denied_handles(): array
 
 /**
  * URLs whose links opt out of Taxi navigation.
+ *
+ * Memoized per request: proto_taxi_mark_ignored_links() runs on every
+ * render_block call whose content contains a link, and render_block fires for
+ * nested blocks too, so the same content is re-scanned at every nesting level.
+ * Without this, wc_get_page_id() + get_permalink() would run several times per
+ * block. The filter still runs once, so filter callbacks see no behaviour
+ * change.
  */
 function proto_taxi_ignore_urls(): array
 {
+    static $cache = null;
+
+    if (null !== $cache) {
+        return $cache;
+    }
+
     $urls = [];
 
     if (function_exists('wc_get_page_id')) {
@@ -73,7 +87,9 @@ function proto_taxi_ignore_urls(): array
         }
     }
 
-    return array_values(array_filter((array) apply_filters('proto_taxi_ignore_urls', $urls)));
+    $cache = array_values(array_filter((array) apply_filters('proto_taxi_ignore_urls', $urls)));
+
+    return $cache;
 }
 
 /**
@@ -95,8 +111,15 @@ add_filter('script_loader_tag', function ($tag, $handle) {
         return $tag;
     }
 
-    // ES modules evaluate once per URL — re-appending will not re-run them.
-    // Those blocks must use the proto:page-ready event instead.
+    // ES modules evaluate once per resolved URL, so re-appending an identical
+    // tag will not re-run them; those blocks must use proto:page-ready instead.
+    //
+    // In practice this is belt-and-braces: Proto-Blocks registers a block's
+    // viewScriptModule through WordPress's Script Modules API, and
+    // WP_Script_Modules::print_script_module() prints via wp_print_script_tag()
+    // without ever firing script_loader_tag — so a module tag does not reach
+    // this filter today. Kept for any handle registered the classic way with an
+    // explicit type="module".
     if (str_contains($tag, 'type="module"')) {
         return $tag;
     }
@@ -125,7 +148,9 @@ add_filter('render_block', function ($content, $block) {
 
 function proto_taxi_mark_ignored_links($content)
 {
-    if (!proto_taxi_is_enabled() || !is_string($content) || $content === '' || !str_contains($content, '<a')) {
+    // stripos, not str_contains: the regex below is case-insensitive, so a
+    // case-sensitive guard would skip markup written <A HREF="...">.
+    if (!proto_taxi_is_enabled() || !is_string($content) || $content === '' || stripos($content, '<a') === false) {
         return $content;
     }
 

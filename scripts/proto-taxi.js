@@ -241,15 +241,21 @@
     var current = document.getElementById('wp-admin-bar-edit');
     if (!current || !page) return;
 
-    var incoming = page.getElementById
-      ? page.getElementById('wp-admin-bar-edit')
-      : page.querySelector('#wp-admin-bar-edit');
+    var incoming = page.querySelector('#wp-admin-bar-edit');
 
     if (incoming) {
-      current.replaceWith(incoming.cloneNode(true));
-    } else {
-      current.remove();
+      var replacement = incoming.cloneNode(true);
+      replacement.style.display = '';
+      current.replaceWith(replacement);
+      return;
     }
+
+    // The incoming page has nothing editable (an archive or a 404), so a hard
+    // load would render no Edit node. Hide it rather than remove it: this
+    // function bails out when #wp-admin-bar-edit is absent, so removing the
+    // node is irreversible — navigating back to an editable page could never
+    // restore it. Hiding keeps the node addressable for that later navigation.
+    current.style.display = 'none';
   }
 
   /**
@@ -282,9 +288,19 @@
 
     var all = window.ScrollTrigger.getAll();
     for (var i = 0; i < all.length; i++) {
-      var trigger = all[i].trigger || all[i].vars.trigger;
-      if (trigger && container.contains(trigger)) {
-        all[i].kill(false);
+      // Guarded per iteration, not around the whole loop: a ScrollTrigger whose
+      // selector matched nothing leaves a bare string in vars.trigger, and
+      // container.contains(string) throws a TypeError. A single loop-level
+      // try/catch would abandon every trigger after the bad one, leaking them
+      // into the next page. Isolating each iteration means one malformed
+      // trigger costs only itself.
+      try {
+        var trigger = all[i].trigger || all[i].vars.trigger;
+        if (trigger && container.contains(trigger)) {
+          all[i].kill(false);
+        }
+      } catch (err) {
+        console.error('[proto-taxi] killScrollTriggersIn', err);
       }
     }
   }
