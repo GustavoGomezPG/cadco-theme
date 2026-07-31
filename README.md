@@ -311,6 +311,37 @@ WooCommerce only enables the verbose page rules that could disambiguate it when
 the base contains the shop slug (`class-wc-admin-permalink-settings.php:205`),
 which is exactly why the `/products/` prefix is used here.
 
+### Admin cleanup
+
+The commerce-only admin surfaces are removed too, so the WooCommerce menu shows
+only what this site can actually manage.
+
+| Removed | How |
+|---|---|
+| Analytics, Marketing, Home, Coupons, store setup flows, payment/shipping upsells | `woocommerce_admin_features` filter |
+| Settings tabs: Payments, Shipping, Tax, Accounts & Privacy, Emails, Point of Sale | `woocommerce_get_settings_pages` filter |
+| Orders, Reports, Extensions | `remove_submenu_page()` |
+
+What remains: **Products** with all its screens (All Products, Add new, Brands,
+Categories, Tags, Attributes, Reviews), and **WooCommerce → Settings / Status**.
+Settings keeps General, Products, Site visibility, Advanced and any Integration
+tabs.
+
+Two things worth knowing:
+
+- Removing a **settings tab** genuinely unregisters it — it stops rendering and
+  stops saving. Removing a **menu page** only hides it; WordPress still serves
+  the screen to anyone who types the URL. That is a tidy-up for trusted admins,
+  not an access control, and it is not pretending to be one.
+- `launch-your-store` is deliberately left enabled. WooCommerce only registers
+  the Site visibility settings tab when that feature is on
+  (`class-wc-admin-settings.php:62`), so disabling it as "store setup cruft"
+  silently removes a legitimate setting.
+
+Both lists are filterable — `cadco_disabled_wc_admin_features` and
+`cadco_disabled_wc_settings_tabs` — and everything is behind
+`cadco_commerce_disabled`.
+
 ### Product templates
 
 `templates/single-product.html` and `templates/archive-product.html` override

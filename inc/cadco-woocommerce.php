@@ -131,17 +131,119 @@ add_filter('proto_taxi_ignore_urls', function ($urls) {
 });
 
 /**
- * Hide the commerce-only admin menu entries that have nothing to manage.
+ * Turn off the WooCommerce Admin features that only exist to serve selling.
  *
- * Orders, Coupons and Marketing are left off the menu; Products, Categories,
- * Attributes and WooCommerce settings all stay, because the product editing
- * experience is the reason WooCommerce is installed.
+ * This is the surgical lever. The blunt one, `woocommerce_admin_disabled`,
+ * switches off the whole WooCommerce Admin app — including the block-based
+ * product editor, which is the single feature this site actually wants. So the
+ * features list is filtered instead, and anything product-editing related is
+ * deliberately kept.
+ *
+ * Feature names are WooCommerce's own, read from
+ * Automattic\WooCommerce\Admin\Features\Features::get_features().
+ */
+function cadco_disabled_wc_admin_features(): array
+{
+    return (array) apply_filters('cadco_disabled_wc_admin_features', [
+        // Sales reporting for a store with no sales.
+        'analytics',
+        'analytics-scheduled-import',
+        // Commerce objects that cannot exist here.
+        'coupons',
+        'subscriptions',
+        // Storefront marketing surfaces.
+        'marketing',
+        'homescreen',
+        'store-alerts',
+        'remote-inbox-notifications',
+        'remote-free-extensions',
+        // Payment and shipping upsells.
+        'payment-gateway-suggestions',
+        'wc-pay-promotion',
+        'wc-pay-welcome-page',
+        'shipping-label-banner',
+        'shipping-smart-defaults',
+        'shipping-setting-tour',
+        'printful',
+        // Store setup flows. Note 'launch-your-store' is deliberately NOT in
+        // this list: WooCommerce only registers the Site visibility settings
+        // tab when that feature is enabled (class-wc-admin-settings.php:62),
+        // and removing it takes a legitimate setting away as a side effect.
+        'onboarding',
+        'onboarding-tasks',
+        'core-profiler',
+        'customize-store',
+        'import-products-task',
+        'experimental-fashion-sample-products',
+        // App promos.
+        'mobile-app-banner',
+        'woo-mobile-welcome',
+    ]);
+}
+
+add_filter('woocommerce_admin_features', function ($features) {
+    if (!cadco_commerce_disabled()) {
+        return $features;
+    }
+
+    return array_values(array_diff((array) $features, cadco_disabled_wc_admin_features()));
+});
+
+/**
+ * Drop the settings tabs that configure selling.
+ *
+ * Unlike removing a menu page, this genuinely unregisters the tab: it stops
+ * rendering and stops saving, rather than merely being hidden from view.
+ *
+ * "Payments" is the tab whose id is `checkout`.
+ *
+ * Kept: General (currency and price display), Products, Site visibility,
+ * Advanced (page setup, REST API) and any Integration tabs a plugin adds.
+ */
+add_filter('woocommerce_get_settings_pages', function ($pages) {
+    if (!cadco_commerce_disabled()) {
+        return $pages;
+    }
+
+    $drop = (array) apply_filters('cadco_disabled_wc_settings_tabs', [
+        'checkout',      // Payments
+        'shipping',
+        'tax',
+        'account',       // Accounts & Privacy
+        'email',
+        'point-of-sale',
+    ]);
+
+    return array_values(array_filter($pages, static function ($page) use ($drop) {
+        return !in_array($page->get_id(), $drop, true);
+    }));
+});
+
+/**
+ * Take the remaining commerce-only entries off the admin menu.
+ *
+ * Note this hides rather than forbids: WordPress still serves these screens to
+ * anyone who types the URL. That is the right trade-off for tidying an admin
+ * whose users are trusted — it is not an access control, and it is not
+ * pretending to be one.
+ *
+ * Kept: Products and its taxonomies, WooCommerce → Settings, and
+ * WooCommerce → Status, which stays useful for debugging.
  */
 add_action('admin_menu', function () {
     if (!cadco_commerce_disabled()) {
         return;
     }
 
-    remove_submenu_page('woocommerce', 'edit.php?post_type=shop_coupon');
+    // Submenu entries under the WooCommerce top-level.
+    remove_submenu_page('woocommerce', 'wc-orders');                        // Orders
+    remove_submenu_page('woocommerce', 'wc-reports');                       // legacy sales reports
+    remove_submenu_page('woocommerce', 'wc-admin');                         // WooCommerce → Home
+    remove_submenu_page('woocommerce', 'wc-addons');                        // Extensions marketplace
+    remove_submenu_page('woocommerce', 'edit.php?post_type=shop_coupon');   // Coupons
+
+    // Top-level menus. The features filter above should already have removed
+    // these, so this is a backstop for WooCommerce registering them anyway.
     remove_menu_page('woocommerce-marketing');
+    remove_menu_page('wc-admin&path=/analytics/overview');
 }, 99);
