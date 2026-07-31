@@ -508,3 +508,56 @@ function cadco_resolve_category_path($vars)
     return $vars;
 }
 add_filter('request', 'cadco_resolve_category_path', 20);
+
+/* -------------------------------------------------------------------------
+   Editor weight: stop registering blocks that cannot work here.
+
+   The Site Editor loads assets for every registered block, because any of them
+   could be inserted. WooCommerce registers 175, and since Blocks 10.7 each
+   carries its own stylesheet, so opening any template pulled ~115 WooCommerce
+   files. On Local's HTTP/1.1 router that is enough to exhaust Chrome's
+   connection pool and throw ERR_INSUFFICIENT_RESOURCES.
+
+   Only blocks this site has already disabled are dropped -- cart, checkout,
+   mini-cart, order confirmation, add-to-cart, customer account, payment icons
+   and coupons. Nothing in that set can function: products are not purchasable,
+   there are no gateways, no orders can exist, and the cart, checkout and
+   account pages redirect to the catalogue. Removing them cannot regress
+   behaviour that was never available.
+
+   Everything catalogue-related stays: products, collections, galleries,
+   filters, reviews, breadcrumbs, sorting, store notices. Those are all usable
+   and are what the product templates are built from.
+
+   Note this is deliberately NOT a dequeue of WooCommerce's stylesheets, which
+   WooCommerce advises against: a dequeued sheet still leaves the block
+   renderable, so a future release ships new markup with no styles to match it.
+   Unregistering removes block and stylesheet together, and always in step.
+
+   Gated on the same switch as the rest of this file, so restoring commerce
+   restores the blocks.
+   ------------------------------------------------------------------------- */
+add_filter('woocommerce_get_block_types', function ($types) {
+    if (!is_array($types) || !cadco_commerce_disabled()) {
+        return $types;
+    }
+
+    // Separately switchable from the commerce gate: if a WooCommerce release
+    // ever makes one of these blocks matter again, this can be turned off on its
+    // own without restoring selling.
+    if (!apply_filters('cadco_trim_disabled_commerce_blocks', true)) {
+        return $types;
+    }
+
+    // Prefix-matched rather than an explicit list so that inner blocks added by
+    // a later WooCommerce release -- cart and checkout are made of dozens of
+    // them -- are covered without this needing an edit to keep working.
+    $disabled = '/^(Cart|Checkout|MiniCart|OrderConfirmation|AddToCart'
+        . '|CustomerAccount|PaymentMethodIcons|CouponCode'
+        . '|FilledCart|EmptyCart|ProceedToCheckout|FilledMiniCart|EmptyMiniCart)/';
+
+    return array_values(array_filter(
+        $types,
+        static fn($type) => !preg_match($disabled, (string) $type)
+    ));
+});
