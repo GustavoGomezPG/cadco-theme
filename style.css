@@ -1,0 +1,119 @@
+/*
+Theme Name: CADCO theme
+Theme URI:
+Author:
+Author URI:
+Description: The CADCO website theme, built on the Proto-Blocks block-theme foundation.
+Requires at least: 6.9
+Tested up to: 6.9
+Requires PHP: 8.0
+Version: 1.1.2
+License: GNU General Public License v2 or later
+License URI: http://www.gnu.org/licenses/gpl-2.0.html
+Text Domain: cadco-theme
+Tags: block-theme, full-site-editing, proto-blocks
+*/
+
+/* Optional web font — swap or remove. */
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap");
+
+/* ------------------------------------------------------------------------
+   Base typography — sans-serif everywhere by default (headings inherit).
+   ------------------------------------------------------------------- */
+body {
+  font-family: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI",
+    Roboto, Helvetica, Arial, sans-serif;
+}
+
+/* ------------------------------------------------------------------------
+   Page shell — full-height column so content fills the viewport (footer
+   sits at the bottom instead of everything bunching at the top), and the
+   header / main / footer are capped at 1440px and centered.
+   ------------------------------------------------------------------- */
+.wp-site-blocks {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+/* The Taxi wrapper sits between .wp-site-blocks and <main>. It stretches like
+   <main> used to, and stacks its children in one grid cell so the outgoing and
+   incoming views overlap during a transition instead of stacking vertically. */
+.wp-site-blocks > [data-taxi] {
+  display: grid;
+  grid-template-areas: "proto-taxi-view";
+  flex: 1 0 auto;
+  min-width: 0;
+}
+.wp-site-blocks > [data-taxi] > [data-taxi-view] {
+  grid-area: proto-taxi-view;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.wp-site-blocks > header,
+.wp-site-blocks > footer,
+.wp-site-blocks main {
+  box-sizing: border-box;        /* keep padding inside the 1440 / 100% width */
+  width: 100%;
+  max-width: 1440px;
+  margin-inline: auto;
+  padding-inline: clamp(1rem, 4vw, 2.5rem); /* default side gutters */
+}
+.wp-site-blocks main {
+  flex: 1 0 auto; /* take the leftover height */
+}
+
+/* Header: keep site branding and navigation on a single, vertically
+   centered row instead of letting the nav wrap below the branding. */
+.wp-site-blocks > header .wp-block-group.is-layout-flex {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+}
+
+/* ------------------------------------------------------------------------
+   Intro overlay (once-per-session preloader). Markup is injected at
+   wp_body_open by functions.php; play/fade logic in scripts/proto-intro.js.
+   ------------------------------------------------------------------- */
+.proto-intro {
+  position: fixed;
+  inset: 0;
+  z-index: 999999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #ffffff;
+  transition: opacity 600ms ease;
+}
+.proto-intro.is-hidden { opacity: 0; pointer-events: none; }
+.proto-intro__lottie { width: 200px; height: 200px; }
+.proto-intro-skip .proto-intro { display: none !important; }
+html.proto-intro-active { overflow: hidden; }
+
+/* ------------------------------------------------------------------------
+   Proto-Blocks: the scoped Tailwind preflight resets ol/ul markers inside
+   .proto-blocks-scope. Restore them for the core List block, and stop
+   Spacer blocks inheriting the flow block-gap margin (exact heights).
+   ------------------------------------------------------------------- */
+.proto-blocks-scope ol.wp-block-list,
+.proto-blocks-scope ul.wp-block-list { margin: 0 0 1em; padding-left: 1.5em; }
+.proto-blocks-scope ol.wp-block-list { list-style: decimal; }
+.proto-blocks-scope ul.wp-block-list { list-style: disc; }
+.is-layout-flow > .wp-block-spacer { margin-block-start: 0; margin-block-end: 0; }
+
+/* Visually hidden live region announcing Taxi navigations. */
+.proto-taxi-announcer {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+[data-taxi-view]:focus { outline: none; }

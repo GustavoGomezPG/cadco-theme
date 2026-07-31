@@ -1,0 +1,18 @@
+/*
+ * Builder Canvas — editor-only styles.
+ *
+ * Hides WP's default post-title input from the editor canvas when the
+ * current page is using the "Builder Canvas" page template. The body
+ * class is toggled by builder-canvas.js (applied to both the editor
+ * chrome body and the iframed canvas body).
+ *
+ * The title still exists in the database; authors edit it via the
+ * "Page Title" panel that the same JS registers in the right sidebar.
+ */
+
+body.proto-builder-canvas .editor-visual-editor__post-title-wrapper,
+body.proto-builder-canvas .wp-block-post-title,
+body.proto-builder-canvas .editor-post-title,
+body.proto-builder-canvas .editor-post-title__input {
+	display: none !important;
+}

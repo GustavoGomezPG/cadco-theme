@@ -1,0 +1,31 @@
+/*
+ * Proto-theme Tailwind tokens (Tailwind v4 @theme).
+ * NEUTRAL placeholders — replace with your brand. Each --color-*, --font-*,
+ * --text-*, --shadow-* becomes a utility (bg-ink, font-display, text-h2, …).
+ */
+@theme {
+  /* Colors — grayscale ramp + one neutral accent placeholder. */
+  --color-ink:       #111111;
+  --color-gray-900:  #1a1a1a;
+  --color-gray-700:  #3b3b3b;
+  --color-gray-500:  #6b6b6b;
+  --color-gray-300:  #c9c9c9;
+  --color-gray-100:  #ededed;
+  --color-paper:     #ffffff;
+  --color-accent:    #2563eb; /* placeholder accent — change me */
+
+  /* Fonts. */
+  --font-sans:    "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Inter", ui-sans-serif, system-ui, sans-serif;
+
+  /* Type scale. */
+  --text-h1: 48px;
+  --text-h2: 36px;
+  --text-h3: 28px;
+  --text-body-lg: 20px;
+  --text-body-md: 16px;
+  --text-body-sm: 14px;
+
+  /* Shadow. */
+  --shadow-soft: 0 6px 16px rgba(0,0,0,0.08);
+}
