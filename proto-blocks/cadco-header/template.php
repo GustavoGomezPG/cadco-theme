@@ -66,7 +66,7 @@ $panel_id = static function (string $key): string {
 ?>
 <header <?php echo $wrapper; ?> data-cadco-header>
 
-    <div class="mx-auto flex h-[74px] w-full max-w-[1440px] items-center gap-3 px-3 lg:gap-8 lg:px-10">
+    <div class="mx-auto flex h-[74px] w-full max-w-[1440px] items-center justify-between gap-3 px-3 lg:gap-8 lg:px-10">
 
         <?php // Logo — always rendered so it stays editable when empty. ?>
         <a class="flex shrink-0 items-center" href="<?php echo esc_url(home_url('/')); ?>">
