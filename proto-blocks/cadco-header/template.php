@@ -91,7 +91,7 @@ $panel_id = static function (string $key): string {
                  right margin, on top of the bar's own gap, gives the ~72px the
                  design leaves between the last link and the search icon. */ ?>
         <nav class="cadco-nav hidden flex-1 items-center justify-end lg:mr-10 lg:flex" aria-label="<?php esc_attr_e('Main', 'cadco-theme'); ?>" data-cadco-nav>
-            <ul class="flex list-none items-center gap-16 p-0 m-0">
+            <ul class="flex list-none items-center gap-16 xl:gap-[84px] p-0 m-0">
                 <?php foreach ($navItems as $item) :
                     $label   = $item['label'] ?? '';
                     $isMega  = $hasMega && $label === $megaAttachTo;
