@@ -102,6 +102,35 @@ add_action('wp_enqueue_scripts', function () {
 }, 20);
 
 /**
+ * Let the product catalogue take part in Taxi navigation.
+ *
+ * proto_taxi_ignore_urls() marks the shop page as a full page load because the
+ * stock WooCommerce block templates carry no [data-taxi-view] wrapper for Taxi
+ * to swap. This theme overrides single-product.html and archive-product.html
+ * with wrapped versions, so that reasoning no longer applies here and the
+ * catalogue should transition like every other route.
+ *
+ * Cart, checkout and my-account stay in the list: they redirect anyway, and a
+ * redirect is cleaner as a real navigation than as a swapped view.
+ */
+add_filter('proto_taxi_ignore_urls', function ($urls) {
+    if (!cadco_commerce_disabled() || !function_exists('wc_get_page_id')) {
+        return $urls;
+    }
+
+    $shop_id = wc_get_page_id('shop');
+    if (!$shop_id || $shop_id <= 0) {
+        return $urls;
+    }
+
+    $shop_url = get_permalink($shop_id);
+
+    return array_values(array_filter($urls, static function ($url) use ($shop_url) {
+        return $url !== $shop_url;
+    }));
+});
+
+/**
  * Hide the commerce-only admin menu entries that have nothing to manage.
  *
  * Orders, Coupons and Marketing are left off the menu; Products, Categories,

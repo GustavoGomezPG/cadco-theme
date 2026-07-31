@@ -257,6 +257,79 @@ by `git archive`.
 
 ---
 
+## WooCommerce: catalogue only
+
+WooCommerce is installed for its product post type, its admin editing
+experience and its product URL structure. The site does not sell anything.
+
+`inc/cadco-woocommerce.php` turns commerce off. WooCommerce core has no setting
+for this — verified against 10.9.4, and the official Cart and Checkout FAQ
+documents no supported way to disable purchasing — so it is done with hooks:
+`woocommerce_is_purchasable` returns false, the add-to-cart template actions are
+removed, `woocommerce_payment_gateways` returns an empty array, the
+cart-fragments script is dequeued, and cart / checkout / my-account redirect to
+the catalogue.
+
+Everything is behind one filter, so selling can be switched back on without
+unpicking the file:
+
+```php
+add_filter('cadco_commerce_disabled', '__return_false');
+```
+
+Products deliberately stay **public**. Making the post type non-public would
+destroy the product URLs below.
+
+### Required site configuration
+
+These are database settings, not code — a fresh environment needs them set or
+product URLs will differ from production:
+
+| Setting | Value | Where |
+|---|---|---|
+| Shop page slug | `products` | Pages → the WooCommerce "Shop" page |
+| Product permalink | Custom base `/products/%product_cat%/` | Settings → Permalinks → Product permalinks |
+| Site visibility | Live (not "Coming soon") | WooCommerce → Settings → Site visibility |
+
+That yields:
+
+```
+/products/                                   catalogue archive
+/products/widgets/test-widget/               product in a top-level category
+/products/widgets/gadgets/nested-widget/     product in a sub-category
+```
+
+Category nesting is handled by WooCommerce itself: it walks the full ancestor
+chain of the deepest assigned category, so arbitrarily deep hierarchies work.
+`woocommerce_product_post_type_link_parent_category_only` flattens it to the
+top-level parent if that is ever wanted.
+
+**Do not set the product base to a bare `/%product_cat%/`.** It reads like the
+tidier URL, but a product base starting at the site root is a greedy catch-all
+that swallows every page and post — the entire site 404s except the front page.
+WooCommerce only enables the verbose page rules that could disambiguate it when
+the base contains the shop slug (`class-wc-admin-permalink-settings.php:205`),
+which is exactly why the `/products/` prefix is used here.
+
+### Product templates
+
+`templates/single-product.html` and `templates/archive-product.html` override
+WooCommerce's blockified templates. They are WooCommerce's markup wrapped in the
+`[data-taxi]` / `[data-taxi-view]` structure, so product pages transition like
+every other route instead of falling back to full page loads, with the
+add-to-cart form and loop button removed.
+
+Because those templates carry the wrapper, `inc/cadco-woocommerce.php` also
+removes the shop page from `proto_taxi_ignore_urls()` — the upstream theme
+excludes it precisely because stock WooCommerce templates have no wrapper, and
+that reasoning does not apply here.
+
+**If WooCommerce's templates change upstream, these copies do not.** Re-diff
+them against `plugins/woocommerce/templates/templates/blockified/` after a major
+WooCommerce upgrade.
+
+---
+
 ## Scaffolding a Block
 
 All custom blocks live in `proto-blocks/`. Each block is a folder containing at minimum a `block.json` and a `template.php`. Proto-Blocks discovers all folders in this directory automatically — no registration code needed.
