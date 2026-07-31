@@ -67,13 +67,21 @@
 /* ------------------------------------------------------------------------
    Mobile menu.
 
-   An overlay card rather than the desktop nav squeezed into a column: the
-   desktop panels are wide four-column layouts that do not fold sensibly into a
-   phone. Each top-level item that owns a panel is a collapsible section here.
+   A full-width panel sitting directly beneath the bar, not a floating card:
+   it is overflow:hidden and its height is tweened open, so the content is
+   revealed downwards as if emerging from behind the bar. The bar itself stays
+   visible above it, with its hamburger becoming the close control.
+
+   Its markup is separate from the desktop nav because the desktop panels are
+   wide four-column layouts that do not fold sensibly into a phone. Each item
+   that has nesting is a collapsible section here.
 
    Open/close and the accordion heights are animated by GSAP in view.js, so CSS
    only declares the closed resting state.
    ------------------------------------------------------------------------- */
+.cadco-mobile[hidden] {
+    display: none;
+}
 .cadco-acc__panel {
     overflow: hidden;
     height: 0;

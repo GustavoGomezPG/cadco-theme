@@ -307,7 +307,7 @@
 
     var menuToggle = root.querySelector('[data-cadco-menu-toggle]');
     var mobile = root.querySelector('[data-cadco-mobile]');
-    var mobileClose = root.querySelector('[data-cadco-mobile-close]');
+    var mobileInner = mobile ? mobile.querySelector('.cadco-mobile__inner') : null;
 
     function menuIsOpen() {
       return root.classList.contains('is-menu-open');
@@ -321,19 +321,27 @@
       if (menuToggle) menuToggle.setAttribute('aria-expanded', 'false');
 
       if (!gsap || prefersReducedMotion()) {
+        mobile.style.height = '';
         mobile.hidden = true;
         return;
       }
 
-      gsap.killTweensOf(mobile);
+      gsap.killTweensOf([mobile, mobileInner]);
+      // Retract behind the bar: the panel's own height closes while its content
+      // slides back up under it, so the menu reads as withdrawing rather than
+      // fading away in place.
       gsap.to(mobile, {
-        opacity: 0,
-        scale: 0.96,
-        duration: 0.14,
-        ease: 'power2.in',
-        transformOrigin: 'top right',
-        onComplete: function () { mobile.hidden = true; },
+        height: 0,
+        duration: 0.22,
+        ease: 'power2.inOut',
+        onComplete: function () {
+          mobile.hidden = true;
+          mobile.style.height = '';
+        },
       });
+      if (mobileInner) {
+        gsap.to(mobileInner, { y: -16, duration: 0.22, ease: 'power2.inOut' });
+      }
     }
 
     function openMenu() {
@@ -345,14 +353,20 @@
       if (menuToggle) menuToggle.setAttribute('aria-expanded', 'true');
       mobile.hidden = false;
 
-      if (!gsap || prefersReducedMotion()) return;
+      if (!gsap || prefersReducedMotion()) {
+        mobile.style.height = 'auto';
+        return;
+      }
 
-      gsap.killTweensOf(mobile);
-      gsap.fromTo(
-        mobile,
-        { opacity: 0, scale: 0.96 },
-        { opacity: 1, scale: 1, duration: 0.2, ease: 'power2.out', transformOrigin: 'top right' }
-      );
+      gsap.killTweensOf([mobile, mobileInner]);
+      // Emerge from behind the bar: the panel is overflow:hidden, so tweening
+      // its height reveals the content downwards, and sliding the inner block
+      // from -16px makes it read as coming out from under the bar rather than
+      // simply unrolling.
+      gsap.fromTo(mobile, { height: 0 }, { height: 'auto', duration: 0.28, ease: 'power2.out' });
+      if (mobileInner) {
+        gsap.fromTo(mobileInner, { y: -16 }, { y: 0, duration: 0.32, ease: 'power2.out' });
+      }
     }
 
     if (menuToggle) {
@@ -365,9 +379,7 @@
       });
     }
 
-    if (mobileClose) {
-      mobileClose.addEventListener('click', closeMenu);
-    }
+
 
     // ---- Mobile accordions ----------------------------------------------
 

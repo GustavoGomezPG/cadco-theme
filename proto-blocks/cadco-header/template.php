@@ -248,24 +248,10 @@ $panel_id = static function (string $key): string {
     // to one field would give the editor two bindings for it. Editing either
     // field still updates both, because both are rendered from the same value.
     ?>
-    <div class="cadco-mobile absolute inset-x-0 top-0 z-50 p-2 lg:hidden" data-cadco-mobile hidden>
-        <div class="overflow-hidden rounded-xl bg-header shadow-2xl ring-1 ring-white/10">
+    <div class="cadco-mobile absolute inset-x-0 top-full z-40 w-full overflow-hidden bg-header lg:hidden" data-cadco-mobile hidden>
+        <div class="cadco-mobile__inner max-h-[calc(100vh-74px)] overflow-y-auto border-t border-white/10">
 
-            <div class="flex items-center justify-between px-5 py-4">
-                <img class="h-8 w-auto max-w-[120px] object-contain"
-                     src="<?php echo esc_url($logo['url'] ?? ''); ?>"
-                     alt="<?php echo esc_attr($logo['alt'] ?? get_bloginfo('name')); ?>" />
-                <button type="button"
-                        class="-mr-2 flex items-center rounded-md border-0 bg-transparent p-2 text-white transition-colors hover:bg-white/10 cursor-pointer"
-                        aria-label="<?php esc_attr_e('Close menu', 'cadco-theme'); ?>"
-                        data-cadco-mobile-close>
-                    <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                        <path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/>
-                    </svg>
-                </button>
-            </div>
-
-            <nav class="border-t border-white/10" aria-label="<?php esc_attr_e('Mobile', 'cadco-theme'); ?>">
+            <nav aria-label="<?php esc_attr_e('Mobile', 'cadco-theme'); ?>">
                 <?php foreach ($navItems as $item) :
                     $label   = $item['label'] ?? '';
                     $isMega  = $hasMega && $label === $megaAttachTo;
