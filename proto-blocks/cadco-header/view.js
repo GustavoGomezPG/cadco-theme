@@ -183,7 +183,11 @@
       if (!searchPanel) return;
       var gsap = gsapOrNull();
 
-      closeAll(); // a panel and the drawer would otherwise overlap
+      // Only one thing open at a time: a desktop panel would overlap the drawer,
+      // and on mobile the menu and the drawer both drop from the same bar.
+      // closeMenu is a hoisted function declaration further down this scope.
+      closeAll();
+      closeMenu();
       searchPanel.classList.add('is-open');
       if (searchToggle) searchToggle.setAttribute('aria-expanded', 'true');
 
