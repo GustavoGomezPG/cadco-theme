@@ -382,183 +382,151 @@ add_action('admin_menu', function () {
    Category archives on the same /products/ base as the product URLs.
 
    Products live at /products/<category-path>/<product>. Left alone, WooCommerce
-   puts their category archives on a separate "product-category" base, so a
-   catalogue built from one taxonomy is addressed two different ways and the
-   literal words "product-category" show up in every navigation link.
+   puts their category archives on a separate "product-category" base, so one
+   taxonomy is addressed two ways and that literal appears in every navigation
+   link.
 
-   WooCommerce does not merely default to that -- wc_fix_rewrite_rules() deletes
+   WooCommerce does not merely default to that. wc_fix_rewrite_rules() deletes
    every standalone product_cat rule sharing the product base's prefix, because
-   /products/A/B is ambiguous: B can be a product in category A, or a
-   sub-category of A. Deleting the rules resolves the ambiguity by making the
-   category interpretation impossible.
+   a generic /products/A/B rule is ambiguous: B can be a product in category A,
+   or a sub-category of A. Deleting the rules resolves the ambiguity by making
+   the category reading impossible.
 
-   The ambiguity is real but decidable, so this resolves it at query time
-   instead: re-add the archive rules below the product rules, and when the
-   product rule claims a URL whose last segment is not actually a product, hand
-   it back to the taxonomy. A product wins over a same-named sibling category,
-   which is the safer way round -- a product URL is the one that gets linked
-   externally.
+   The fix is to remove the ambiguity rather than arbitrate it after the fact.
+   One explicit rule set is registered per term, carrying that term's real
+   ancestor path, so /products/convection-cook-hold-ovens/bakerlux-classic is
+   matched literally and nothing else can match it. Approach follows the
+   Custom Permalinks for WooCommerce plugin.
+
+   This replaces an earlier generic products/(.+?) rule plus a `request` filter
+   that guessed whether the last segment was a product or a term. That guessing
+   had to be taught about /feed/ and /page/ separately, and it accepted any
+   ancestor path at all -- /products/total-nonsense/bakerlux-classic resolved,
+   as did /products/a/b/c/bakerlux-classic, giving every archive unlimited
+   duplicate URLs. Literal rules end all three problems at once: endpoints come
+   free because they are declared, and a wrong ancestor path simply matches
+   nothing and 404s.
+
+   The cost is that the rules embed term slugs, so they must be rebuilt when a
+   category changes -- see the flush below.
    ------------------------------------------------------------------------- */
 
 /**
- * Restore the product_cat archive rules that wc_fix_rewrite_rules() removes.
+ * The category base, but only while it is nested inside the product base.
  *
- * Spliced in directly after the last existing rule on the same base, which puts
- * them below the product rules -- /products/A/B is tried as a product first and
- * only falls back to the taxonomy in cadco_resolve_category_path() -- while
- * still keeping them above WordPress's generic trailing catch-alls. Appending
- * to the end instead leaves them below the catch-all attachment rule
- * ([^/]+/([^/]+)/?$), which swallows every two-segment path and 404s.
+ * Returns '' for any other configuration, which switches this whole layer off:
+ * with a separate base WooCommerce's own rules work and these would fight them.
  */
-add_filter('rewrite_rules_array', function ($rules) {
-    if (!is_array($rules) || !function_exists('wc_get_permalink_structure')) {
-        return $rules;
+function cadco_nested_category_base(): string
+{
+    if (!function_exists('wc_get_permalink_structure')) {
+        return '';
     }
 
     $permalinks = wc_get_permalink_structure();
+    $base       = trim((string) ($permalinks['category_rewrite_slug'] ?? ''), '/');
+    $product    = trim((string) ($permalinks['product_rewrite_slug'] ?? ''), '/');
 
-    // Only relevant while the category base is nested under the product base;
-    // with any other base WooCommerce keeps its own rules and these would be
-    // duplicates pointing at the wrong path.
-    $base = trim((string) ($permalinks['category_rewrite_slug'] ?? ''), '/');
-    if ($base === '' || !str_starts_with(trim((string) $permalinks['product_rewrite_slug'], '/'), $base . '/')) {
+    if ($base === '' || !str_starts_with($product, $base . '/')) {
+        return '';
+    }
+
+    return $base;
+}
+
+/**
+ * A term's full path, built from its ancestors: "parent/child/grandchild".
+ */
+function cadco_term_path(WP_Term $term): string
+{
+    $slugs = [$term->slug];
+
+    foreach (get_ancestors($term->term_id, 'product_cat', 'taxonomy') as $ancestor_id) {
+        $ancestor = get_term($ancestor_id, 'product_cat');
+        if ($ancestor instanceof WP_Term) {
+            array_unshift($slugs, $ancestor->slug);
+        }
+    }
+
+    return implode('/', $slugs);
+}
+
+/**
+ * Register one literal rule set per category, ahead of WooCommerce's own.
+ *
+ * Prepended with the union operator rather than array_merge: keys on the left
+ * win and keep their position, so these are tested before the product rule that
+ * would otherwise swallow the same path. A product URL carries one more segment
+ * than any of these patterns allow, so it never matches one and falls through to
+ * WooCommerce untouched.
+ *
+ * Endpoint names come from WP_Rewrite rather than string literals, so a site
+ * that renames its feed or pagination base stays consistent.
+ */
+add_filter('rewrite_rules_array', function ($rules) {
+    $base = cadco_nested_category_base();
+
+    if ($base === '' || !is_array($rules)) {
+        return $rules;
+    }
+
+    $terms = get_terms([
+        'taxonomy'   => 'product_cat',
+        'hide_empty' => false,
+    ]);
+
+    if (is_wp_error($terms) || empty($terms)) {
         return $rules;
     }
 
     global $wp_rewrite;
-    if (!$wp_rewrite instanceof WP_Rewrite) {
-        return $rules;
-    }
 
-    // Generated rather than hard-coded so feed/embed/paging variants stay in
-    // step with whatever this WordPress version produces for the permastruct.
-    $generated = $wp_rewrite->generate_rewrite_rules(
-        $base . '/%product_cat%',
-        EP_NONE,
-        true,
-        true,
-        false,
-        true,
-        true
-    );
+    $feeds      = '(' . implode('|', $wp_rewrite->feeds) . ')';
+    $feed_base  = $wp_rewrite->feed_base;
+    $pagination = $wp_rewrite->pagination_base;
 
-    // Position matters more than order of definition here, so rebuild the map
-    // rather than merging: PHP keeps a key at its first insertion point.
-    $keys    = array_keys($rules);
-    $lastOwn = -1;
-    foreach ($keys as $i => $key) {
-        if (str_starts_with($key, $base . '/')) {
-            $lastOwn = $i;
-        }
-    }
+    $custom = [];
 
-    if ($lastOwn === -1) {
-        return array_merge($rules, $generated);
-    }
-
-    $merged = [];
-    foreach ($keys as $i => $key) {
-        $merged[$key] = $rules[$key];
-
-        if ($i !== $lastOwn) {
+    foreach ($terms as $term) {
+        if (!$term instanceof WP_Term) {
             continue;
         }
 
-        foreach ($generated as $pattern => $target) {
-            if (!isset($rules[$pattern])) {
-                $merged[$pattern] = $target;
-            }
-        }
+        $path  = $base . '/' . cadco_term_path($term);
+        $query = 'index.php?product_cat=' . $term->slug;
+
+        $custom[$path . '/?$']                                  = $query;
+        $custom[$path . '/embed/?$']                             = $query . '&embed=true';
+        $custom[$path . '/' . $feed_base . '/' . $feeds . '/?$'] = $query . '&feed=$matches[1]';
+        $custom[$path . '/' . $feeds . '/?$']                    = $query . '&feed=$matches[1]';
+        $custom[$path . '/' . $pagination . '/?([0-9]{1,})/?$']  = $query . '&paged=$matches[1]';
     }
 
-    return $merged;
+    return $custom + $rules;
 }, 11);
 
 /**
- * Re-read a /products/... URL that the product rule claimed but does not own.
+ * Rebuild the rules when the categories they name change.
  *
- * The product rule matches ahead of the category rules and always fills in
- * product_cat + product, so two kinds of URL arrive here mislabelled:
- *
- *   /products/A/B/      B is a sub-category, not a product
- *   /products/A/feed/   "feed" is a WordPress endpoint, not a product
- *
- * The second kind is why a top-level category's feed, paging and embed URLs
- * used to 404: the endpoint segment landed in `product`, no product carried
- * that slug, and nothing put it back. Sub-categories never had the problem,
- * because there the endpoint keeps its own capture group and the sub-category
- * slug lands in `product` instead.
+ * The rules above are literal, so a renamed, added, moved or deleted category
+ * leaves them stale. Flushing is deferred to shutdown so that a bulk edit
+ * touching many terms rebuilds once rather than once per term.
  */
-function cadco_resolve_category_path($vars)
-{
-    if (!is_array($vars) || empty($vars['product_cat']) || empty($vars['product'])) {
-        return $vars;
-    }
-
-    $slug = (string) $vars['product'];
-
-    // WordPress endpoint segments, captured as though they were a product slug.
-    // Only reachable as /products/<category>/<endpoint>/, so product_cat is
-    // already the single top-level slug the archive needs.
-    $endpoints = ['feed', 'page', 'embed', 'trackback'];
-
-    if (in_array($slug, $endpoints, true)) {
-        // Guard against inventing an archive for a category that does not exist.
-        if (!get_term_by('slug', (string) $vars['product_cat'], 'product_cat') instanceof WP_Term) {
-            return $vars;
-        }
-
-        unset($vars['product'], $vars['post_type'], $vars['name']);
-
-        switch ($slug) {
-            case 'feed':
-                // A feed type may already be set by /feed/atom/; default to the
-                // site's standard feed when the URL was just /feed/.
-                if (empty($vars['feed'])) {
-                    $vars['feed'] = 'feed';
-                }
-                break;
-
-            case 'page':
-                // The page number arrives in `page` because the product rule
-                // treats it as a paginated post; an archive needs `paged`.
-                if (!empty($vars['page'])) {
-                    $vars['paged'] = (int) $vars['page'];
-                }
-                unset($vars['page']);
-                break;
-
-            case 'embed':
-                $vars['embed'] = true;
-                break;
-
-            case 'trackback':
-                $vars['tb'] = 1;
-                break;
-        }
-
-        return $vars;
-    }
-
-    // A real product keeps the URL. Any status is accepted so that a draft or
-    // pending product still resolves to itself (and 404s as a product for
-    // logged-out visitors) rather than silently becoming a category archive.
-    if (get_page_by_path($slug, OBJECT, 'product') instanceof WP_Post) {
-        return $vars;
-    }
-
-    if (!get_term_by('slug', $slug, 'product_cat') instanceof WP_Term) {
-        return $vars;
-    }
-
-    // Term slugs are unique within the taxonomy, so the leaf identifies the
-    // term on its own; the ancestor segments were only there to build the path.
-    $vars['product_cat'] = $slug;
-    unset($vars['product'], $vars['post_type'], $vars['name']);
-
-    return $vars;
+foreach (['created_product_cat', 'edited_product_cat', 'delete_product_cat'] as $cadco_term_hook) {
+    add_action($cadco_term_hook, static function (): void {
+        update_option('cadco_flush_category_rules', true);
+    });
 }
-add_filter('request', 'cadco_resolve_category_path', 20);
+unset($cadco_term_hook);
+
+add_action('shutdown', static function (): void {
+    if (!get_option('cadco_flush_category_rules')) {
+        return;
+    }
+
+    delete_option('cadco_flush_category_rules');
+    flush_rewrite_rules(false);
+});
 
 /* -------------------------------------------------------------------------
    Editor weight: stop registering blocks that cannot work here.
