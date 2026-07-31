@@ -214,6 +214,47 @@
       });
     }
 
+    /**
+     * Route the search submit through Taxi.
+     *
+     * Taxi intercepts links, never form submissions, so submitting this form
+     * did a full page load even though the results page renders through the
+     * index template and carries a [data-taxi-view] for Taxi to swap.
+     *
+     * The URL is built the way the browser would have, then handed to
+     * navigateTo(). If Taxi is not present — disabled by filter, or the script
+     * failed to load — the submit is left alone and the browser does what it
+     * always did.
+     */
+    var searchForm = searchPanel ? searchPanel.querySelector('form') : null;
+
+    if (searchForm) {
+      searchForm.addEventListener('submit', function (event) {
+        var taxi = window.protoTaxi && window.protoTaxi.core;
+        if (!taxi) return;
+
+        var url;
+        try {
+          url = new URL(searchForm.getAttribute('action') || '/', window.location.href);
+        } catch (err) {
+          return; // unparseable action: let the browser handle it
+        }
+
+        var field = searchForm.querySelector('input[type="search"]');
+        url.searchParams.set('s', field ? field.value : '');
+
+        event.preventDefault();
+        closeSearch();
+
+        // navigateTo rejects while another transition is running, and Taxi
+        // itself falls back to a real navigation when a page has no view to
+        // swap. Catch so a rejection still gets the user to the results.
+        taxi.navigateTo(url.href).catch(function () {
+          window.location.href = url.href;
+        });
+      });
+    }
+
     // ---- Trigger wiring --------------------------------------------------
 
     triggers.forEach(function (trigger) {
