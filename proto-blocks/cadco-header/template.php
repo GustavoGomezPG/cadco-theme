@@ -8,8 +8,6 @@
 
 $logo         = $attributes['logo'] ?? [];
 $cta          = $attributes['cta'] ?? [];
-$megaColumns  = $attributes['megaColumns'] ?? [];
-$miniCards    = $attributes['miniCards'] ?? [];
 $navMenu      = (int) ($attributes['navMenu'] ?? 0);
 $megaAttachTo = $attributes['megaAttachTo'] ?? '';
 $miniAttachTo = $attributes['miniAttachTo'] ?? '';
@@ -23,34 +21,41 @@ $is_preview = ! isset($block) || $block === null;
 
 $navItems = function_exists('cadco_get_nav_items') ? cadco_get_nav_items($navMenu) : [];
 
-// Seed the editor so every region is discoverable and editable from a fresh
-// insert: the parser learns a repeater's sub-fields from rendered item markup,
-// so an empty repeater would have nothing to learn from.
-if ($is_preview) {
-    if (empty($navItems)) {
-        $navItems = [
-            ['label' => 'Products', 'url' => '#', 'children' => []],
-            ['label' => 'Resource Center', 'url' => '#', 'children' => []],
-            ['label' => 'Support', 'url' => '#', 'children' => []],
-            ['label' => 'About', 'url' => '#', 'children' => []],
-        ];
-    }
-    if (empty($megaColumns)) {
-        $megaColumns = [[
-            'id'      => 'preview-mega-1',
-            'heading' => 'Column heading',
-            'links'   => '<ul><li><a href="#">First link</a></li><li><a href="#">Second link</a></li></ul>',
-            'seeAll'  => ['url' => '#', 'text' => 'See All'],
-        ]];
-    }
-    if (empty($miniCards)) {
-        $miniCards = [[
-            'id'          => 'preview-mini-1',
-            'cardLink'    => ['url' => '#', 'text' => 'Card title'],
-            'description' => 'Short description of this destination.',
-        ]];
-    }
+// Show the shape of a menu in the editor when none is chosen yet, so the block
+// is not a bare bar with nothing to look at.
+if ($is_preview && empty($navItems)) {
+    $navItems = [
+        ['label' => 'Products', 'url' => '#', 'description' => '', 'children' => []],
+        ['label' => 'Resource Center', 'url' => '#', 'description' => '', 'children' => []],
+        ['label' => 'Support', 'url' => '#', 'description' => '', 'children' => []],
+        ['label' => 'About', 'url' => '#', 'description' => '', 'children' => []],
+    ];
 }
+
+/**
+ * The children of the item a panel is attached to.
+ *
+ * Both panels are projections of the navigation menu — the mega menu renders a
+ * child as a column and its own children as that column's links; the mini menu
+ * renders each child as a card. Nothing about the menu is restated in the
+ * block's own attributes, so the catalogue has exactly one home.
+ */
+$children_of = static function (string $label) use ($navItems): array {
+    if ($label === '') {
+        return [];
+    }
+
+    foreach ($navItems as $item) {
+        if ($item['label'] === $label) {
+            return $item['children'];
+        }
+    }
+
+    return [];
+};
+
+$megaColumns = $children_of($megaAttachTo);
+$miniCards   = $children_of($miniAttachTo);
 
 $hasMega = $megaAttachTo !== '' && ! empty($megaColumns);
 $hasMini = $miniAttachTo !== '' && ! empty($miniCards);
@@ -178,23 +183,30 @@ $panel_id = static function (string $key): string {
             </p>
         <?php endif; ?>
 
-        <div class="mx-auto grid w-full max-w-[1440px] grid-cols-1 lg:grid-cols-4" data-proto-repeater="megaColumns">
-            <?php foreach ($megaColumns as $column) :
-                $seeAll = $column['seeAll'] ?? [];
-                ?>
-                <div class="flex flex-col gap-4 border-gray-300 px-8 py-12 lg:border-l lg:last:border-r" data-proto-repeater-item>
-                    <span class="block text-[16px] font-bold leading-tight text-ink" data-proto-field="heading">
-                        <?php echo esc_html($column['heading'] ?? ''); ?>
+        <?php /* Columns come from the menu, not from the block: a child of the
+                 attached item is a column, its own children are that column's
+                 links, and the child's URL is where See All goes. The catalogue
+                 is therefore edited once, in the navigation menu. */ ?>
+        <div class="mx-auto grid w-full max-w-[1440px] grid-cols-1 lg:grid-cols-4">
+            <?php foreach ($megaColumns as $column) : ?>
+                <div class="flex flex-col gap-4 border-gray-300 px-8 py-12 lg:border-l lg:last:border-r">
+                    <span class="block text-[16px] font-bold leading-tight text-ink">
+                        <?php echo esc_html($column['label']); ?>
                     </span>
 
-                    <div class="cadco-menu-links text-[16px] leading-relaxed text-gray-700" data-proto-field="links">
-                        <?php echo wp_kses_post($column['links'] ?? ''); ?>
-                    </div>
+                    <ul class="cadco-menu-links m-0 list-none p-0 text-[16px] leading-relaxed text-gray-700">
+                        <?php foreach ($column['children'] as $link) : ?>
+                            <li>
+                                <a href="<?php echo esc_url($link['url']); ?>"><?php echo esc_html($link['label']); ?></a>
+                            </li>
+                        <?php endforeach; ?>
+                    </ul>
 
-                    <a data-proto-field="seeAll"
-                       class="mt-2 inline-flex w-fit items-center rounded-md bg-cadco-blue px-5 py-3 text-[15px] font-bold leading-none text-white no-underline transition-colors hover:bg-[#00395a]"
-                       href="<?php echo esc_url($seeAll['url'] ?? '#'); ?>"
-                    ><?php echo esc_html($seeAll['text'] ?? 'See All'); ?></a>
+                    <?php if ($column['url'] !== '') : ?>
+                        <a class="mt-2 inline-flex w-fit items-center rounded-md bg-cadco-blue px-5 py-3 text-[15px] font-bold leading-none text-white no-underline transition-colors hover:bg-[#00395a]"
+                           href="<?php echo esc_url($column['url']); ?>"
+                        ><?php esc_html_e('See All', 'cadco-theme'); ?></a>
+                    <?php endif; ?>
                 </div>
             <?php endforeach; ?>
         </div>
@@ -214,28 +226,26 @@ $panel_id = static function (string $key): string {
 
         <div class="mx-auto w-full max-w-[1440px] px-6 lg:px-10">
             <div class="ml-auto w-fit overflow-hidden rounded-lg bg-panel text-ink shadow-soft">
-                <div class="grid grid-cols-1 sm:grid-cols-2" data-proto-repeater="miniCards">
-                    <?php foreach ($miniCards as $card) :
-                        $cardLink = $card['cardLink'] ?? [];
-                        ?>
-                        <div class="flex min-w-[240px] flex-col gap-3 border-gray-300 px-10 py-8 sm:border-l sm:first:border-l-0" data-proto-repeater-item>
-                            <a data-proto-field="cardLink"
-                               class="inline-flex items-center gap-2 text-[16px] font-bold leading-none text-cadco-blue no-underline hover:underline"
-                               href="<?php echo esc_url($cardLink['url'] ?? '#'); ?>"
-                            ><?php /* The label is a direct text node, not wrapped in a span: the
-                                      editor swaps a link field's text nodes for its own editable
-                                      text but preserves child *elements*, so a span around the
-                                      label survived alongside the injected one and the title
-                                      rendered twice. An inline icon is fine — it is an element
-                                      with no text of its own. */ ?>
-                                <?php echo esc_html($cardLink['text'] ?? ''); ?>
+                <?php /* Cards come from the menu too: one per child of the attached
+                         item. The supporting line is the linked page's excerpt or
+                         the linked term's description — see
+                         cadco_resolve_nav_description(). */ ?>
+                <div class="grid grid-cols-1 sm:grid-cols-2">
+                    <?php foreach ($miniCards as $card) : ?>
+                        <div class="flex min-w-[240px] flex-col gap-3 border-gray-300 px-10 py-8 sm:border-l sm:first:border-l-0">
+                            <a class="inline-flex items-center gap-2 text-[16px] font-bold leading-none text-cadco-blue no-underline hover:underline"
+                               href="<?php echo esc_url($card['url']); ?>"
+                            >
+                                <?php echo esc_html($card['label']); ?>
                                 <svg class="h-4 w-4 shrink-0" viewBox="0 0 20 20" fill="none" aria-hidden="true">
                                     <path d="M3 10h13M12 5.5L16.5 10 12 14.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
                                 </svg>
                             </a>
-                            <p class="m-0 text-[16px] leading-snug text-gray-700" data-proto-field="description">
-                                <?php echo esc_html($card['description'] ?? ''); ?>
-                            </p>
+                            <?php if ($card['description'] !== '') : ?>
+                                <p class="m-0 text-[16px] leading-snug text-gray-700">
+                                    <?php echo esc_html($card['description']); ?>
+                                </p>
+                            <?php endif; ?>
                         </div>
                     <?php endforeach; ?>
                 </div>
@@ -284,8 +294,7 @@ $panel_id = static function (string $key): string {
                                         // collapse, so the section opens to a short list of categories
                                         // rather than every product link at once. ?>
                                         <?php foreach ($megaColumns as $index => $column) :
-                                            $seeAll = $column['seeAll'] ?? [];
-                                            $subId  = 'cadco-acc-' . $section . '-' . (int) $index;
+                                            $subId = 'cadco-acc-' . $section . '-' . (int) $index;
                                             ?>
                                             <div class="border-t border-white/10 first:border-t-0" data-cadco-acc>
                                                 <button type="button"
@@ -293,7 +302,7 @@ $panel_id = static function (string $key): string {
                                                         aria-expanded="false"
                                                         aria-controls="<?php echo esc_attr($subId); ?>"
                                                         data-cadco-acc-toggle>
-                                                    <span><?php echo esc_html($column['heading'] ?? ''); ?></span>
+                                                    <span><?php echo esc_html($column['label']); ?></span>
                                                     <svg class="cadco-acc__chevron h-4 w-4 shrink-0 text-white/60" viewBox="0 0 20 20" fill="none" aria-hidden="true">
                                                         <path d="M5.5 7.5L10 12l4.5-4.5" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
                                                     </svg>
@@ -301,25 +310,31 @@ $panel_id = static function (string $key): string {
 
                                                 <div id="<?php echo esc_attr($subId); ?>" class="cadco-acc__panel" data-cadco-acc-panel>
                                                     <div class="pb-4">
-                                                        <div class="cadco-mobile-links text-[15px] text-white/70">
-                                                            <?php echo wp_kses_post($column['links'] ?? ''); ?>
-                                                        </div>
-                                                        <a class="mt-3 inline-flex items-center rounded-md bg-cadco-blue px-4 py-2 text-[14px] font-bold leading-none text-white no-underline transition-colors hover:bg-[#00395a]"
-                                                           href="<?php echo esc_url($seeAll['url'] ?? '#'); ?>">
-                                                            <?php echo esc_html($seeAll['text'] ?? 'See All'); ?>
-                                                        </a>
+                                                        <ul class="cadco-mobile-links m-0 list-none p-0 text-[15px] text-white/70">
+                                                            <?php foreach ($column['children'] as $link) : ?>
+                                                                <li>
+                                                                    <a href="<?php echo esc_url($link['url']); ?>"><?php echo esc_html($link['label']); ?></a>
+                                                                </li>
+                                                            <?php endforeach; ?>
+                                                        </ul>
+                                                        <?php if ($column['url'] !== '') : ?>
+                                                            <a class="mt-3 inline-flex items-center rounded-md bg-cadco-blue px-4 py-2 text-[14px] font-bold leading-none text-white no-underline transition-colors hover:bg-[#00395a]"
+                                                               href="<?php echo esc_url($column['url']); ?>">
+                                                                <?php esc_html_e('See All', 'cadco-theme'); ?>
+                                                            </a>
+                                                        <?php endif; ?>
                                                     </div>
                                                 </div>
                                             </div>
                                         <?php endforeach; ?>
                                     <?php else : ?>
-                                        <?php foreach ($miniCards as $card) :
-                                            $cardLink = $card['cardLink'] ?? [];
-                                            ?>
+                                        <?php foreach ($miniCards as $card) : ?>
                                             <a class="block rounded-lg px-3 py-3 -mx-3 no-underline transition-colors hover:bg-white/5"
-                                               href="<?php echo esc_url($cardLink['url'] ?? '#'); ?>">
-                                                <span class="block text-[15px] font-bold text-white"><?php echo esc_html($cardLink['text'] ?? ''); ?></span>
-                                                <span class="mt-1 block text-[14px] leading-snug text-white/60"><?php echo esc_html($card['description'] ?? ''); ?></span>
+                                               href="<?php echo esc_url($card['url']); ?>">
+                                                <span class="block text-[15px] font-bold text-white"><?php echo esc_html($card['label']); ?></span>
+                                                <?php if ($card['description'] !== '') : ?>
+                                                    <span class="mt-1 block text-[14px] leading-snug text-white/60"><?php echo esc_html($card['description']); ?></span>
+                                                <?php endif; ?>
                                             </a>
                                         <?php endforeach; ?>
                                     <?php endif; ?>

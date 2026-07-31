@@ -39,9 +39,16 @@ function cadco_get_nav_menu_post(int $menu_id = 0): ?WP_Post
 }
 
 /**
- * Parse a navigation menu into a flat list of top-level items.
+ * Parse a navigation menu into a nested list of items.
  *
- * Returns: [ ['label' => string, 'url' => string, 'children' => [...]], ... ]
+ * Returns, to any depth:
+ *   [ ['label' => string, 'url' => string, 'description' => string,
+ *      'children' => [ ...same shape... ]], ... ]
+ *
+ * The whole menu structure lives here, not just the top level: the header's mega
+ * menu renders a top-level item's children as its columns and their children as
+ * the column links, so the catalogue is edited once, in the menu, rather than
+ * being restated inside the block.
  *
  * Handles the three block types a menu can contain: navigation-link,
  * navigation-submenu (a link that also has children), and page-list, which is
@@ -55,9 +62,20 @@ function cadco_get_nav_items(int $menu_id = 0): array
         return [];
     }
 
+    return cadco_parse_nav_blocks(parse_blocks($menu->post_content));
+}
+
+/**
+ * Turn a list of parsed menu blocks into item arrays, recursing into submenus.
+ *
+ * @param array<int, array<string, mixed>> $blocks
+ * @return array<int, array<string, mixed>>
+ */
+function cadco_parse_nav_blocks(array $blocks): array
+{
     $items = [];
 
-    foreach (parse_blocks($menu->post_content) as $block) {
+    foreach ($blocks as $block) {
         $name = $block['blockName'] ?? '';
 
         if ('core/navigation-link' === $name || 'core/navigation-submenu' === $name) {
@@ -68,21 +86,11 @@ function cadco_get_nav_items(int $menu_id = 0): array
                 continue;
             }
 
-            $children = [];
-            foreach ($block['innerBlocks'] ?? [] as $child) {
-                $childAttrs = $child['attrs'] ?? [];
-                if (!empty($childAttrs['label'])) {
-                    $children[] = [
-                        'label' => $childAttrs['label'],
-                        'url'   => cadco_resolve_nav_url($childAttrs),
-                    ];
-                }
-            }
-
             $items[] = [
-                'label'    => $label,
-                'url'      => cadco_resolve_nav_url($attrs),
-                'children' => $children,
+                'label'       => $label,
+                'url'         => cadco_resolve_nav_url($attrs),
+                'description' => cadco_resolve_nav_description($attrs),
+                'children'    => cadco_parse_nav_blocks($block['innerBlocks'] ?? []),
             ];
             continue;
         }
@@ -90,15 +98,52 @@ function cadco_get_nav_items(int $menu_id = 0): array
         if ('core/page-list' === $name) {
             foreach (get_pages(['parent' => 0, 'sort_column' => 'menu_order,post_title']) as $page) {
                 $items[] = [
-                    'label'    => $page->post_title,
-                    'url'      => (string) get_permalink($page),
-                    'children' => [],
+                    'label'       => $page->post_title,
+                    'url'         => (string) get_permalink($page),
+                    'description' => (string) $page->post_excerpt,
+                    'children'    => [],
                 ];
             }
         }
     }
 
     return $items;
+}
+
+/**
+ * Resolve the supporting line shown under a mini-menu card's title.
+ *
+ * Core stores a `description` on every navigation item but does not currently
+ * expose a field for it in the Navigation editor, so authoring happens where the
+ * content lives instead: a linked page's excerpt, or a linked term's
+ * description. The stored attribute still wins when something has set it, so a
+ * future core field (or a programmatically built menu) takes precedence.
+ */
+function cadco_resolve_nav_description(array $attrs): string
+{
+    $stored = trim((string) ($attrs['description'] ?? ''));
+    if ('' !== $stored) {
+        return $stored;
+    }
+
+    $kind = $attrs['kind'] ?? '';
+    $id   = isset($attrs['id']) ? (int) $attrs['id'] : 0;
+
+    if ($id <= 0) {
+        return '';
+    }
+
+    if ('post-type' === $kind) {
+        $post = get_post($id);
+        return $post instanceof WP_Post ? trim((string) $post->post_excerpt) : '';
+    }
+
+    if ('taxonomy' === $kind) {
+        $term = get_term($id);
+        return $term instanceof WP_Term ? trim(wp_strip_all_tags($term->description)) : '';
+    }
+
+    return '';
 }
 
 /**

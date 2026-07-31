@@ -6,12 +6,19 @@
   "category": "proto",
   "icon": "menu",
   "description": "Site header: logo, the site navigation menu, search and a call-to-action button, with an optional mega menu (design A) and mini-mega menu (design B) attached to chosen menu items.",
-  "keywords": ["header", "navigation", "menu", "mega menu"],
+  "keywords": [
+    "header",
+    "navigation",
+    "menu",
+    "mega menu"
+  ],
   "supports": {
     "html": false,
     "anchor": false,
     "customClassName": true,
-    "align": ["full"],
+    "align": [
+      "full"
+    ],
     "multiple": false
   },
   "protoBlocks": {
@@ -26,31 +33,6 @@
       "cta": {
         "type": "link",
         "label": "Call to action"
-      },
-      "megaColumns": {
-        "type": "repeater",
-        "label": "Mega menu columns (design A)",
-        "min": 0,
-        "max": 6,
-        "itemLabel": "heading",
-        "collapsible": true,
-        "fields": {
-          "heading": { "type": "text", "tagName": "span", "label": "Column heading" },
-          "links": { "type": "wysiwyg", "label": "Links" },
-          "seeAll": { "type": "link", "label": "See all button" }
-        }
-      },
-      "miniCards": {
-        "type": "repeater",
-        "label": "Mini menu cards (design B)",
-        "min": 0,
-        "max": 4,
-        "itemLabel": "description",
-        "collapsible": true,
-        "fields": {
-          "cardLink": { "type": "link", "label": "Card link" },
-          "description": { "type": "text", "tagName": "p", "label": "Description" }
-        }
       }
     },
     "controls": {
@@ -59,7 +41,10 @@
         "label": "Navigation menu",
         "help": "Which navigation menu to display. Menus are edited in the Site Editor.",
         "optionsSource": "wp:posts",
-        "sourceArgs": { "post_type": "wp_navigation", "per_page": 50 }
+        "sourceArgs": {
+          "post_type": "wp_navigation",
+          "per_page": 50
+        }
       },
       "megaAttachTo": {
         "type": "select",
