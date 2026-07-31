@@ -1,0 +1,44 @@
+/*
+ * Cadco header — the few rules Tailwind utilities cannot reach.
+ *
+ * The mega menu's link list is authored in a wysiwyg field, so its markup is
+ * produced by the editor rather than by this template. Utilities can't be put
+ * on those elements, so the list is styled here through its container.
+ */
+
+.cadco-menu-links ul,
+.cadco-menu-links ol {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.cadco-menu-links li {
+    margin: 0;
+}
+
+.cadco-menu-links a {
+    color: #3b3b3b;
+    text-decoration: none;
+    transition: color 120ms ease;
+}
+
+.cadco-menu-links a:hover,
+.cadco-menu-links a:focus-visible {
+    color: #00476e;
+    text-decoration: underline;
+}
+
+/*
+ * In the editor the panels are rendered open and stacked so their repeater
+ * fields are reachable — a repeater inside a display:none panel cannot be
+ * edited. Undo the absolute positioning that makes them dropdowns on the front
+ * end, so they sit in the flow instead of overlapping each other.
+ */
+.cadco-panel.is-preview {
+    position: static;
+    margin-top: 1px;
+}
