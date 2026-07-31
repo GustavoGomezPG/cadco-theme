@@ -190,22 +190,16 @@ add_filter('woocommerce_admin_features', function ($features) {
 });
 
 /**
- * Drop the settings tabs that configure selling.
- *
- * Unlike removing a menu page, this genuinely unregisters the tab: it stops
- * rendering and stops saving, rather than merely being hidden from view.
+ * The settings tabs that configure selling.
  *
  * "Payments" is the tab whose id is `checkout`.
  *
  * Kept: General (currency and price display), Products, Site visibility,
  * Advanced (page setup, REST API) and any Integration tabs a plugin adds.
  */
-add_filter('woocommerce_get_settings_pages', function ($pages) {
-    if (!cadco_commerce_disabled()) {
-        return $pages;
-    }
-
-    $drop = (array) apply_filters('cadco_disabled_wc_settings_tabs', [
+function cadco_disabled_wc_settings_tabs(): array
+{
+    return (array) apply_filters('cadco_disabled_wc_settings_tabs', [
         'checkout',      // Payments
         'shipping',
         'tax',
@@ -213,10 +207,59 @@ add_filter('woocommerce_get_settings_pages', function ($pages) {
         'email',
         'point-of-sale',
     ]);
+}
+
+/**
+ * Remove those tabs from the settings navigation.
+ *
+ * This is the filter that actually decides what renders. Each settings page
+ * registers its own tab into `woocommerce_settings_tabs_array` from its
+ * constructor, so filtering `woocommerce_get_settings_pages` (below) does NOT
+ * take the tab out of the nav — the object has already registered by then.
+ */
+add_filter('woocommerce_settings_tabs_array', function ($tabs) {
+    if (!cadco_commerce_disabled()) {
+        return $tabs;
+    }
+
+    foreach (cadco_disabled_wc_settings_tabs() as $id) {
+        unset($tabs[$id]);
+    }
+
+    return $tabs;
+}, 100);
+
+/**
+ * Also drop the page objects, so the tab bodies stop rendering and saving.
+ *
+ * Caveat worth knowing: WC_Admin_Settings::get_settings_pages() memoises into a
+ * static and only builds the list once (`if ( empty( self::$settings ) )`,
+ * class-wc-admin-settings.php:48). If anything asks for the settings pages
+ * before this theme's functions.php has loaded, the list is already built and
+ * this filter never runs. That is why the nav filter above — which fires on
+ * every render — is the load-bearing one, and this is the belt to its braces.
+ */
+add_filter('woocommerce_get_settings_pages', function ($pages) {
+    if (!cadco_commerce_disabled()) {
+        return $pages;
+    }
+
+    $drop = cadco_disabled_wc_settings_tabs();
 
     return array_values(array_filter($pages, static function ($page) use ($drop) {
         return !in_array($page->get_id(), $drop, true);
     }));
+});
+
+/**
+ * Remove the Extensions marketplace entry.
+ *
+ * Its menu slug is `wc-admin` with a `path=/extensions` query arg rather than a
+ * plain page slug, so remove_submenu_page() cannot address it. WooCommerce
+ * exposes the menu definition itself, which can.
+ */
+add_filter('woocommerce_marketplace_menu_items', function ($items) {
+    return cadco_commerce_disabled() ? [] : $items;
 });
 
 /**
@@ -239,11 +282,16 @@ add_action('admin_menu', function () {
     remove_submenu_page('woocommerce', 'wc-orders');                        // Orders
     remove_submenu_page('woocommerce', 'wc-reports');                       // legacy sales reports
     remove_submenu_page('woocommerce', 'wc-admin');                         // WooCommerce → Home
-    remove_submenu_page('woocommerce', 'wc-addons');                        // Extensions marketplace
     remove_submenu_page('woocommerce', 'edit.php?post_type=shop_coupon');   // Coupons
+    remove_submenu_page('woocommerce', 'wc-addons');                        // legacy hidden marketplace node
 
     // Top-level menus. The features filter above should already have removed
     // these, so this is a backstop for WooCommerce registering them anyway.
     remove_menu_page('woocommerce-marketing');
     remove_menu_page('wc-admin&path=/analytics/overview');
-}, 99);
+
+    // The standalone Payments menu. Its slug is a full admin.php query string,
+    // not a bare page slug -- read off the rendered menu item's element id,
+    // toplevel_page_admin-page-wc-settings-tab-checkout-from-PAYMENTS_MENU_ITEM.
+    remove_menu_page('admin.php?page=wc-settings&tab=checkout&from=PAYMENTS_MENU_ITEM');
+}, 999);
