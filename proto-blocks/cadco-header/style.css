@@ -33,38 +33,21 @@
 }
 
 /*
- * Search drawer.
+ * Opening and closing is animated with GSAP in view.js, not with CSS
+ * transitions — the theme already ships GSAP, and driving it from JS gives the
+ * menus timelines, eases and stagger that a CSS transition cannot express.
  *
- * Slides on max-height. The open height is not a guessed constant — view.js
- * measures the form and sets it, so the drawer always travels exactly its own
- * height and nothing is clipped if the form grows.
- *
- * visibility transitions with a delay equal to the slide, so the drawer is
- * removed from the accessibility tree and tab order once it has finished
- * closing, rather than the instant the class is dropped.
+ * CSS therefore only declares the *closed* resting state. Everything in motion
+ * is an inline style written by GSAP, so there is no CSS transition competing
+ * with the tween for the same property.
  */
 .cadco-search {
     overflow: hidden;
-    max-height: 0;
-    visibility: hidden;
-    transition: max-height 240ms ease, visibility 0s linear 240ms;
+    height: 0;
 }
 
-.cadco-search.is-open {
-    /* A generous ceiling rather than a measured pixel value. The element's own
-       height is min(content, max-height), so it stops growing at the form's
-       natural height — the slide simply finishes a touch early. Keeping this in
-       CSS means no inline style to be cleared and no JS/CSS disagreement. */
-    max-height: 60vh;
-    visibility: visible;
-    transition: max-height 240ms ease, visibility 0s linear 0s;
-}
-
-/* Respect a reduced-motion preference: still opens, just without the slide. */
-@media (prefers-reduced-motion: reduce) {
-    .cadco-search {
-        transition: none;
-    }
+.cadco-panel:not(.is-preview) {
+    display: none;
 }
 
 /* Visually hidden, still announced. */
@@ -119,23 +102,35 @@
     }
 
     /* Panels sit inline under their item on mobile instead of dropping over
-       the page, so the drawer reads as one scrollable list. */
+       the page, so the drawer reads as one scrollable list. No negative margin:
+       pulling the panel out to the drawer edges made it wider than the drawer
+       and pushed the whole page into horizontal overflow. */
     .cadco-header.is-menu-open .cadco-panel {
         position: static;
-        width: auto;
-        margin-inline: -1.5rem;
+        width: 100%;
+        margin-inline: 0;
+    }
+
+    /* Inline in the drawer, a closed panel must take no space at all —
+       visibility:hidden alone would still reserve its full height and leave a
+       large gap between menu items. */
+    .cadco-header .cadco-panel:not(.is-open):not(.is-preview) {
+        display: none;
     }
 
     .cadco-header.is-menu-open .cadco-panel .grid {
         grid-template-columns: 1fr;
     }
 
-    /* The CTA is hidden in the bar on mobile; surface it at the end of the
-       drawer so it is still reachable. */
-    .cadco-header.is-menu-open .cadco-nav::after {
-        content: "";
-        display: block;
-        height: 0.5rem;
+    /* The CTA is relocated into the drawer by view.js on mobile, so give it
+       room and let it span the drawer width. */
+    .cadco-cta--in-drawer {
+        display: flex;
+        justify-content: center;
+        width: 100%;
+        margin-top: 1rem;
+        padding-block: 0.9rem !important;
+        font-size: 15px !important;
     }
 
     /* Hamburger becomes a close icon while the drawer is open. */
@@ -148,12 +143,15 @@
 }
 
 /*
- * In the editor the panels are rendered open and stacked so their repeater
- * fields are reachable — a repeater inside a display:none panel cannot be
- * edited. Undo the absolute positioning that makes them dropdowns on the front
- * end, so they sit in the flow instead of overlapping each other.
+ * Editor preview.
+ *
+ * The panels are rendered open and stacked while editing, because a repeater
+ * inside a display:none panel cannot be edited. This undoes both the closed
+ * resting state and the absolute positioning that makes them dropdowns on the
+ * front end, so they sit in the flow instead of overlapping each other.
  */
 .cadco-panel.is-preview {
+    display: block;
     position: static;
     margin-top: 1px;
 }

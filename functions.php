@@ -92,6 +92,33 @@ add_action('wp_enqueue_scripts', function () {
     }
 });
 
+/**
+ * The header block animates with GSAP, so it must not run before GSAP exists.
+ *
+ * Proto-Blocks registers a block's view.js with no dependencies, and both it and
+ * the vendored libraries print in the footer, so the order is otherwise down to
+ * enqueue timing. The dependency is appended to the already-registered handle
+ * rather than re-registering the script, which would fight the plugin over
+ * ownership of the URL and version.
+ *
+ * view.js still degrades to instant show/hide if GSAP is absent — this makes the
+ * animated path the one that actually runs.
+ */
+add_action('wp_enqueue_scripts', function () {
+    global $wp_scripts;
+
+    $handle = 'proto-blocks-cadco-header';
+
+    if (!isset($wp_scripts->registered[$handle]) || !wp_script_is('proto-gsap', 'registered')) {
+        return;
+    }
+
+    $deps = $wp_scripts->registered[$handle]->deps;
+    if (!in_array('proto-gsap', $deps, true)) {
+        $wp_scripts->registered[$handle]->deps[] = 'proto-gsap';
+    }
+}, 99);
+
 // Once-per-session intro overlay.
 add_action('wp_head', function () {
     if (is_admin()) { return; }

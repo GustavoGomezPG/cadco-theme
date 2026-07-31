@@ -72,7 +72,7 @@ $panel_id = static function (string $key): string {
         <a class="flex shrink-0 items-center" href="<?php echo esc_url(home_url('/')); ?>">
             <img
                 data-proto-field="logo"
-                class="h-7 w-auto max-w-[110px] object-contain lg:h-[46px] lg:max-w-none"
+                class="h-9 w-auto max-w-[120px] object-contain lg:h-14 lg:max-w-none"
                 src="<?php echo esc_url($logo['url'] ?? ''); ?>"
                 alt="<?php echo esc_attr($logo['alt'] ?? get_bloginfo('name')); ?>"
             />
@@ -83,7 +83,7 @@ $panel_id = static function (string $key): string {
         // into a drawer rather than duplicated, so the mega/mini panel ids stay
         // unique and the triggers keep working in both. ?>
         <nav class="cadco-nav hidden flex-1 items-center justify-center lg:flex" aria-label="<?php esc_attr_e('Main', 'cadco-theme'); ?>" data-cadco-nav>
-            <ul class="flex list-none items-center gap-10 p-0 m-0">
+            <ul class="flex list-none items-center gap-16 p-0 m-0">
                 <?php foreach ($navItems as $item) :
                     $label   = $item['label'] ?? '';
                     $isMega  = $hasMega && $label === $megaAttachTo;
@@ -114,9 +114,11 @@ $panel_id = static function (string $key): string {
                         aria-expanded="false"
                         aria-controls="cadco-search"
                         data-cadco-search-toggle>
-                    <svg class="h-5 w-5" viewBox="0 0 20 20" fill="none" aria-hidden="true">
-                        <circle cx="9" cy="9" r="6.25" stroke="currentColor" stroke-width="1.5"/>
-                        <path d="M13.5 13.5L17.5 17.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                    <?php // 18x18 to match the Figma vector, circle set upper-left
+                    // with the handle running to the corner. ?>
+                    <svg class="h-[18px] w-[18px]" viewBox="0 0 18 18" fill="none" aria-hidden="true">
+                        <circle cx="7" cy="7" r="5.6" stroke="currentColor" stroke-width="1.5"/>
+                        <path d="M11.2 11.2L17 17" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
                     </svg>
                 </button>
             <?php endif; ?>
@@ -169,7 +171,7 @@ $panel_id = static function (string $key): string {
     <?php // ---------- Design A: full-width mega menu ---------- ?>
     <div
         id="<?php echo esc_attr($panel_id($megaAttachTo)); ?>"
-        class="cadco-panel <?php echo $is_preview ? 'is-preview' : 'hidden'; ?> absolute inset-x-0 top-full w-full bg-panel text-ink"
+        class="cadco-panel <?php echo $is_preview ? "is-preview" : ""; ?> absolute inset-x-0 top-full w-full bg-panel text-ink"
         data-cadco-panel
     >
         <?php if ($is_preview) : ?>
@@ -203,7 +205,7 @@ $panel_id = static function (string $key): string {
     <?php // ---------- Design B: compact card menu ---------- ?>
     <div
         id="<?php echo esc_attr($panel_id($miniAttachTo)); ?>"
-        class="cadco-panel <?php echo $is_preview ? 'is-preview' : 'hidden'; ?> absolute inset-x-0 top-full w-full"
+        class="cadco-panel <?php echo $is_preview ? "is-preview" : ""; ?> absolute inset-x-0 top-full w-full"
         data-cadco-panel
     >
         <?php if ($is_preview) : ?>
