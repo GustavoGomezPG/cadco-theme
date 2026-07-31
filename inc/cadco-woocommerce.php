@@ -475,11 +475,19 @@ add_filter('rewrite_rules_array', function ($rules) {
 }, 11);
 
 /**
- * Re-read /products/A/B as a category archive when B is not a product.
+ * Re-read a /products/... URL that the product rule claimed but does not own.
  *
- * The product rule matches first and sets product_cat + product. When no
- * published product carries that slug, the last segment is a sub-category and
- * the request belongs to the taxonomy.
+ * The product rule matches ahead of the category rules and always fills in
+ * product_cat + product, so two kinds of URL arrive here mislabelled:
+ *
+ *   /products/A/B/      B is a sub-category, not a product
+ *   /products/A/feed/   "feed" is a WordPress endpoint, not a product
+ *
+ * The second kind is why a top-level category's feed, paging and embed URLs
+ * used to 404: the endpoint segment landed in `product`, no product carried
+ * that slug, and nothing put it back. Sub-categories never had the problem,
+ * because there the endpoint keeps its own capture group and the sub-category
+ * slug lands in `product` instead.
  */
 function cadco_resolve_category_path($vars)
 {
@@ -488,6 +496,49 @@ function cadco_resolve_category_path($vars)
     }
 
     $slug = (string) $vars['product'];
+
+    // WordPress endpoint segments, captured as though they were a product slug.
+    // Only reachable as /products/<category>/<endpoint>/, so product_cat is
+    // already the single top-level slug the archive needs.
+    $endpoints = ['feed', 'page', 'embed', 'trackback'];
+
+    if (in_array($slug, $endpoints, true)) {
+        // Guard against inventing an archive for a category that does not exist.
+        if (!get_term_by('slug', (string) $vars['product_cat'], 'product_cat') instanceof WP_Term) {
+            return $vars;
+        }
+
+        unset($vars['product'], $vars['post_type'], $vars['name']);
+
+        switch ($slug) {
+            case 'feed':
+                // A feed type may already be set by /feed/atom/; default to the
+                // site's standard feed when the URL was just /feed/.
+                if (empty($vars['feed'])) {
+                    $vars['feed'] = 'feed';
+                }
+                break;
+
+            case 'page':
+                // The page number arrives in `page` because the product rule
+                // treats it as a paginated post; an archive needs `paged`.
+                if (!empty($vars['page'])) {
+                    $vars['paged'] = (int) $vars['page'];
+                }
+                unset($vars['page']);
+                break;
+
+            case 'embed':
+                $vars['embed'] = true;
+                break;
+
+            case 'trackback':
+                $vars['tb'] = 1;
+                break;
+        }
+
+        return $vars;
+    }
 
     // A real product keeps the URL. Any status is accepted so that a draft or
     // pending product still resolves to itself (and 404s as a product for
