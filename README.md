@@ -327,16 +327,54 @@ Categories, Tags, Attributes, Reviews), and **WooCommerce → Settings / Status*
 Settings keeps General, Products, Site visibility, Advanced and any Integration
 tabs.
 
-Two things worth knowing:
+### Blocked, not just hidden
 
-- Removing a **settings tab** genuinely unregisters it — it stops rendering and
-  stops saving. Removing a **menu page** only hides it; WordPress still serves
-  the screen to anyone who types the URL. That is a tidy-up for trusted admins,
-  not an access control, and it is not pretending to be one.
+Removing a menu item is cosmetic — WordPress still serves the screen to anyone
+who types the URL. An `admin_init` guard refuses the commerce screens outright:
+
+| Request | Result |
+|---|---|
+| `admin.php?page=wc-orders`, `wc-reports`, `wc-addons` | 403 |
+| `admin.php?page=wc-admin&path=/analytics\|/extensions\|/marketing\|/customers` | 403 |
+| `edit.php?post_type=shop_coupon` | 403 |
+| `admin.php?page=wc-settings&tab=<removed tab>` | 302 → settings root |
+
+Removed tabs redirect rather than dying: the tab is a query arg on a page that
+is legitimately available, so bouncing a stale bookmark to General beats an
+error page.
+
+This is deliberately a list of explicit matches rather than a capability change.
+Stripping `manage_woocommerce` would be the blunt route and would take
+WooCommerce → Settings and Status with it. `wc-admin` paths are matched by
+**prefix**, never by blocking the `wc-admin` page wholesale, because that page
+is the root of the WooCommerce Admin app.
+
+Three things worth knowing:
+
 - `launch-your-store` is deliberately left enabled. WooCommerce only registers
   the Site visibility settings tab when that feature is on
   (`class-wc-admin-settings.php:62`), so disabling it as "store setup cruft"
   silently removes a legitimate setting.
+- Settings tabs must be removed via `woocommerce_settings_tabs_array`, not
+  `woocommerce_get_settings_pages`. Each settings page registers its own tab
+  from its constructor, so filtering the pages array afterwards leaves the tab
+  in the nav. `WC_Admin_Settings::get_settings_pages()` also memoises into a
+  static and may build its list before this theme loads.
+- **Known limitation:** with this layer active, `admin.php?page=wc-admin`
+  returns 403 — disabling the WooCommerce Admin features unregisters the app
+  root. Nothing the site uses depends on it today: "Add new product" uses the
+  classic `post-new.php?post_type=product` editor, which works in full
+  (General, Inventory, Shipping, Linked Products, Attributes, Variations,
+  Advanced, gallery, categories). But WooCommerce's newer **block-based product
+  editor** is served from `wc-admin&path=/add-product`, so it would not load
+  while this is on. If that editor is ever wanted, re-enable the relevant
+  features:
+
+  ```php
+  add_filter('cadco_disabled_wc_admin_features', function ($features) {
+      return array_diff($features, ['analytics']); // find the one that re-registers wc-admin
+  });
+  ```
 
 Both lists are filterable — `cadco_disabled_wc_admin_features` and
 `cadco_disabled_wc_settings_tabs` — and everything is behind

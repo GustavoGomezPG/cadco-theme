@@ -263,6 +263,88 @@ add_filter('woocommerce_marketplace_menu_items', function ($items) {
 });
 
 /**
+ * Screens that are blocked outright, not merely hidden.
+ *
+ * Deliberately expressed as narrow, explicit matches rather than a capability
+ * change. Stripping `manage_woocommerce` would be the blunt route and would
+ * take WooCommerce → Settings and Status with it, which this site keeps.
+ *
+ * `wc-admin` paths are matched by prefix rather than blocking the `wc-admin`
+ * page wholesale: it is the root of the WooCommerce Admin app, and newer
+ * WooCommerce serves the block-based product editor from
+ * `wc-admin&path=/add-product`. Blocking the page would break product editing
+ * the moment that feature is switched on.
+ */
+function cadco_blocked_admin_screens(): array
+{
+    return (array) apply_filters('cadco_blocked_admin_screens', [
+        'pages'          => ['wc-orders', 'wc-reports', 'wc-addons'],
+        'wc_admin_paths' => ['/analytics', '/extensions', '/marketing', '/customers'],
+        'post_types'     => ['shop_coupon'],
+    ]);
+}
+
+/**
+ * Refuse the commerce-only screens rather than just hiding them from the menu.
+ *
+ * Removing a menu item is cosmetic — WordPress still serves the screen to
+ * anyone who types the URL. This closes that gap for the screens that manage
+ * things this site does not have.
+ *
+ * Removed settings tabs redirect to the settings root instead of dying, because
+ * the tab is a query arg on a page that is legitimately available, and bouncing
+ * to General is friendlier than an error for a stale bookmark.
+ */
+add_action('admin_init', function () {
+    if (!cadco_commerce_disabled() || wp_doing_ajax()) {
+        return;
+    }
+
+    $blocked = cadco_blocked_admin_screens();
+    $page    = isset($_GET['page']) ? sanitize_key(wp_unslash($_GET['page'])) : '';
+
+    $deny = static function () {
+        wp_die(
+            esc_html__('This site does not use WooCommerce selling features, so this screen is unavailable.', 'cadco-theme'),
+            esc_html__('Screen unavailable', 'cadco-theme'),
+            ['response' => 403, 'back_link' => true]
+        );
+    };
+
+    // Whole pages.
+    if ($page && in_array($page, $blocked['pages'], true)) {
+        $deny();
+    }
+
+    // WooCommerce Admin app routes, matched by path prefix.
+    if ('wc-admin' === $page) {
+        $path = isset($_GET['path']) ? wp_unslash($_GET['path']) : '';
+
+        foreach ($blocked['wc_admin_paths'] as $prefix) {
+            if ($path && 0 === strpos($path, $prefix)) {
+                $deny();
+            }
+        }
+    }
+
+    // Post-type screens for objects that cannot exist here.
+    $post_type = isset($_GET['post_type']) ? sanitize_key(wp_unslash($_GET['post_type'])) : '';
+    if ($post_type && in_array($post_type, $blocked['post_types'], true)) {
+        $deny();
+    }
+
+    // Removed settings tabs.
+    if ('wc-settings' === $page) {
+        $tab = isset($_GET['tab']) ? sanitize_key(wp_unslash($_GET['tab'])) : '';
+
+        if ($tab && in_array($tab, cadco_disabled_wc_settings_tabs(), true)) {
+            wp_safe_redirect(admin_url('admin.php?page=wc-settings'), 302);
+            exit;
+        }
+    }
+});
+
+/**
  * Take the remaining commerce-only entries off the admin menu.
  *
  * Note this hides rather than forbids: WordPress still serves these screens to
