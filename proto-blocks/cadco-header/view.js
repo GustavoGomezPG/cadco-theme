@@ -109,8 +109,76 @@
       });
     });
 
+    // ---- Mobile drawer -------------------------------------------------
+    var menuToggle = root.querySelector('[data-cadco-menu-toggle]');
+
+    function closeMenu() {
+      root.classList.remove('is-menu-open');
+      if (menuToggle) menuToggle.setAttribute('aria-expanded', 'false');
+    }
+
+    if (menuToggle) {
+      menuToggle.addEventListener('click', function () {
+        var isOpen = root.classList.toggle('is-menu-open');
+        menuToggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+      });
+    }
+
+    // ---- Search drawer -------------------------------------------------
+    var searchToggle = root.querySelector('[data-cadco-search-toggle]');
+    var searchPanel = root.querySelector('[data-cadco-search]');
+
+    function searchIsOpen() {
+      return !!searchPanel && searchPanel.classList.contains('is-open');
+    }
+
+    function closeSearch() {
+      if (!searchPanel) return;
+      searchPanel.classList.remove('is-open');
+      if (searchToggle) searchToggle.setAttribute('aria-expanded', 'false');
+    }
+
+    function openSearch() {
+      if (!searchPanel) return;
+      closeAll(); // a menu panel and the search drawer would otherwise overlap
+
+      searchPanel.classList.add('is-open');
+      if (searchToggle) searchToggle.setAttribute('aria-expanded', 'true');
+
+      var field = searchPanel.querySelector('input[type="search"]');
+      if (field) {
+        // Wait a frame: the drawer is visibility:hidden until the class lands,
+        // and focusing a hidden field is a no-op.
+        window.requestAnimationFrame(function () { field.focus(); });
+      }
+    }
+
+    if (searchToggle && searchPanel) {
+      searchToggle.addEventListener('click', function () {
+        if (searchIsOpen()) {
+          closeSearch();
+        } else {
+          openSearch();
+        }
+      });
+    }
+
+    // Opening a menu panel should dismiss the search drawer.
+    triggers.forEach(function (trigger) {
+      trigger.addEventListener('mouseenter', closeSearch);
+      trigger.addEventListener('click', closeSearch);
+    });
+
     root.addEventListener('keydown', function (event) {
-      if (event.key === 'Escape' && openPanel) {
+      if (event.key !== 'Escape') return;
+
+      if (searchIsOpen()) {
+        closeSearch();
+        if (searchToggle) searchToggle.focus();
+        return;
+      }
+
+      if (openPanel) {
         var owner = root.querySelector('[data-cadco-trigger="' + openPanel.id + '"]');
         closeAll();
         if (owner) owner.focus();
@@ -118,10 +186,20 @@
     });
 
     document.addEventListener('click', function (event) {
-      if (openPanel && !root.contains(event.target)) {
-        closeAll();
-      }
+      if (root.contains(event.target)) return;
+      if (openPanel) closeAll();
+      if (searchIsOpen()) closeSearch();
+      closeMenu();
     });
+
+    // Below md the panels are inline in the drawer, so hover-open would fight
+    // the tap-to-expand behaviour. Only wire hover when a fine pointer exists.
+    var finePointer = window.matchMedia('(hover: hover) and (pointer: fine)');
+    if (!finePointer.matches) {
+      triggers.forEach(function (trigger) {
+        trigger.addEventListener('mouseenter', function (e) { e.stopPropagation(); }, true);
+      });
+    }
   }
 
   function initAll() {

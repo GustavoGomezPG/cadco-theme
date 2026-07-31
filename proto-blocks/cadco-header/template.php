@@ -66,20 +66,23 @@ $panel_id = static function (string $key): string {
 ?>
 <header <?php echo $wrapper; ?> data-cadco-header>
 
-    <div class="mx-auto flex h-[74px] w-full max-w-[1440px] items-center gap-8 px-6 md:px-10">
+    <div class="mx-auto flex h-[74px] w-full max-w-[1440px] items-center gap-3 px-3 lg:gap-8 lg:px-10">
 
         <?php // Logo — always rendered so it stays editable when empty. ?>
         <a class="flex shrink-0 items-center" href="<?php echo esc_url(home_url('/')); ?>">
             <img
                 data-proto-field="logo"
-                class="h-[46px] w-auto"
+                class="h-7 w-auto max-w-[110px] object-contain lg:h-[46px] lg:max-w-none"
                 src="<?php echo esc_url($logo['url'] ?? ''); ?>"
                 alt="<?php echo esc_attr($logo['alt'] ?? get_bloginfo('name')); ?>"
             />
         </a>
 
-        <?php // Navigation, read from the site's navigation menu. ?>
-        <nav class="flex flex-1 items-center justify-center" aria-label="<?php esc_attr_e('Main', 'cadco-theme'); ?>">
+        <?php // Navigation, read from the site's navigation menu.
+        // One nav element for both layouts: below lg it is repositioned by CSS
+        // into a drawer rather than duplicated, so the mega/mini panel ids stay
+        // unique and the triggers keep working in both. ?>
+        <nav class="cadco-nav hidden flex-1 items-center justify-center lg:flex" aria-label="<?php esc_attr_e('Main', 'cadco-theme'); ?>" data-cadco-nav>
             <ul class="flex list-none items-center gap-10 p-0 m-0">
                 <?php foreach ($navItems as $item) :
                     $label   = $item['label'] ?? '';
@@ -103,25 +106,65 @@ $panel_id = static function (string $key): string {
             </ul>
         </nav>
 
-        <div class="flex shrink-0 items-center gap-6">
+        <div class="flex shrink-0 items-center gap-2 lg:gap-6">
             <?php if ($showSearch) : ?>
-                <a class="flex items-center text-white transition-opacity hover:opacity-70"
-                   href="<?php echo esc_url($searchUrl); ?>"
-                   aria-label="<?php esc_attr_e('Search', 'cadco-theme'); ?>">
+                <button type="button"
+                        class="flex items-center bg-transparent p-0 text-white transition-opacity hover:opacity-70 cursor-pointer border-0"
+                        aria-label="<?php esc_attr_e('Search', 'cadco-theme'); ?>"
+                        aria-expanded="false"
+                        aria-controls="cadco-search"
+                        data-cadco-search-toggle>
                     <svg class="h-5 w-5" viewBox="0 0 20 20" fill="none" aria-hidden="true">
                         <circle cx="9" cy="9" r="6.25" stroke="currentColor" stroke-width="1.5"/>
                         <path d="M13.5 13.5L17.5 17.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
                     </svg>
-                </a>
+                </button>
             <?php endif; ?>
 
+            <?php // Hamburger — only below the lg breakpoint. ?>
+            <button type="button"
+                    class="flex items-center border-0 bg-transparent p-0 text-white transition-opacity hover:opacity-70 cursor-pointer lg:hidden"
+                    aria-label="<?php esc_attr_e('Menu', 'cadco-theme'); ?>"
+                    aria-expanded="false"
+                    data-cadco-menu-toggle>
+                <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path class="cadco-burger__top" d="M3 6h18" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/>
+                    <path class="cadco-burger__mid" d="M3 12h18" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/>
+                    <path class="cadco-burger__bot" d="M3 18h18" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/>
+                </svg>
+            </button>
+
             <a data-proto-field="cta"
-               class="inline-flex items-center rounded-md bg-cadco-blue px-6 py-4 text-[16px] font-bold leading-none text-white no-underline transition-colors hover:bg-[#00395a]"
+               class="inline-flex items-center rounded-md bg-cadco-blue px-2 py-2 text-[12px] font-bold leading-none text-white no-underline transition-colors hover:bg-[#00395a] lg:px-6 lg:py-4 lg:text-[16px]"
                href="<?php echo esc_url($cta['url'] ?? '#'); ?>"
                <?php echo ! empty($cta['target']) ? 'target="' . esc_attr($cta['target']) . '"' : ''; ?>
             ><?php echo esc_html($cta['text'] ?? 'Contact Cadco'); ?></a>
         </div>
     </div>
+
+    <?php // ---------- Search: slides down from the bar ---------- ?>
+    <?php if ($showSearch) : ?>
+        <div id="cadco-search" class="cadco-search absolute inset-x-0 top-full w-full bg-header" data-cadco-search>
+            <div class="cadco-search__inner">
+                <form role="search" method="get" class="mx-auto flex w-full max-w-[1440px] items-center gap-3 px-6 py-5 lg:px-10"
+                      action="<?php echo esc_url(home_url('/')); ?>">
+                    <label class="sr-only" for="cadco-search-field"><?php esc_html_e('Search', 'cadco-theme'); ?></label>
+                    <input
+                        id="cadco-search-field"
+                        type="search"
+                        name="s"
+                        value="<?php echo esc_attr(get_search_query()); ?>"
+                        placeholder="<?php esc_attr_e('Search Cadco…', 'cadco-theme'); ?>"
+                        class="min-w-0 flex-1 rounded-md border-0 bg-white px-4 py-3 text-[16px] text-ink outline-none focus:ring-2 focus:ring-cadco-blue"
+                    />
+                    <button type="submit"
+                            class="shrink-0 rounded-md bg-cadco-blue px-6 py-3 text-[16px] font-bold leading-none text-white transition-colors hover:bg-[#00395a] cursor-pointer border-0">
+                        <?php esc_html_e('Search', 'cadco-theme'); ?>
+                    </button>
+                </form>
+            </div>
+        </div>
+    <?php endif; ?>
 
     <?php // ---------- Design A: full-width mega menu ---------- ?>
     <div
@@ -135,11 +178,11 @@ $panel_id = static function (string $key): string {
             </p>
         <?php endif; ?>
 
-        <div class="mx-auto grid w-full max-w-[1440px] grid-cols-1 md:grid-cols-4" data-proto-repeater="megaColumns">
+        <div class="mx-auto grid w-full max-w-[1440px] grid-cols-1 lg:grid-cols-4" data-proto-repeater="megaColumns">
             <?php foreach ($megaColumns as $column) :
                 $seeAll = $column['seeAll'] ?? [];
                 ?>
-                <div class="flex flex-col gap-4 border-gray-300 px-8 py-12 md:border-l md:last:border-r" data-proto-repeater-item>
+                <div class="flex flex-col gap-4 border-gray-300 px-8 py-12 lg:border-l lg:last:border-r" data-proto-repeater-item>
                     <span class="block text-[16px] font-bold leading-tight text-ink" data-proto-field="heading">
                         <?php echo esc_html($column['heading'] ?? ''); ?>
                     </span>
@@ -169,7 +212,7 @@ $panel_id = static function (string $key): string {
             </p>
         <?php endif; ?>
 
-        <div class="mx-auto w-full max-w-[1440px] px-6 md:px-10">
+        <div class="mx-auto w-full max-w-[1440px] px-6 lg:px-10">
             <div class="ml-auto w-fit overflow-hidden rounded-lg bg-panel text-ink shadow-soft">
                 <div class="grid grid-cols-1 sm:grid-cols-2" data-proto-repeater="miniCards">
                     <?php foreach ($miniCards as $card) :

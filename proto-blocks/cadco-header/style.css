@@ -33,6 +33,121 @@
 }
 
 /*
+ * Search drawer.
+ *
+ * Slides on max-height. The open height is not a guessed constant — view.js
+ * measures the form and sets it, so the drawer always travels exactly its own
+ * height and nothing is clipped if the form grows.
+ *
+ * visibility transitions with a delay equal to the slide, so the drawer is
+ * removed from the accessibility tree and tab order once it has finished
+ * closing, rather than the instant the class is dropped.
+ */
+.cadco-search {
+    overflow: hidden;
+    max-height: 0;
+    visibility: hidden;
+    transition: max-height 240ms ease, visibility 0s linear 240ms;
+}
+
+.cadco-search.is-open {
+    /* A generous ceiling rather than a measured pixel value. The element's own
+       height is min(content, max-height), so it stops growing at the form's
+       natural height — the slide simply finishes a touch early. Keeping this in
+       CSS means no inline style to be cleared and no JS/CSS disagreement. */
+    max-height: 60vh;
+    visibility: visible;
+    transition: max-height 240ms ease, visibility 0s linear 0s;
+}
+
+/* Respect a reduced-motion preference: still opens, just without the slide. */
+@media (prefers-reduced-motion: reduce) {
+    .cadco-search {
+        transition: none;
+    }
+}
+
+/* Visually hidden, still announced. */
+.cadco-header .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    clip-path: inset(50%);
+    white-space: nowrap;
+    border: 0;
+}
+
+/* ------------------------------------------------------------------------
+   Mobile (below the lg breakpoint, 1024px).
+
+   The Figma only covers desktop, so this is a conventional interpretation:
+   the bar keeps the logo, search and a hamburger, and the same <nav> element
+   is repositioned into a full-width drawer beneath it. Repositioning rather
+   than rendering a second nav keeps the mega/mini panel ids unique — two navs
+   would mean two elements sharing an id, which breaks both the triggers and
+   the aria-controls relationship.
+   ------------------------------------------------------------------------- */
+@media (max-width: 1023px) {
+    .cadco-header.is-menu-open .cadco-nav {
+        display: flex;
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        flex-direction: column;
+        align-items: stretch;
+        background: var(--color-header, #111);
+        padding: 0.5rem 1.5rem 1.5rem;
+        border-top: 1px solid rgba(255, 255, 255, 0.12);
+        max-height: calc(100vh - 74px);
+        overflow-y: auto;
+    }
+
+    .cadco-header.is-menu-open .cadco-nav > ul {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0;
+        width: 100%;
+    }
+
+    .cadco-header.is-menu-open .cadco-nav a {
+        padding-block: 1rem;
+    }
+
+    /* Panels sit inline under their item on mobile instead of dropping over
+       the page, so the drawer reads as one scrollable list. */
+    .cadco-header.is-menu-open .cadco-panel {
+        position: static;
+        width: auto;
+        margin-inline: -1.5rem;
+    }
+
+    .cadco-header.is-menu-open .cadco-panel .grid {
+        grid-template-columns: 1fr;
+    }
+
+    /* The CTA is hidden in the bar on mobile; surface it at the end of the
+       drawer so it is still reachable. */
+    .cadco-header.is-menu-open .cadco-nav::after {
+        content: "";
+        display: block;
+        height: 0.5rem;
+    }
+
+    /* Hamburger becomes a close icon while the drawer is open. */
+    .cadco-header.is-menu-open .cadco-burger__mid { opacity: 0; }
+    .cadco-header.is-menu-open .cadco-burger__top { transform: translateY(6px) rotate(45deg); transform-origin: center; }
+    .cadco-header.is-menu-open .cadco-burger__bot { transform: translateY(-6px) rotate(-45deg); transform-origin: center; }
+    .cadco-burger__top,
+    .cadco-burger__mid,
+    .cadco-burger__bot { transition: transform 180ms ease, opacity 180ms ease; }
+}
+
+/*
  * In the editor the panels are rendered open and stacked so their repeater
  * fields are reachable — a repeater inside a display:none panel cannot be
  * edited. Undo the absolute positioning that makes them dropdowns on the front
