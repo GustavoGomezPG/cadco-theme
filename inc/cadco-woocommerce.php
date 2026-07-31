@@ -377,3 +377,134 @@ add_action('admin_menu', function () {
     // toplevel_page_admin-page-wc-settings-tab-checkout-from-PAYMENTS_MENU_ITEM.
     remove_menu_page('admin.php?page=wc-settings&tab=checkout&from=PAYMENTS_MENU_ITEM');
 }, 999);
+
+/* -------------------------------------------------------------------------
+   Category archives on the same /products/ base as the product URLs.
+
+   Products live at /products/<category-path>/<product>. Left alone, WooCommerce
+   puts their category archives on a separate "product-category" base, so a
+   catalogue built from one taxonomy is addressed two different ways and the
+   literal words "product-category" show up in every navigation link.
+
+   WooCommerce does not merely default to that -- wc_fix_rewrite_rules() deletes
+   every standalone product_cat rule sharing the product base's prefix, because
+   /products/A/B is ambiguous: B can be a product in category A, or a
+   sub-category of A. Deleting the rules resolves the ambiguity by making the
+   category interpretation impossible.
+
+   The ambiguity is real but decidable, so this resolves it at query time
+   instead: re-add the archive rules below the product rules, and when the
+   product rule claims a URL whose last segment is not actually a product, hand
+   it back to the taxonomy. A product wins over a same-named sibling category,
+   which is the safer way round -- a product URL is the one that gets linked
+   externally.
+   ------------------------------------------------------------------------- */
+
+/**
+ * Restore the product_cat archive rules that wc_fix_rewrite_rules() removes.
+ *
+ * Spliced in directly after the last existing rule on the same base, which puts
+ * them below the product rules -- /products/A/B is tried as a product first and
+ * only falls back to the taxonomy in cadco_resolve_category_path() -- while
+ * still keeping them above WordPress's generic trailing catch-alls. Appending
+ * to the end instead leaves them below the catch-all attachment rule
+ * ([^/]+/([^/]+)/?$), which swallows every two-segment path and 404s.
+ */
+add_filter('rewrite_rules_array', function ($rules) {
+    if (!is_array($rules) || !function_exists('wc_get_permalink_structure')) {
+        return $rules;
+    }
+
+    $permalinks = wc_get_permalink_structure();
+
+    // Only relevant while the category base is nested under the product base;
+    // with any other base WooCommerce keeps its own rules and these would be
+    // duplicates pointing at the wrong path.
+    $base = trim((string) ($permalinks['category_rewrite_slug'] ?? ''), '/');
+    if ($base === '' || !str_starts_with(trim((string) $permalinks['product_rewrite_slug'], '/'), $base . '/')) {
+        return $rules;
+    }
+
+    global $wp_rewrite;
+    if (!$wp_rewrite instanceof WP_Rewrite) {
+        return $rules;
+    }
+
+    // Generated rather than hard-coded so feed/embed/paging variants stay in
+    // step with whatever this WordPress version produces for the permastruct.
+    $generated = $wp_rewrite->generate_rewrite_rules(
+        $base . '/%product_cat%',
+        EP_NONE,
+        true,
+        true,
+        false,
+        true,
+        true
+    );
+
+    // Position matters more than order of definition here, so rebuild the map
+    // rather than merging: PHP keeps a key at its first insertion point.
+    $keys    = array_keys($rules);
+    $lastOwn = -1;
+    foreach ($keys as $i => $key) {
+        if (str_starts_with($key, $base . '/')) {
+            $lastOwn = $i;
+        }
+    }
+
+    if ($lastOwn === -1) {
+        return array_merge($rules, $generated);
+    }
+
+    $merged = [];
+    foreach ($keys as $i => $key) {
+        $merged[$key] = $rules[$key];
+
+        if ($i !== $lastOwn) {
+            continue;
+        }
+
+        foreach ($generated as $pattern => $target) {
+            if (!isset($rules[$pattern])) {
+                $merged[$pattern] = $target;
+            }
+        }
+    }
+
+    return $merged;
+}, 11);
+
+/**
+ * Re-read /products/A/B as a category archive when B is not a product.
+ *
+ * The product rule matches first and sets product_cat + product. When no
+ * published product carries that slug, the last segment is a sub-category and
+ * the request belongs to the taxonomy.
+ */
+function cadco_resolve_category_path($vars)
+{
+    if (!is_array($vars) || empty($vars['product_cat']) || empty($vars['product'])) {
+        return $vars;
+    }
+
+    $slug = (string) $vars['product'];
+
+    // A real product keeps the URL. Any status is accepted so that a draft or
+    // pending product still resolves to itself (and 404s as a product for
+    // logged-out visitors) rather than silently becoming a category archive.
+    if (get_page_by_path($slug, OBJECT, 'product') instanceof WP_Post) {
+        return $vars;
+    }
+
+    if (!get_term_by('slug', $slug, 'product_cat') instanceof WP_Term) {
+        return $vars;
+    }
+
+    // Term slugs are unique within the taxonomy, so the leaf identifies the
+    // term on its own; the ancestor segments were only there to build the path.
+    $vars['product_cat'] = $slug;
+    unset($vars['product'], $vars['post_type'], $vars['name']);
+
+    return $vars;
+}
+add_filter('request', 'cadco_resolve_category_path', 20);
