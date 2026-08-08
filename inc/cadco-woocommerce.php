@@ -385,6 +385,28 @@ add_action('admin_menu', function () {
     remove_menu_page('admin.php?page=wc-settings&tab=checkout&from=PAYMENTS_MENU_ITEM');
 }, 999);
 
+/**
+ * Take the WooCommerce widgets off the dashboard.
+ *
+ * "WooCommerce Status" reports sales, low stock and pending orders; "Recent
+ * Reviews" lists product review comments. Neither has anything to report on a
+ * catalogue that cannot be bought from, so they are dead panels taking the top
+ * of every editor's dashboard — and Status runs its sales queries to build them.
+ *
+ * WC_Admin_Dashboard::init() registers these on wp_dashboard_setup at the
+ * default priority, so this has to run after it. Network Orders is multisite
+ * only and included so the same block covers that install too.
+ */
+add_action('wp_dashboard_setup', function () {
+    if (!cadco_commerce_disabled()) {
+        return;
+    }
+
+    remove_meta_box('woocommerce_dashboard_status', 'dashboard', 'normal');
+    remove_meta_box('woocommerce_dashboard_recent_reviews', 'dashboard', 'normal');
+    remove_meta_box('woocommerce_network_orders', 'dashboard', 'normal');
+}, 20);
+
 /* -------------------------------------------------------------------------
    Category archives on the same /products/ base as the product URLs.
 
