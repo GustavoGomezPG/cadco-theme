@@ -2,7 +2,7 @@
 /**
  * Required / recommended plugins via TGM Plugin Activation.
  *
- * - Required (wp.org): Safe SVG, Yoast SEO, Duplicate Post.
+ * - Required (wp.org): Safe SVG, Yoast SEO.
  * - Required (GitHub): Proto-Blocks — the theme's reason for existing.
  * - Recommended (deactivatable while developing): Wordfence.
  */
@@ -75,11 +75,6 @@ function proto_register_required_plugins() {
         [
             'name'     => 'Yoast SEO',
             'slug'     => 'wordpress-seo',
-            'required' => true,
-        ],
-        [
-            'name'     => 'Yoast Duplicate Post',
-            'slug'     => 'duplicate-post',
             'required' => true,
         ],
         [

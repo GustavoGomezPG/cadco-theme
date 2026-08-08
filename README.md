@@ -22,7 +22,6 @@ When you activate Proto-theme, WordPress will display a **"Install Required Plug
 |---|---|---|
 | **Safe SVG** | WordPress.org | Yes |
 | **Yoast SEO** | WordPress.org | Yes |
-| **Yoast Duplicate Post** | WordPress.org | Yes |
 | **Proto-Blocks** | GitHub (latest release) | Yes |
 | **Wordfence Security** | WordPress.org | Recommended |
 
