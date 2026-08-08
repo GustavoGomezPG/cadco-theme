@@ -5,7 +5,8 @@
  * This site uses WooCommerce for its product post type and admin editing
  * experience — variations, attributes, galleries, categories — and for the
  * product URL structure. It does not sell anything: there is no cart, no
- * checkout, no payment.
+ * checkout, no payment. Those pages have been deleted outright and are blocked
+ * from being recreated — see the woocommerce_create_pages filter below.
  *
  * WooCommerce core has no setting for this. Verified against 10.9.4: there is
  * no catalog-mode option, and the official Cart and Checkout FAQ documents no
@@ -65,28 +66,33 @@ add_filter('woocommerce_payment_gateways', function ($gateways) {
 });
 
 /**
- * Send anyone who reaches cart, checkout or my-account to the product catalogue.
+ * Never let WooCommerce (re)create the selling pages.
  *
- * Redirect rather than trashing the pages: WooCommerce reads those page IDs in
- * a number of admin checks, and keeping them means selling can be switched back
- * on with the filter above rather than by rebuilding pages.
+ * Cart, Checkout, My account and the Refund and Returns draft have been deleted
+ * — this site is a catalogue and will not sell. Deleting them is not enough on
+ * its own: WC_Install::create_pages() runs on activation *and on every plugin
+ * update*, so without this filter they would quietly come back at the next
+ * WooCommerce release and the deletion would undo itself.
+ *
+ * Shop is kept: it is the catalogue landing page and holds
+ * woocommerce_shop_page_id, which the product URL structure and the Taxi ignore
+ * list both read.
+ *
+ * There is deliberately no redirect for the old /cart/, /checkout/ and
+ * /my-account/ URLs. With the pages gone is_cart()/is_checkout()/
+ * is_account_page() are always false, so a redirect could never fire; the URLs
+ * 404, which is the honest answer for pages that do not exist and never will.
  */
-add_action('template_redirect', function () {
-    if (!cadco_commerce_disabled() || is_admin()) {
-        return;
+add_filter('woocommerce_create_pages', function ($pages) {
+    if (!cadco_commerce_disabled()) {
+        return $pages;
     }
 
-    if (!function_exists('is_cart')) {
-        return;
+    foreach (['cart', 'checkout', 'myaccount', 'refund_returns'] as $page) {
+        unset($pages[$page]);
     }
 
-    if (is_cart() || is_checkout() || is_account_page()) {
-        $shop = function_exists('wc_get_page_id') ? wc_get_page_id('shop') : 0;
-        $target = ($shop && $shop > 0) ? get_permalink($shop) : home_url('/');
-
-        wp_safe_redirect($target, 302);
-        exit;
-    }
+    return $pages;
 });
 
 /**
@@ -110,8 +116,9 @@ add_action('wp_enqueue_scripts', function () {
  * with wrapped versions, so that reasoning no longer applies here and the
  * catalogue should transition like every other route.
  *
- * Cart, checkout and my-account stay in the list: they redirect anyway, and a
- * redirect is cleaner as a real navigation than as a swapped view.
+ * Cart, checkout and my-account need no handling here any more: those pages are
+ * gone, so wc_get_page_id() returns -1 for them and proto_taxi_ignore_urls()
+ * never adds them to the list in the first place.
  */
 add_filter('proto_taxi_ignore_urls', function ($urls) {
     if (!cadco_commerce_disabled() || !function_exists('wc_get_page_id')) {
