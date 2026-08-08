@@ -1,0 +1,46 @@
+/**
+ * Cadco hero — pre-animation state.
+ *
+ * `is-anim-pending` is added by an inline script inside the section itself
+ * (template.php) rather than from view.js, so it lands while the browser is
+ * still parsing the section and there is never a frame of un-animated hero.
+ * Because a script adds it, a visitor with JS off never gets it and sees the
+ * finished hero — which is also why nothing here is in the base rules.
+ *
+ * view.js pins these same values inline via gsap.set() before removing the
+ * class, so the hand-off from CSS to GSAP does not flash either.
+ */
+.cadco-hero.is-anim-pending [data-hero-image] {
+	transform: scale(1.18);
+}
+
+.cadco-hero.is-anim-pending [data-hero-eyebrow],
+.cadco-hero.is-anim-pending [data-hero-cta] {
+	visibility: hidden;
+}
+
+/* The heading is masked per line by SplitText once it runs. Until then hide the
+   whole block — SplitText needs it laid out to measure, so visibility rather
+   than display. */
+.cadco-hero.is-anim-pending [data-hero-heading] {
+	visibility: hidden;
+}
+
+/* SplitText's mask wrappers are inline-block; without this the descenders of a
+   line are clipped by its own mask. */
+.cadco-hero .split-line-mask {
+	padding-bottom: 0.12em;
+	margin-bottom: -0.12em;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.cadco-hero.is-anim-pending [data-hero-image] {
+		transform: none;
+	}
+
+	.cadco-hero.is-anim-pending [data-hero-eyebrow],
+	.cadco-hero.is-anim-pending [data-hero-heading],
+	.cadco-hero.is-anim-pending [data-hero-cta] {
+		visibility: visible;
+	}
+}

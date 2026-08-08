@@ -128,29 +128,37 @@ add_action('wp_enqueue_scripts', function () {
 });
 
 /**
- * The header block animates with GSAP, so it must not run before GSAP exists.
+ * Block view.js files that animate must not run before their libraries exist.
  *
  * Proto-Blocks registers a block's view.js with no dependencies, and both it and
  * the vendored libraries print in the footer, so the order is otherwise down to
- * enqueue timing. The dependency is appended to the already-registered handle
+ * enqueue timing. Dependencies are appended to the already-registered handle
  * rather than re-registering the script, which would fight the plugin over
  * ownership of the URL and version.
  *
- * view.js still degrades to instant show/hide if GSAP is absent — this makes the
- * animated path the one that actually runs.
+ * Each view.js still degrades to instant show/hide when a library is absent —
+ * this makes the animated path the one that actually runs.
  */
 add_action('wp_enqueue_scripts', function () {
     global $wp_scripts;
 
-    $handle = 'proto-blocks-cadco-header';
+    $needs = [
+        'proto-blocks-cadco-header' => ['proto-gsap'],
+        'proto-blocks-cadco-hero'   => ['proto-gsap', 'proto-split-text'],
+    ];
 
-    if (!isset($wp_scripts->registered[$handle]) || !wp_script_is('proto-gsap', 'registered')) {
-        return;
-    }
-
-    $deps = $wp_scripts->registered[$handle]->deps;
-    if (!in_array('proto-gsap', $deps, true)) {
-        $wp_scripts->registered[$handle]->deps[] = 'proto-gsap';
+    foreach ($needs as $handle => $deps) {
+        if (!isset($wp_scripts->registered[$handle])) {
+            continue;
+        }
+        foreach ($deps as $dep) {
+            if (!wp_script_is($dep, 'registered')) {
+                continue;
+            }
+            if (!in_array($dep, $wp_scripts->registered[$handle]->deps, true)) {
+                $wp_scripts->registered[$handle]->deps[] = $dep;
+            }
+        }
     }
 }, 99);
 

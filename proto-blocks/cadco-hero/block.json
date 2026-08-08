@@ -1,0 +1,70 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/block.json",
+  "apiVersion": 3,
+  "name": "proto-blocks/cadco-hero",
+  "title": "Cadco Hero",
+  "category": "proto",
+  "icon": "cover-image",
+  "description": "Full-bleed hero: a background photograph behind a directional dark scrim, with an eyebrow line, display heading and call-to-action button aligned to the left.",
+  "keywords": [
+    "hero",
+    "banner",
+    "masthead",
+    "cover"
+  ],
+  "supports": {
+    "html": false,
+    "anchor": true,
+    "customClassName": true,
+    "align": [
+      "full"
+    ]
+  },
+  "protoBlocks": {
+    "version": "1.0",
+    "template": "template.php",
+    "useTailwind": true,
+    "fields": {
+      "eyebrow": {
+        "type": "text",
+        "label": "Eyebrow",
+        "default": "Proudly Serving You Since 1996"
+      },
+      "heading": {
+        "type": "text",
+        "tagName": "h1",
+        "label": "Heading",
+        "default": "America's Leader in Innovative Foodservice Equipment"
+      },
+      "cta": {
+        "type": "link",
+        "label": "Call to action"
+      }
+    },
+    "controls": {
+      "backgroundImage": {
+        "type": "image",
+        "label": "Background image",
+        "help": "Sits behind the scrim. Landscape photography works best — the right half stays legible while the left is darkened for the text."
+      },
+      "scrimOpacity": {
+        "type": "range",
+        "label": "Scrim strength",
+        "help": "Darkness of the left-to-right gradient over the photo. The design uses 74.",
+        "default": 74,
+        "min": 0,
+        "max": 100,
+        "step": 1
+      },
+      "minHeight": {
+        "type": "range",
+        "label": "Height (px)",
+        "help": "Desktop height. The design is 841px beneath the 77px header, making the 918px hero in Figma.",
+        "default": 841,
+        "min": 400,
+        "max": 1100,
+        "step": 1
+      }
+    }
+  }
+}
