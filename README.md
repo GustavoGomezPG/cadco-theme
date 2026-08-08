@@ -466,7 +466,11 @@ All library files live in `scripts/` and are versioned by their `filemtime`, so 
 
 The intro overlay plays once per browser session and fades out before the page is visible. It is powered by `scripts/proto-intro.js` and reads a Lottie JSON file pointed to by the `data-lottie-url` attribute.
 
-To swap the animation, replace `assets/lottie/intro.json` with your own Lottie file. The overlay dimensions are controlled by `.proto-intro__lottie` in `style.css` (default: 200×200 px).
+To swap the animation, replace `assets/lottie/intro.json` with your own Lottie file. The overlay dimensions are controlled by `.proto-intro__lottie` in `style.css`, currently `clamp(260px, 80vw, 420px)` with `aspect-ratio: 520 / 200` to match the shipped composition. If your replacement has a different aspect ratio, update that `aspect-ratio` to match its `w`/`h` or the animation will letterbox inside the container.
+
+The shipped intro is the Cadco wordmark (520×200, 110f @60fps, 1.83s): the **C** outline draws on with a trim path while its fill cross-fades in underneath, and `a`,`d`,`c`,`o` stagger in to complete the word. The stroke layer is clipped by a track matte (`td`/`tt`) of the same glyph — Lottie strokes are centre-aligned, so without the matte the stroke straddles the outline and the C visibly deflates when the stroke fades out.
+
+`proto-intro.js` ends the overlay on the Lottie `complete` event, so the overlay's lifetime is driven by the animation's `op` — a longer animation delays the site becoming interactive (capped by the 8 s safety timeout).
 
 To disable the intro entirely, remove the `wp_body_open` hook and the `wp_head` script in `functions.php` (the two blocks near the bottom of the file).
 

@@ -101,7 +101,12 @@ body {
   transition: opacity 600ms ease;
 }
 .proto-intro.is-hidden { opacity: 0; pointer-events: none; }
-.proto-intro__lottie { width: 200px; height: 200px; }
+/* Matches the 520x200 Lottie comp (2.6:1); aspect-ratio keeps it letterbox-free
+   at every width, so only the clamp needs touching if the mark is replaced. */
+.proto-intro__lottie { width: clamp(260px, 80vw, 420px); aspect-ratio: 520 / 200; }
+/* Lottie's injected <svg> is display:inline, so its baseline descender space
+   would add ~4px below the art and defeat the aspect-ratio height. */
+.proto-intro__lottie > svg { display: block; }
 .proto-intro-skip .proto-intro { display: none !important; }
 html.proto-intro-active { overflow: hidden; }
 
