@@ -14,8 +14,11 @@ Text Domain: cadco-theme
 Tags: block-theme, full-site-editing, proto-blocks
 */
 
-/* Optional web font — swap or remove. */
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap");
+/* Web fonts are enqueued from functions.php ('cadco-fonts'), not @imported.
+   An @import here would force the browser to fetch and parse style.css before
+   it could even discover the font stylesheet, serialising three round trips on
+   the critical path. Inter = body/UI, Barlow = display (Tailwind
+   `font-display`, see tailwind-theme.css). */
 
 /* ------------------------------------------------------------------------
    Base typography — sans-serif everywhere by default (headings inherit).

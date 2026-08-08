@@ -28,9 +28,10 @@
   --color-paper:     #ffffff;
   --color-accent:    #00476e; /* brand accent = Cadco Dark Blue */
 
-  /* Fonts. */
+  /* Fonts. Barlow is the display face in the Figma file (headings, eyebrows,
+     buttons); Inter remains the body/UI face. */
   --font-sans:    "Inter", ui-sans-serif, system-ui, sans-serif;
-  --font-display: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Barlow", "Inter", ui-sans-serif, system-ui, sans-serif;
 
   /* Type scale. */
   --text-h1: 48px;

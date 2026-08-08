@@ -30,6 +30,35 @@ add_action('wp_head', function () {
     );
 }, 1);
 
+/**
+ * Web fonts — front end AND the block-editor canvas iframe.
+ *
+ * Inter carries body/UI, Barlow is the display face the Figma file uses for
+ * headings, eyebrows and buttons (Tailwind `font-display`).
+ *
+ * Every weight in the family list is *declared*, but the browser only downloads
+ * the faces a page actually renders — a requested-but-unused weight costs one
+ * @font-face rule and no bandwidth. Listing the range up front therefore keeps
+ * later blocks from needing a change here.
+ */
+add_action('enqueue_block_assets', function () {
+    wp_enqueue_style(
+        'cadco-fonts',
+        'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Barlow:wght@400;500;600;700;800&display=swap',
+        [],
+        null
+    );
+});
+
+// Open the TLS connection to the font host while the HTML is still parsing;
+// without it the woff2 fetch waits on a cold connection after the CSS lands.
+add_filter('wp_resource_hints', function (array $urls, string $relation): array {
+    if ($relation === 'preconnect') {
+        $urls[] = ['href' => 'https://fonts.gstatic.com', 'crossorigin' => 'anonymous'];
+    }
+    return $urls;
+}, 10, 2);
+
 // Theme stylesheet for front end AND the block-editor canvas iframe.
 add_action('enqueue_block_assets', function () {
     $style = get_stylesheet_directory() . '/style.css';
