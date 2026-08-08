@@ -472,7 +472,18 @@ To disable the intro entirely, remove the `wp_body_open` hook and the `wp_head` 
 
 ### Favicon
 
-The theme registers a custom SVG favicon from `assets/img/favicon.svg`, bypassing the WordPress Customizer setting. Replace that file with your own SVG. The URL includes a `filemtime` cache-buster so browsers pick up changes immediately.
+The theme registers its own site icons from `assets/img/`, bypassing the WordPress Customizer setting. Every URL includes a `filemtime` cache-buster so browsers pick up changes immediately.
+
+| File | Emitted as | Purpose |
+| --- | --- | --- |
+| `favicon.svg` | `rel="icon"` (`image/svg+xml`) | Primary icon; scales to any size |
+| `favicon-32.png` | `rel="icon"` `32x32` | Raster fallback |
+| `favicon-16.png` | `rel="icon"` `16x16` | Raster fallback |
+| `apple-touch-icon.png` | `rel="apple-touch-icon"` `180x180` | iOS home screen (opaque; iOS masks its own corners) |
+
+Each file is emitted only if it exists, so you can drop any of them without touching `functions.php`. Replace the set to rebrand.
+
+`favicon.ico` (16/32/48) and `apple-touch-icon.png` also live at the **web root**, because browsers and iOS request those paths directly without reading the markup. Keep them in sync with the theme copies when you rebrand — `assets/img/favicon.ico` is the source.
 
 ---
 

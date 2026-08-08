@@ -19,15 +19,21 @@ add_action('after_setup_theme', function () {
 add_filter('proto_blocks_category_slug', fn() => 'proto');
 add_filter('proto_blocks_category_title', fn() => __('Proto Blocks', 'cadco-theme'));
 
-// SVG favicon (theme-owned, survives Customizer changes).
+// Site icons (theme-owned, survives Customizer changes).
 add_action('wp_head', function () {
-    $path = get_stylesheet_directory() . '/assets/img/favicon.svg';
-    if (!file_exists($path)) { return; }
-    printf(
-        '<link rel="icon" type="image/svg+xml" href="%s?v=%s">' . "\n",
-        esc_url(get_stylesheet_directory_uri() . '/assets/img/favicon.svg'),
-        esc_attr(filemtime($path))
-    );
+    $dir = get_stylesheet_directory() . '/assets/img';
+    $uri = get_stylesheet_directory_uri() . '/assets/img';
+    $icons = [
+        ['favicon.svg',          '<link rel="icon" type="image/svg+xml" href="%s?v=%s">'],
+        ['favicon-32.png',       '<link rel="icon" type="image/png" sizes="32x32" href="%s?v=%s">'],
+        ['favicon-16.png',       '<link rel="icon" type="image/png" sizes="16x16" href="%s?v=%s">'],
+        ['apple-touch-icon.png', '<link rel="apple-touch-icon" sizes="180x180" href="%s?v=%s">'],
+    ];
+    foreach ($icons as [$file, $tag]) {
+        $path = $dir . '/' . $file;
+        if (!file_exists($path)) { continue; }
+        printf($tag . "\n", esc_url($uri . '/' . $file), esc_attr(filemtime($path)));
+    }
 }, 1);
 
 /**
