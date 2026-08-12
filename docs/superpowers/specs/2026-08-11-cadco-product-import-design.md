@@ -341,6 +341,11 @@ deliverable: a worklist CADCO iterates against.
   comma-separated `Type`)
 - `Parent Product` referencing a `Model #` not present
 - unrecognised sheet name or missing required header
+- malformed `UPC#` — the canonical shape is `NNNNNN-NNNNN-N`
+
+**Sheets whose name begins with `_` are ignored**, so CADCO can keep working
+notes, corrections logs and scratch data in the same workbook without tripping
+the unrecognised-sheet rule.
 
 ### Tier B — consistency
 
@@ -418,9 +423,26 @@ Planner is tested against a fixtured DB state. Fixture workbooks cover:
 - a workbook missing a required header → rejected with a named column
 - `Parent Product` resolution, and an unresolvable reference → Tier A failure
 
-A corrected workbook (all inconsistencies resolved) is maintained alongside the
-fixtures as the canonical passing case and as the reference CADCO compares
-against.
+### 9.1 The corrected workbook
+
+`Product Index Spreadsheet 2026_Website_CORRECTED.xlsx` is maintained alongside
+the source as the canonical passing case — the fixture the importer is tested
+against, and the reference CADCO compares their own file to.
+
+It carries a `_CORRECTIONS` sheet recording every change as
+*sheet / row / model / column / before / after / type / why*. 501 corrections
+across three classes:
+
+| Class | Count | Nature |
+|---|---|---|
+| A — identity | 7 | Cross-sheet duplicates removed, corrupt and colliding UPCs resolved |
+| B — consistency | 183 | Tag and attribute spellings canonicalised, whitespace normalised |
+| C — completeness | 311 | Blanks filled with `n/a`, required fields supplied |
+
+Nine of those are **not** deterministic and are flagged red in the sheet:
+4 placeholder UPCs and 5 estimated dimensions/weights. Placeholder UPCs use a
+reserved `654796-0000N-N` block so they are format-valid but unmistakably fake
+and can never be shipped by accident.
 
 ---
 
