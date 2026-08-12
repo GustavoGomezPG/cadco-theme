@@ -49,3 +49,20 @@
 	max-width: 32em;
 	height: 1.4em;
 }
+
+#cadco-import-failures {
+	margin-top: 1em;
+}
+
+#cadco-import-failures .cadco-import-failures-heading {
+	font-weight: 600;
+}
+
+#cadco-import-failures .cadco-import-failures-list {
+	margin: .5em 0 1em 1.5em;
+	list-style: disc;
+	font-family: monospace;
+	font-size: 12px;
+	max-height: 16em;
+	overflow-y: auto;
+}

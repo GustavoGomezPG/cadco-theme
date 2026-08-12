@@ -62,10 +62,14 @@ final class CADCO_Import_Admin
             'nonce'      => wp_create_nonce(self::NONCE),
             'batchSize'  => 25,
             'i18n'       => [
-                'failed'   => __('The import failed.', 'cadco-theme'),
-                'network'  => __('The import request failed.', 'cadco-theme'),
-                /* translators: %d: number of changes applied */
-                'done'     => __('Done — %d changes applied.', 'cadco-theme'),
+                'failed'           => __('The import failed.', 'cadco-theme'),
+                'network'          => __('The import request failed.', 'cadco-theme'),
+                /* translators: {applied} is replaced with the number of changes actually applied */
+                'done'             => __('Done — {applied} changes applied.', 'cadco-theme'),
+                /* translators: {applied}, {total} and {failed} are each replaced with a count */
+                'doneWithFailures' => __('Done — {applied} of {total} changes applied. {failed} failed; see the list below.', 'cadco-theme'),
+                /* translators: {count} is replaced with the number of failed rows */
+                'failuresHeading'  => __('{count} row(s) failed and were not applied:', 'cadco-theme'),
             ],
         ]);
     }
@@ -106,7 +110,21 @@ final class CADCO_Import_Admin
 
         $result = null;
 
-        if (isset($_POST['cadco_import_upload'])) {
+        // PHP discards $_POST entirely when the body exceeds post_max_size —
+        // isset($_POST['cadco_import_upload']) is then simply false and the
+        // page would otherwise silently redraw the empty form with no
+        // explanation. A POST with an empty $_POST but a non-zero
+        // Content-Length is exactly that case.
+        if (self::exceeded_post_max_size()) {
+            self::notice(
+                'error',
+                sprintf(
+                    /* translators: %s: the server's configured upload limit, e.g. "8 MB" */
+                    __('That file is larger than this server allows (%s). Ask your host to raise post_max_size, or upload a smaller workbook.', 'cadco-theme'),
+                    size_format((int) wp_convert_hr_to_bytes(ini_get('post_max_size')))
+                )
+            );
+        } elseif (isset($_POST['cadco_import_upload'])) {
             check_admin_referer(self::NONCE);
             $result = self::handle_upload();
         }
@@ -118,6 +136,20 @@ final class CADCO_Import_Admin
         }
 
         echo '</div>';
+    }
+
+    /**
+     * True when this request's body was too large for post_max_size.
+     *
+     * PHP drops the whole $_POST superglobal in that case rather than
+     * reporting an error, so the only signal left is an empty $_POST on a
+     * POST request that Content-Length says was not empty.
+     */
+    private static function exceeded_post_max_size(): bool
+    {
+        return ($_SERVER['REQUEST_METHOD'] ?? '') === 'POST'
+            && $_POST === []
+            && (int) ($_SERVER['CONTENT_LENGTH'] ?? 0) > 0;
     }
 
     private static function render_form(): void
@@ -139,8 +171,16 @@ final class CADCO_Import_Admin
      */
     private static function handle_upload(): ?array
     {
-        if (!isset($_FILES['workbook']) || ($_FILES['workbook']['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
+        if (!isset($_FILES['workbook'])) {
             self::notice('error', __('No file was uploaded.', 'cadco-theme'));
+
+            return null;
+        }
+
+        $error = (int) ($_FILES['workbook']['error'] ?? UPLOAD_ERR_NO_FILE);
+
+        if ($error !== UPLOAD_ERR_OK) {
+            self::notice('error', self::upload_error_message($error));
 
             return null;
         }
@@ -156,7 +196,17 @@ final class CADCO_Import_Admin
             return null;
         }
 
-        $dir = trailingslashit(wp_upload_dir()['basedir']) . 'cadco-imports/' . gmdate('Y-m-d-His');
+        $base_dir = trailingslashit(wp_upload_dir()['basedir']) . 'cadco-imports';
+
+        self::guard_imports_dir($base_dir);
+        self::garbage_collect_runs($base_dir);
+
+        // The timestamp alone is guessable; the user ID plus a random
+        // component makes the directory unguessable (it sits behind
+        // guard_imports_dir()'s deny-all anyway, but this is cheap and
+        // removes the timestamp collision between two operators uploading
+        // in the same second as a side effect).
+        $dir = $base_dir . '/' . gmdate('Y-m-d-His') . '-' . get_current_user_id() . '-' . wp_generate_password(12, false);
         wp_mkdir_p($dir);
 
         $path = $dir . '/workbook.xlsx';
@@ -199,6 +249,134 @@ final class CADCO_Import_Admin
         );
 
         return $result;
+    }
+
+    /**
+     * A real reason for each PHP upload error code, rather than the generic
+     * "No file was uploaded" the brief's reference implementation gave every
+     * failure including UPLOAD_ERR_INI_SIZE — which is both wrong (a file
+     * *was* uploaded; it was rejected) and unactionable.
+     */
+    private static function upload_error_message(int $code): string
+    {
+        switch ($code) {
+            case UPLOAD_ERR_INI_SIZE:
+            case UPLOAD_ERR_FORM_SIZE:
+                return __('That file is larger than this server allows. Ask your host to raise the upload limit, or upload a smaller workbook.', 'cadco-theme');
+            case UPLOAD_ERR_PARTIAL:
+                return __('The upload was interrupted partway through. Please try again.', 'cadco-theme');
+            case UPLOAD_ERR_NO_FILE:
+                return __('No file was uploaded.', 'cadco-theme');
+            case UPLOAD_ERR_NO_TMP_DIR:
+            case UPLOAD_ERR_CANT_WRITE:
+            case UPLOAD_ERR_EXTENSION:
+                return __('The server could not accept the upload. Please try again or contact your host.', 'cadco-theme');
+            default:
+                return __('The upload failed for an unknown reason. Please try again.', 'cadco-theme');
+        }
+    }
+
+    /**
+     * Make sure the archive directory cannot be browsed or executed.
+     *
+     * Every run's workbook, report, plan and (temporarily) job queue live
+     * under wp-content/uploads/cadco-imports/ — real catalogue data (SKUs,
+     * UPCs, supplier descriptions, dimensions). Nothing under uploads/ on
+     * this install carries an .htaccess of its own, so without this the
+     * whole run archive is one guessable directory name away from being
+     * readable — or, with autoindex on, listable — by anyone.
+     *
+     * Idempotent and cheap: called on every upload, so a guard file removed
+     * by hand is simply rewritten on the next run rather than staying gone.
+     */
+    private static function guard_imports_dir(string $base_dir): void
+    {
+        wp_mkdir_p($base_dir);
+
+        $index = $base_dir . '/index.php';
+
+        if (!file_exists($index)) {
+            file_put_contents($index, "<?php\n// Silence is golden.\n");
+        }
+
+        $htaccess = $base_dir . '/.htaccess';
+
+        if (!file_exists($htaccess)) {
+            file_put_contents($htaccess, "Require all denied\n");
+        }
+    }
+
+    /**
+     * Delete run directories older than a week.
+     *
+     * Every upload — including ones that fail validation — leaves a
+     * permanent copy of the workbook plus its report and plan, and an
+     * abandoned apply run leaves the (potentially large) queue file behind
+     * too, since unlink() for that file only runs when a run completes.
+     * Nothing else ever cleaned these up.
+     *
+     * Deliberately conservative: only entries whose name is exactly the
+     * shape this class creates (a timestamp, a user ID, and the random
+     * suffix from guard's sibling upload code) are even considered, and only
+     * plain files one level inside such a directory are ever unlinked — an
+     * unexpected subdirectory, a symlink, or a name that merely looks close
+     * is left alone rather than recursed into or followed. This never
+     * touches anything outside $base_dir.
+     */
+    private static function garbage_collect_runs(string $base_dir): void
+    {
+        if (!is_dir($base_dir)) {
+            return;
+        }
+
+        $entries = scandir($base_dir);
+
+        if ($entries === false) {
+            return;
+        }
+
+        $cutoff = time() - 7 * DAY_IN_SECONDS;
+
+        foreach ($entries as $entry) {
+            if (!preg_match('/^\d{4}-\d{2}-\d{2}-\d{6}-\d+-[A-Za-z0-9]{12}$/', $entry)) {
+                continue;
+            }
+
+            $path = $base_dir . '/' . $entry;
+
+            if (is_link($path) || !is_dir($path)) {
+                continue;
+            }
+
+            $mtime = filemtime($path);
+
+            if ($mtime === false || $mtime > $cutoff) {
+                continue;
+            }
+
+            $files = scandir($path);
+
+            if ($files === false) {
+                continue;
+            }
+
+            foreach ($files as $file) {
+                if ($file === '.' || $file === '..') {
+                    continue;
+                }
+
+                $file_path = $path . '/' . $file;
+
+                if (is_file($file_path) && !is_link($file_path)) {
+                    unlink($file_path);
+                }
+            }
+
+            // Fails harmlessly if an unexpected entry kept the directory
+            // from being empty — that entry was left alone above, on
+            // purpose, rather than deleted.
+            @rmdir($path);
+        }
     }
 
     private static function render_result(array $result): void
@@ -330,6 +508,10 @@ final class CADCO_Import_Admin
             <progress value="0" max="100"></progress>
             <p class="cadco-import-status"></p>
         </div>
+        <div id="cadco-import-failures" class="notice notice-error" hidden>
+            <p class="cadco-import-failures-heading"></p>
+            <ul class="cadco-import-failures-list"></ul>
+        </div>
         <?php
     }
 
@@ -412,7 +594,14 @@ final class CADCO_Import_Admin
             CADCO_Import_Applier::prepare_terms($result['rows']);
 
             $queue      = CADCO_Import_Applier::build_queue($plan);
-            $queue_file = $run['dir'] . '/queue.php.ser';
+            // Not queue.php.ser: mod_mime matches ANY dot-separated
+            // extension, not just the last, so a name ending in .php...ser
+            // is handed to the PHP handler on a large class of hosts. The
+            // file's contents are raw workbook cell values via serialize();
+            // a product name containing "<?php" would become executable at
+            // a guessable-if-not-for-guard_imports_dir() URL. .bin carries
+            // no handler mapping anywhere.
+            $queue_file = $run['dir'] . '/queue.bin';
 
             // build_queue() guarantees plain scalars and nested arrays only —
             // no objects, closures or resources — which is exactly what
