@@ -128,13 +128,13 @@ function resetCatalogue() {
 /**
  * Delete every run archive the suite leaves under
  * wp-content/uploads/cadco-imports/, plus the `cadco_import_run_{user}`
- * transient that points at them. The importer only garbage-collects the
- * directories itself after 7 days (see
- * CADCO_Import_Admin::garbage_collect_runs()) and never garbage-collects the
- * transient at all outside of a completed apply run, so a suite run that
- * uploads a workbook a dozen times would otherwise leave a dozen fresh
- * directories — real catalogue data, one guessable timestamp away from being
- * the only trace an operator has — and one dangling transient behind.
+ * transient that points at them. The importer only prunes runs itself down
+ * to the newest 20 (see CADCO_Import_Archive::prune()) and never
+ * garbage-collects the transient at all outside of a completed apply run,
+ * so a suite run that uploads a workbook a dozen times would otherwise
+ * leave a dozen fresh directories — real catalogue data, one guessable
+ * timestamp away from being the only trace an operator has — and one
+ * dangling transient behind.
  * index.php and .htaccess are left in place; they guard the directory and
  * are re-created on demand anyway.
  */

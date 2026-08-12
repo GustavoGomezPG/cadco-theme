@@ -198,7 +198,7 @@ final class CADCO_Import_Admin
             return null;
         }
 
-        $archive = CADCO_Import_Archive::create($file['name'], get_current_user_id());
+        $archive = CADCO_Import_Archive::create(get_current_user_id());
         $dir     = $archive['dir'];
 
         $path = $dir . '/workbook.xlsx';

@@ -28,8 +28,17 @@ final class CADCO_Import_Archive
      * generated in create(). Matched against the run id BEFORE it is ever
      * used to build a path, so something like "../../../etc/passwd" or a
      * trailing "/.." never reaches the filesystem.
+     *
+     * The `D` modifier matters: without it, PCRE's `$` matches at
+     * end-of-subject OR immediately before a single trailing "\n", so
+     * "…a7Kd93mQx0Lp\n" would otherwise pass. That string never reaches
+     * is_dir() looking dangerous — it just names a directory that doesn't
+     * exist — but this function is the boundary a browser-supplied run id
+     * crosses (restore, label editing), and a "validated" id that still
+     * carries a trailing newline is a liability the moment it reaches a
+     * redirect, a header, or a log line, not just a path.
      */
-    private const RUN_ID_PATTERN = '/^\d{4}-\d{2}-\d{2}-\d{6}-\d+-[A-Za-z0-9]{12}$/';
+    private const RUN_ID_PATTERN = '/^\d{4}-\d{2}-\d{2}-\d{6}-\d+-[A-Za-z0-9]{12}$/D';
 
     public static function is_valid_run_id(string $id): bool
     {
@@ -51,7 +60,7 @@ final class CADCO_Import_Archive
      *
      * @return array{run_id:string, dir:string}
      */
-    public static function create(string $filename, int $user_id): array
+    public static function create(int $user_id): array
     {
         $base_dir = self::base_dir();
 
@@ -144,7 +153,7 @@ final class CADCO_Import_Archive
 
             $manifest = self::read_manifest($path . '/manifest.json');
 
-            if ($manifest === null) {
+            if ($manifest === null || !self::is_usable_manifest($manifest)) {
                 continue;
             }
 
@@ -177,7 +186,7 @@ final class CADCO_Import_Archive
 
         $manifest = self::read_manifest($path . '/manifest.json');
 
-        if ($manifest === null) {
+        if ($manifest === null || !self::is_usable_manifest($manifest)) {
             return null;
         }
 
@@ -232,6 +241,17 @@ final class CADCO_Import_Archive
      * (scandir() returning false) means skip, never delete. This never
      * touches anything outside the archive base directory.
      *
+     * One floor sits under the count: a run younger than an hour is never
+     * deleted, no matter how far beyond $keep it falls. The old age-based
+     * collector could never touch a directory created seconds ago — it only
+     * ever looked at things a week old — but count alone has no such
+     * guarantee: if enough newer runs are uploaded in a burst, a run whose
+     * apply is still in progress (its queue.bin still being read batch by
+     * batch by ajax_batch()) could otherwise be pruned out from under
+     * itself. Age is decided from the run id's own Y-m-d-His prefix rather
+     * than filemtime() — consistent with the ordering above, and one fewer
+     * syscall that can fail.
+     *
      * @return list<string> the run ids that were actually deleted
      */
     public static function prune(int $keep = 20): array
@@ -268,8 +288,18 @@ final class CADCO_Import_Archive
 
         $to_delete = array_slice($run_ids, max(0, $keep));
         $deleted   = [];
+        $cutoff    = time() - HOUR_IN_SECONDS;
 
         foreach ($to_delete as $run_id) {
+            $created_at = self::created_at($run_id);
+
+            // Unknown age (should not happen — the id already matched the
+            // anchored pattern) is treated the same as "too young": skip
+            // rather than delete.
+            if ($created_at === null || $created_at > $cutoff) {
+                continue;
+            }
+
             $path = $base_dir . '/' . $run_id;
 
             $files = scandir($path);
@@ -303,6 +333,20 @@ final class CADCO_Import_Archive
     }
 
     /**
+     * The instant a run id's own Y-m-d-His prefix names, as a Unix
+     * timestamp — or null if it somehow doesn't parse (defensive; every
+     * caller has already matched the run id against the anchored pattern,
+     * so this is not expected to happen in practice).
+     */
+    private static function created_at(string $run_id): ?int
+    {
+        $prefix    = substr($run_id, 0, 17);
+        $timestamp = \DateTime::createFromFormat('Y-m-d-His', $prefix, new \DateTimeZone('UTC'));
+
+        return $timestamp === false ? null : $timestamp->getTimestamp();
+    }
+
+    /**
      * Read and decode a manifest.json, degrading to null rather than
      * throwing on anything that goes wrong: a missing file, a symlink, an
      * unreadable file, or JSON that does not decode to an array (malformed,
@@ -325,6 +369,21 @@ final class CADCO_Import_Archive
         $manifest = json_decode($raw, true);
 
         return is_array($manifest) ? $manifest : null;
+    }
+
+    /**
+     * A manifest that decodes to *an array* is not necessarily one worth
+     * showing — `{}` decodes fine and is still useless. This is the second
+     * half of "degrade gracefully": truncated/malformed JSON is already
+     * caught by read_manifest() returning null; this catches the
+     * valid-but-empty case, so all()/get() never hand the history screen a
+     * manifest missing the fields it actually reads.
+     *
+     * @param array<string, mixed> $manifest
+     */
+    private static function is_usable_manifest(array $manifest): bool
+    {
+        return array_key_exists('run_id', $manifest) && array_key_exists('created', $manifest);
     }
 
     /**
