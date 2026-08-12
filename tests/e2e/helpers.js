@@ -49,46 +49,80 @@ function termCount(taxonomy) {
 }
 
 /**
+ * Published/trashed product counts plus category/tag/brand term counts, in
+ * one `wp eval` rather than up to five separate `wp()` invocations. Each
+ * invocation pays a full WordPress bootstrap (~1.9s measured on this
+ * machine) before it does anything — a test that used to call
+ * productCount(), trashedCount() and termCount() back to back was paying
+ * that cost three or more times over for values a single request already
+ * has all of.
+ *
+ * @returns {{published:number,trashed:number,cats:number,tags:number,brands:number}}
+ */
+function counts() {
+	const php = `
+		echo json_encode([
+			'published' => (int) wp_count_posts('product')->publish,
+			'trashed'   => (int) wp_count_posts('product')->trash,
+			'cats'      => (int) wp_count_terms('product_cat'),
+			'tags'      => (int) wp_count_terms('product_tag'),
+			'brands'    => (int) wp_count_terms('product_brand'),
+		]);
+	`;
+
+	return JSON.parse(wp(['eval', php]));
+}
+
+/**
  * Empty the catalogue so a test starts from a known state.
  *
- * Products are force-deleted rather than trashed: a trashed product would be
- * excluded from the importer's "current products" query and silently recreated,
- * which would make the next assertion lie.
+ * One `wp eval` rather than the loop-of-`wp()`-calls this used to be. That
+ * loop was not just slow, it was slow enough to break the suite: each `wp()`
+ * invocation pays a full WordPress bootstrap (~1.9s measured on this
+ * machine), and a real import leaves roughly 35 categories + 26 tags + 6
+ * brands — around 67 terms, deleted one WP-CLI process at a time, so a
+ * single reset cost over two minutes of pure process startup before any
+ * test work happened. Called from beforeAll, afterAll and every test's own
+ * cleanup, that blew the suite's 180s-per-test budget and made unrelated
+ * *later* tests fail waiting on a locator, which looked like a product bug
+ * and was not one.
  *
- * Two passes, not one: WordPress's `post_status=any` explicitly excludes
- * 'trash' and 'auto-draft' (core behaviour, not a WP-CLI quirk) — a single
- * `--post_status=any` query leaves every trashed product behind. That was
- * latent and harmless as long as nothing in the suite ever trashed a
- * product; the trash-path E2E test does, so without this a trashed product
- * from one run survives into the next and collides with a fresh product of
- * the same SKU, which is exactly the kind of cross-run pollution this
- * function exists to prevent.
+ * Products are force-deleted (wp_delete_post($id, true)) rather than
+ * trashed: a trashed product would be excluded from the importer's "current
+ * products" query and silently recreated, which would make the next
+ * assertion lie. Both 'any' and 'trash' status are swept — WordPress's
+ * 'any' explicitly excludes 'trash' and 'auto-draft' (core behaviour), so a
+ * single-status query would leave every trashed product behind to collide
+ * by SKU with a fresh one in the next run.
+ *
+ * Also clears the `pa_*` attribute taxonomies the importer creates
+ * (wc_delete_attribute()) — the previous version of this function never
+ * touched them, so 11 attribute taxonomies and ~72 terms survived every
+ * single run.
  */
 function resetCatalogue() {
-	for (const status of ['any', 'trash']) {
-		const ids = wp(['post', 'list', '--post_type=product', `--post_status=${status}`, '--format=ids']);
-
-		if (ids) {
-			wp(['post', 'delete', ...ids.split(/\s+/), '--force']);
-		}
-	}
-
-	for (const taxonomy of ['product_cat', 'product_tag', 'product_brand']) {
-		const terms = wp(['term', 'list', taxonomy, '--field=term_id', '--format=csv'])
-			.split('\n')
-			.filter((line) => line && line !== 'term_id');
-
-		for (const id of terms) {
-			try {
-				wp(['term', 'delete', taxonomy, id]);
-			} catch (e) {
-				// The default 'uncategorized' term cannot be deleted; that is fine.
+	const php = `
+		foreach (['any', 'trash'] as $status) {
+			foreach (get_posts(['post_type' => 'product', 'post_status' => $status, 'numberposts' => -1, 'fields' => 'ids']) as $id) {
+				wp_delete_post($id, true);
 			}
 		}
-	}
+		foreach (['product_cat', 'product_tag', 'product_brand'] as $taxonomy) {
+			foreach (get_terms(['taxonomy' => $taxonomy, 'hide_empty' => false]) as $term) {
+				if ($term->slug !== 'uncategorized') {
+					wp_delete_term($term->term_id, $taxonomy);
+				}
+			}
+		}
+		foreach (wc_get_attribute_taxonomies() as $attribute) {
+			wc_delete_attribute($attribute->attribute_id);
+		}
+		foreach (['cadco_import_taxonomy_reset', 'cadco_import_redirects', 'cadco_flush_category_rules'] as $option) {
+			delete_option($option);
+		}
+	`;
 
-	wp(['option', 'delete', 'cadco_import_taxonomy_reset']);
-	wp(['option', 'delete', 'cadco_import_redirects']);
+	wp(['eval', php]);
 }
 
 /**
@@ -227,6 +261,7 @@ module.exports = {
 	productCount,
 	trashedCount,
 	termCount,
+	counts,
 	resetCatalogue,
 	cleanupUploadRuns,
 	buildFixture,

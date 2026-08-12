@@ -1,6 +1,6 @@
 const { test, expect } = require('@playwright/test');
 const {
-	productCount, trashedCount, termCount, resetCatalogue, cleanupUploadRuns,
+	productCount, counts, resetCatalogue, cleanupUploadRuns,
 	buildFixture, seedRenameSource, productIdBySku, trashedProductIdBySku, postStatus,
 	permalinkFor, withoutCapability,
 	CORRECTED, SOURCE, IMPORT_PATH,
@@ -131,8 +131,9 @@ test.describe('Product import', () => {
 		// There must be no Apply button anywhere on a failing report.
 		await expect(page.locator('#cadco-import-apply')).toHaveCount(0);
 
-		expect(productCount()).toBe(before);
-		expect(trashedCount()).toBe(0);
+		const after = counts();
+		expect(after.published).toBe(before);
+		expect(after.trashed).toBe(0);
 	});
 
 	test('a clean workbook previews a plan without writing anything', async ({ page }) => {
@@ -343,8 +344,9 @@ test.describe('Product import', () => {
 			await page.click('#cadco-import-apply');
 			await expect(page.locator('.cadco-import-status')).toContainText(/Done/i, { timeout: 30000 });
 
-			expect(productCount()).toBe(5);
-			expect(trashedCount()).toBe(0);
+			const afterFull = counts();
+			expect(afterFull.published).toBe(5);
+			expect(afterFull.trashed).toBe(0);
 
 			// Step 2: re-import with the second target row gone (the three
 			// background rows are byte-identical, so they hash the same and
@@ -363,8 +365,9 @@ test.describe('Product import', () => {
 			await page.click('#cadco-import-apply');
 			await expect(page.locator('.cadco-import-status')).toContainText(/Done/i, { timeout: 30000 });
 
-			expect(productCount()).toBe(4);
-			expect(trashedCount()).toBe(1);
+			const afterReduced = counts();
+			expect(afterReduced.published).toBe(4);
+			expect(afterReduced.trashed).toBe(1);
 
 			// Step 4: the removed product is genuinely trashed, never deleted —
 			// trash-never-delete is an explicit design rule, and a hard delete
@@ -399,9 +402,10 @@ test.describe('Product import', () => {
 
 		await expect(status).toContainText(/Done/i, { timeout: 240000 });
 
-		expect(productCount()).toBe(236);
-		expect(termCount('product_tag')).toBe(26);
-		expect(termCount('product_brand')).toBe(6);
+		const final = counts();
+		expect(final.published).toBe(236);
+		expect(final.tags).toBe(26);
+		expect(final.brands).toBe(6);
 	});
 
 	test('an imported product page renders with its specs', async ({ page }) => {
