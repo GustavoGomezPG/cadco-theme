@@ -1,0 +1,8 @@
+/tests            export-ignore
+/docs             export-ignore
+/phpunit.xml      export-ignore
+/composer.json    export-ignore
+/composer.lock    export-ignore
+/.gitattributes   export-ignore
+/.phpunit.cache   export-ignore
+/screenshot.png   -export-ignore
