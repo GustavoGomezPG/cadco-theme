@@ -47,6 +47,7 @@ final class CADCO_Import_Reader
         }
 
         $known = array_map('strtoupper', cadco_import_sheets());
+        $seen  = [];
 
         foreach ($book->getWorksheetIterator() as $sheet) {
             $title = trim($sheet->getTitle());
@@ -69,6 +70,7 @@ final class CADCO_Import_Reader
             }
 
             $name         = cadco_import_sheets()[$canonical];
+            $seen[$name]  = true;
             $headers      = self::headers($sheet);
             $missing      = array_diff(cadco_import_required_fields(), $headers);
 
@@ -88,6 +90,12 @@ final class CADCO_Import_Reader
         }
 
         $book->disconnectWorksheets();
+
+        foreach (cadco_import_sheets() as $expected) {
+            if (!isset($seen[$expected])) {
+                $errors[] = self::error('', null, '', sprintf('Expected sheet "%s" is not present in the workbook.', $expected));
+            }
+        }
 
         return ['rows' => $rows, 'errors' => $errors];
     }

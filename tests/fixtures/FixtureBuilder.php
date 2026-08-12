@@ -47,6 +47,37 @@ final class FixtureBuilder
     }
 
     /**
+     * All four canonical sheets, each holding one minimal valid row.
+     *
+     * The Reader treats a canonical sheet's absence as a Tier A error (a
+     * missing sheet would otherwise read as "every product on it was
+     * deleted" downstream), so any test that asserts a clean read needs a
+     * structurally complete workbook. This lets a test that only cares about
+     * one sheet write that one sheet and get the other three for free.
+     *
+     * Requires `cadco_import_sheets()` (from inc/import/field-map.php) to
+     * already be loaded.
+     *
+     * @param array<string, list<array<string, string>>> $overrides
+     *        Sheet name => rows. Replaces a canonical sheet's default row(s)
+     *        when the name matches one of the four; adds a sheet otherwise.
+     * @return array<string, list<array<string, string>>>
+     */
+    public static function completeSheets(array $overrides = []): array
+    {
+        $sheets = [];
+
+        foreach (cadco_import_sheets() as $i => $name) {
+            $sheets[$name] = [self::row([
+                'Model #' => sprintf('FIXTURE-%d', $i + 1),
+                'UPC#'    => sprintf('654796-90000-%d', $i + 1),
+            ])];
+        }
+
+        return $overrides + $sheets;
+    }
+
+    /**
      * A minimal valid row. Override any field by passing it in $overrides.
      */
     public static function row(array $overrides = []): array
