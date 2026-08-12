@@ -589,6 +589,7 @@ The Reader turns an XLSX file into rows keyed by header name. It is the only uni
   - Each row is `['__sheet' => string, '__row' => int, '<Header>' => string, ...]`. Every value is a trimmed string; empty cells are `''`, never `null`.
   - Each error is `['tier' => 'A', 'sheet' => string, 'row' => int|null, 'column' => string, 'message' => string]`.
   - `CADCO\Tests\Fixtures\FixtureBuilder::write(string $path, array $sheets): void` where `$sheets` is `['SHEET NAME' => [['Header' => 'value', ...], ...]]`.
+  - `CADCO\Tests\Fixtures\FixtureBuilder::completeSheets(array $overrides = []): array` — all four canonical sheets with one valid row each, so a test asserting a clean read does not have to spell out four sheets. A missing canonical sheet is a Tier A error, so any fixture expecting `errors === []` must be complete.
 
 - [ ] **Step 1: Create the fixture builder**
 
@@ -641,6 +642,34 @@ final class FixtureBuilder
 
         (new Xlsx($book))->save($path);
         $book->disconnectWorksheets();
+    }
+
+    /**
+     * All four canonical sheets, each with one valid row.
+     *
+     * The reader treats a missing canonical sheet as an error, because a
+     * partial workbook would otherwise validate cleanly and then have every
+     * product from the absent sheet trashed as "no longer in the workbook".
+     * Tests that assert a clean read therefore need a complete workbook, and
+     * this keeps that from being five lines of noise in every one of them.
+     *
+     * @param array<string, list<array<string, string>>> $overrides
+     * @return array<string, list<array<string, string>>>
+     */
+    public static function completeSheets(array $overrides = []): array
+    {
+        $sheets = [];
+        $n      = 0;
+
+        foreach (['CONVECTION OVENS', 'FAST COOKING OVENS', 'COUNTERTOP EQUIPMENT', 'FOODSERVICE CARTS'] as $name) {
+            $n++;
+            $sheets[$name] = [self::row([
+                'Model #' => 'FIXTURE-' . $n,
+                'UPC#'    => sprintf('654796-1111%d-1', $n),
+            ])];
+        }
+
+        return array_merge($sheets, $overrides);
     }
 
     /**
