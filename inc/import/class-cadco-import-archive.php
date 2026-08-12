@@ -252,9 +252,26 @@ final class CADCO_Import_Archive
      * than filemtime() — consistent with the ordering above, and one fewer
      * syscall that can fail.
      *
+     * $except_run_id (Task 8, fix round 1, finding 2) exempts one run id
+     * from deletion by this call, no matter where it falls relative to the
+     * newest $keep. A restore copies an older run's workbook into a brand
+     * new run directory, then archives that new run the same way any fresh
+     * upload is archived — including this same prune() call. At exactly
+     * $keep existing runs, restoring the oldest one would otherwise let
+     * this very call delete that same run in the same request: the new
+     * copy would survive (this call only ever deletes entries already on
+     * disk before it started), but the source just restored FROM would
+     * silently vanish, one request after being read. The exemption is
+     * scoped to this one call only — it does not pin the run against a
+     * later, unrelated prune(). Every other safety property above (pattern
+     * guard, symlink skip, one-hour floor) applies to $except_run_id
+     * exactly as it does to any other id; this only ever removes it from
+     * the deletion candidate list, it never loosens what "matches the
+     * pattern" or "is a real directory" means.
+     *
      * @return list<string> the run ids that were actually deleted
      */
-    public static function prune(int $keep = 20): array
+    public static function prune(int $keep = 20, ?string $except_run_id = null): array
     {
         $base_dir = self::base_dir();
 
@@ -287,8 +304,16 @@ final class CADCO_Import_Archive
         rsort($run_ids);
 
         $to_delete = array_slice($run_ids, max(0, $keep));
-        $deleted   = [];
-        $cutoff    = time() - HOUR_IN_SECONDS;
+
+        if ($except_run_id !== null) {
+            $to_delete = array_values(array_filter(
+                $to_delete,
+                static fn (string $run_id): bool => $run_id !== $except_run_id
+            ));
+        }
+
+        $deleted = [];
+        $cutoff  = time() - HOUR_IN_SECONDS;
 
         foreach ($to_delete as $run_id) {
             $created_at = self::created_at($run_id);

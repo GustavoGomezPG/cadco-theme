@@ -17,6 +17,18 @@ final class CADCO_Import_Admin
     public const NONCE      = 'cadco_import';
     private const CAPABILITY = 'manage_woocommerce';
 
+    /**
+     * Set by maybe_handle_restore() (admin_init, fix round 1 finding 2)
+     * when a restore request fails validation. A successful restore
+     * redirects and exits during admin_init, before this page's own chrome
+     * (the "wrap" div, the tab nav) has sent a single byte of output — but
+     * a FAILED one has to show its notice inside that chrome, at the same
+     * point handle_upload()'s own error notices appear, which does not
+     * exist yet during admin_init. This static property is how the message
+     * travels from admin_init to render(), later in the very same request.
+     */
+    private static ?string $restore_error = null;
+
     public static function init(): void
     {
         add_action('admin_menu', [self::class, 'menu']);
@@ -26,6 +38,7 @@ final class CADCO_Import_Admin
         add_action('admin_init', [self::class, 'maybe_export_redirects']);
         add_action('admin_init', [self::class, 'maybe_export_report']);
         add_action('admin_init', [self::class, 'maybe_export_archived_report']);
+        add_action('admin_init', [self::class, 'maybe_handle_restore']);
     }
 
     public static function menu(): void
@@ -171,15 +184,26 @@ final class CADCO_Import_Admin
         } elseif (isset($_POST['cadco_import_upload'])) {
             check_admin_referer(self::NONCE);
             $result = self::handle_upload();
-        } elseif (($_GET['action'] ?? '') === 'restore' && isset($_GET['run_id'])) {
-            // A restore link (History tab) carries its own nonce
-            // (wp_nonce_url(), same NONCE action as every other request on
-            // this screen) — checked here, before the run id is validated or
-            // touches the filesystem, same as the POST upload above.
-            // current_user_can(self::CAPABILITY) already gated this whole
-            // method at the top, before this branch is even reached.
-            check_admin_referer(self::NONCE);
-            $result = self::handle_restore((string) $_GET['run_id']);
+        } elseif (self::$restore_error !== null) {
+            // maybe_handle_restore() (admin_init, fix round 1 finding 2)
+            // already checked the nonce, the capability and the run id
+            // before this page's own chrome had sent a single byte of
+            // output — a successful restore redirected and exited there,
+            // long before render() was even called. This only ever shows
+            // the notice a FAILED one left behind; $result stays null, same
+            // as any other failed request on this screen, so the upload
+            // form renders underneath it.
+            CADCO_Import_View::notice('error', self::$restore_error);
+        } elseif (isset($_GET['restored_run'])) {
+            // Where a successful restore lands (fix round 1, finding 2): a
+            // read-only re-render of a run handle_restore() already
+            // archived. Reloading this URL is always safe — it re-derives
+            // the same Review from what is already on disk, and never
+            // creates another run or prunes one out from under a restore
+            // still in flight. No nonce is required, same as any other
+            // read-only admin view gated only by current_user_can() above —
+            // nothing here writes anything.
+            $result = self::handle_restored_review(self::request_string($_GET['restored_run']));
         }
 
         CADCO_Import_View::stage_bar(self::screen_state($result), self::stage_bar_context($result));
@@ -246,6 +270,25 @@ final class CADCO_Import_Admin
     }
 
     /**
+     * A request value as a string, or '' for anything that isn't one (fix
+     * round 1, finding 7). A run id normally arrives as a plain scalar, but
+     * nothing stops a request from sending `run_id[]=x`, which PHP decodes
+     * to an array — casting that with `(string)` doesn't throw, but with
+     * `display_errors` on it emits an "Array to string conversion" warning
+     * that lands in the response body ahead of JSON a client then fails to
+     * parse. Every one of this class's run-id/label entry points reads
+     * through here first, so the value handed to is_valid_run_id() (which
+     * would reject "Array" anyway) is instead never allowed to become the
+     * literal string "Array" that warning implies — it becomes '', which
+     * every one of these handlers already treats as invalid input, and
+     * `is_string()` never warns on anything it is handed.
+     */
+    private static function request_string(mixed $value): string
+    {
+        return is_string($value) ? $value : '';
+    }
+
+    /**
      * @return array{report:CADCO_Import_Report,plan:?CADCO_Import_Plan,rows:array,changes:array,filename:string}|null
      */
     private static function handle_upload(): ?array
@@ -303,6 +346,37 @@ final class CADCO_Import_Admin
     }
 
     /**
+     * The admin_init entry point for a restore request (fix round 1,
+     * finding 2). Everything that turns the browser-supplied run id into a
+     * path, or writes anything, happens inside handle_restore() — this is
+     * just the same page/action match plus nonce/capability gate every
+     * other admin_init handler in this file (maybe_export_report() and its
+     * two siblings) already uses, run here specifically because a
+     * successful restore needs to wp_safe_redirect(), and headers can only
+     * be sent before this page's own chrome (the "wrap" div, the tab nav)
+     * has echoed anything — which has already happened by the time
+     * render() (the page callback) runs. admin_init fires well before that.
+     */
+    public static function maybe_handle_restore(): void
+    {
+        if (
+            ($_GET['page'] ?? '') !== self::SLUG
+            || ($_GET['action'] ?? '') !== 'restore'
+            || !isset($_GET['run_id'])
+        ) {
+            return;
+        }
+
+        check_admin_referer(self::NONCE);
+
+        if (!current_user_can(self::CAPABILITY)) {
+            wp_die(esc_html__('You are not allowed to do that.', 'cadco-theme'));
+        }
+
+        self::handle_restore(self::request_string($_GET['run_id']));
+    }
+
+    /**
      * Restore (design spec §8.3, task brief step 3): load a previously
      * archived workbook back into the wizard at Review, as an ordinary
      * import from there — re-validated, re-planned against the catalogue as
@@ -313,8 +387,9 @@ final class CADCO_Import_Admin
      *
      * $run_id arrives from the browser (a History-tab link) — the security
      * boundary CADCO_Import_Archive::is_valid_run_id() exists for. Validated
-     * here, first, before it is used to build any path; render() has already
-     * checked the nonce and the capability before this is ever called.
+     * here, first, before it is used to build any path; maybe_handle_restore()
+     * has already checked the nonce and the capability before this is ever
+     * called.
      *
      * The archived workbook is copied into a brand new run directory and
      * run through exactly the same archive-and-track path a fresh upload
@@ -330,31 +405,57 @@ final class CADCO_Import_Admin
      * §8.4). A normal import never does this — see run_pipeline()'s
      * docblock.
      *
-     * @return array{report:CADCO_Import_Report,plan:?CADCO_Import_Plan,rows:array,changes:array,filename:string,size:int,restore:array{run_id:string,label:string,filename:string,created:string}}|null
+     * Fix round 1, finding 2: this used to render Review directly, in the
+     * same GET request that archived the new run — which made restore a
+     * side-effecting GET. WP nonces are not single-use, so a reload (F5)
+     * replayed the whole thing: another run directory, another workbook
+     * copy, another manifest, another prune(). On success this now
+     * `wp_safe_redirect()`s instead, onto a URL
+     * (`?restored_run=<the new run's own id>`) that only ever *reads* what
+     * was just archived — see handle_restored_review(). A reload of that
+     * URL cannot create anything. This method never returns a value: on
+     * failure it records the reason in self::$restore_error for render()
+     * to show later in the same request (it must not echo anything itself
+     * — called from admin_init, before this page's own chrome exists to
+     * echo a notice into); on success it redirects and exits.
+     *
+     * Fix round 1, finding 2's other half: at retention's cap (20 runs),
+     * archiving this restore's own new run could otherwise prune the very
+     * run being restored out from under it in the same request — the
+     * archived copy the operator is about to review would still exist, but
+     * the source they restored *from* would silently vanish. $run_id is
+     * passed to archive_and_track() as the run prune() must not delete this
+     * one time, no matter where it falls relative to the newest 20.
      */
-    private static function handle_restore(string $run_id): ?array
+    private static function handle_restore(string $run_id): void
     {
         if (!CADCO_Import_Archive::is_valid_run_id($run_id)) {
-            CADCO_Import_View::notice('error', __('That import run could not be found.', 'cadco-theme'));
+            self::$restore_error = __('That import run could not be found.', 'cadco-theme');
 
-            return null;
+            return;
         }
 
         $source_manifest = CADCO_Import_Archive::get($run_id);
 
         if ($source_manifest === null) {
-            CADCO_Import_View::notice('error', __('That import run could not be found.', 'cadco-theme'));
+            self::$restore_error = __('That import run could not be found.', 'cadco-theme');
 
-            return null;
+            return;
         }
 
         $source_dir  = self::archive_dir($run_id);
         $source_path = $source_dir !== null ? $source_dir . '/workbook.xlsx' : '';
 
-        if ($source_dir === null || !is_readable($source_path)) {
-            CADCO_Import_View::notice('error', __('That run\'s workbook is no longer available to restore.', 'cadco-theme'));
+        // Fix round 1, finding 3: every other file read this class
+        // introduced checks is_link() before is_readable() — this one
+        // didn't. Exploiting it needs write access to uploads/ already, but
+        // this is the one read that skipped the same guard the class's own
+        // other new methods (archive_dir(), maybe_export_archived_report())
+        // and CADCO_Import_Archive itself all apply consistently.
+        if ($source_dir === null || is_link($source_path) || !is_readable($source_path)) {
+            self::$restore_error = __('That run\'s workbook is no longer available to restore.', 'cadco-theme');
 
-            return null;
+            return;
         }
 
         $archive = CADCO_Import_Archive::create(get_current_user_id());
@@ -362,9 +463,9 @@ final class CADCO_Import_Admin
         $path    = $dir . '/workbook.xlsx';
 
         if (!copy($source_path, $path)) {
-            CADCO_Import_View::notice('error', __('The archived workbook could not be copied.', 'cadco-theme'));
+            self::$restore_error = __('The archived workbook could not be copied.', 'cadco-theme');
 
-            return null;
+            return;
         }
 
         $filename = (string) ($source_manifest['filename'] ?? basename($path));
@@ -374,17 +475,94 @@ final class CADCO_Import_Admin
         $size                = filesize($path);
         $result['size']      = $size !== false ? $size : 0;
 
-        $result = self::archive_and_track($archive, $result, $filename, true);
+        // $run_id (the source being restored) records this run's lineage
+        // (fix round 1, finding 4) — surfaced by the History table and read
+        // back by handle_restored_review() to build the restore banner —
+        // and is also the one run archive_and_track()'s prune() call must
+        // spare this time, so archiving this restore can never delete the
+        // very run it restores from (fix round 1, finding 2).
+        self::archive_and_track($archive, $result, $filename, true, $run_id);
 
-        // The restore banner (task brief step 3) names the run being
-        // restored and its date — read from the ORIGINAL manifest, not the
-        // new run just archived above, so a restore can never be mistaken
-        // for a fresh import. Escaped on output by CADCO_Import_View.
+        wp_safe_redirect(admin_url(
+            'edit.php?post_type=product&page=cadco-import&restored_run=' . rawurlencode($archive['run_id'])
+        ));
+        exit;
+    }
+
+    /**
+     * The read-only landing page handle_restore() redirects to on success
+     * (fix round 1, finding 2). $run_id here is always the NEW run
+     * handle_restore() just archived, never the source — everything this
+     * method does is a read: re-run the pipeline against that new run's own
+     * already-copied workbook.xlsx purely to rebuild the plan for display,
+     * then read the ORIGINAL run's manifest (via this run's own
+     * `restored_from`, fix round 1 finding 4) to build the restore banner.
+     * Nothing here calls CADCO_Import_Archive::create(), write_manifest()
+     * or prune() — a reload of this URL can only ever show the same Review
+     * again, never create another run or prune one out from under a
+     * restore still in flight.
+     *
+     * $run_id still arrives from the browser (the query string, however it
+     * got there) and is still validated with is_valid_run_id() before it
+     * touches anything — "we built the redirect ourselves" is not a reason
+     * to skip the check a user could otherwise bypass by typing their own
+     * URL.
+     *
+     * Only a run carrying `restored_from` is accepted: this endpoint's one
+     * job is showing what a restore produced, not becoming a general
+     * "replay any past Review" feature for an arbitrary run id.
+     *
+     * @return array{report:CADCO_Import_Report,plan:?CADCO_Import_Plan,rows:array,changes:array,filename:string,size:int,restore:array{run_id:string,label:string,filename:string,created:string}}|null
+     */
+    private static function handle_restored_review(string $run_id): ?array
+    {
+        if (!CADCO_Import_Archive::is_valid_run_id($run_id)) {
+            CADCO_Import_View::notice('error', __('That import run could not be found.', 'cadco-theme'));
+
+            return null;
+        }
+
+        $manifest = CADCO_Import_Archive::get($run_id);
+
+        if ($manifest === null || empty($manifest['restored_from']) || !is_string($manifest['restored_from'])) {
+            CADCO_Import_View::notice('error', __('That import run could not be found.', 'cadco-theme'));
+
+            return null;
+        }
+
+        $dir  = self::archive_dir($run_id);
+        $path = $dir !== null ? $dir . '/workbook.xlsx' : '';
+
+        if ($dir === null || is_link($path) || !is_readable($path)) {
+            CADCO_Import_View::notice('error', __('That run\'s workbook is no longer available.', 'cadco-theme'));
+
+            return null;
+        }
+
+        // This run was itself only ever created by handle_restore(), which
+        // always plans with trashed candidates — redisplaying it must use
+        // the same mode, or an untrash Review originally showed would
+        // silently redisplay as a create.
+        $result              = self::run_pipeline($path, CADCO_Import_Repository::trashed_products());
+        $filename            = (string) ($manifest['filename'] ?? basename($path));
+        $result['filename']  = $filename;
+        $size                = filesize($path);
+        $result['size']      = $size !== false ? $size : 0;
+
+        // The banner names the ORIGINAL run — read from ITS manifest, not
+        // this one. Degrades gracefully (rather than fatal or a broken
+        // banner) if the source has since been pruned: falls back to this
+        // run's own filename with an empty label/date, still honestly
+        // marked as a restore, just of a run that no longer has its own
+        // record to show.
+        $source_run_id = (string) $manifest['restored_from'];
+        $origin        = CADCO_Import_Archive::get($source_run_id);
+
         $result['restore'] = [
-            'run_id'   => $run_id,
-            'label'    => (string) ($source_manifest['label'] ?? ''),
-            'filename' => (string) ($source_manifest['filename'] ?? ''),
-            'created'  => (string) ($source_manifest['created'] ?? ''),
+            'run_id'   => $source_run_id,
+            'label'    => $origin !== null ? (string) ($origin['label'] ?? '') : '',
+            'filename' => $origin !== null ? (string) ($origin['filename'] ?? '') : $filename,
+            'created'  => $origin !== null ? (string) ($origin['created'] ?? '') : '',
         ];
 
         return $result;
@@ -402,12 +580,27 @@ final class CADCO_Import_Admin
      * operator approving "1 untrash" on screen would silently get a create
      * instead once the batch loop rebuilds the plan for itself.
      *
+     * $restored_from (fix round 1, findings 2 and 4) is the run id being
+     * restored, non-null only when $is_restore is true. It is written into
+     * this new run's own manifest as `restored_from` — its only consumer is
+     * handle_restored_review() and CADCO_Import_View::history(), so the
+     * lineage between a restore and its source survives even after the
+     * source itself is eventually pruned. It is also passed straight
+     * through to CADCO_Import_Archive::prune() as the one run this
+     * request's pruning must never delete: archiving a restore must not be
+     * able to prune the very run it restores from out from under itself.
+     *
      * @param array{run_id:string,dir:string} $archive
      * @param array{report:CADCO_Import_Report,plan:?CADCO_Import_Plan,rows:array,changes:array,filename:string,size:int} $result
      * @return array{report:CADCO_Import_Report,plan:?CADCO_Import_Plan,rows:array,changes:array,filename:string,size:int}
      */
-    private static function archive_and_track(array $archive, array $result, string $filename, bool $is_restore): array
-    {
+    private static function archive_and_track(
+        array $archive,
+        array $result,
+        string $filename,
+        bool $is_restore,
+        ?string $restored_from = null
+    ): array {
         $dir  = $archive['dir'];
         $path = $dir . '/workbook.xlsx';
 
@@ -447,13 +640,19 @@ final class CADCO_Import_Admin
             'counts'   => $result['plan'] instanceof CADCO_Import_Plan
                 ? $result['plan']->counts()
                 : ['create' => 0, 'update' => 0, 'rename' => 0, 'trash' => 0, 'untrash' => 0, 'skip' => 0],
-            'applied'  => false,
+            'applied'       => false,
+            'restored_from' => $restored_from,
         ]);
 
         // Count-based retention replaces the previous 7-day age-based
         // collector — a restore point should not vanish purely because a
-        // fortnight passed. Keep the newest 20 runs, delete the rest.
-        CADCO_Import_Archive::prune(20);
+        // fortnight passed. Keep the newest 20 runs, delete the rest — but
+        // never the run this archiving is itself a restore of (fix round 1,
+        // finding 2): at exactly 20 existing runs, archiving a restore of
+        // the oldest one would otherwise prune that same run in this same
+        // request, deleting the source out from under the restore that
+        // just copied it.
+        CADCO_Import_Archive::prune(20, $restored_from);
 
         // Only the workbook path and archive directory are stored here. The
         // job queue itself — built once apply starts — lives on disk inside
@@ -963,7 +1162,7 @@ final class CADCO_Import_Admin
             wp_die(esc_html__('You are not allowed to do that.', 'cadco-theme'));
         }
 
-        $dir = self::archive_dir((string) ($_GET['run_id'] ?? ''));
+        $dir = self::archive_dir(self::request_string($_GET['run_id'] ?? null));
 
         if ($dir === null) {
             wp_die(esc_html__('That import run could not be found.', 'cadco-theme'));
@@ -1014,13 +1213,17 @@ final class CADCO_Import_Admin
             wp_send_json_error(['message' => __('Not allowed.', 'cadco-theme')], 403);
         }
 
-        $run_id = (string) ($_POST['run_id'] ?? '');
+        $run_id = self::request_string($_POST['run_id'] ?? null);
 
         if (!CADCO_Import_Archive::is_valid_run_id($run_id)) {
             wp_send_json_error(['message' => __('That import run could not be found.', 'cadco-theme')], 400);
         }
 
-        $label = mb_substr(sanitize_text_field(wp_unslash((string) ($_POST['label'] ?? ''))), 0, 190);
+        $label = mb_substr(
+            sanitize_text_field(wp_unslash(self::request_string($_POST['label'] ?? null))),
+            0,
+            190
+        );
 
         if (!CADCO_Import_Archive::set_label($run_id, $label)) {
             wp_send_json_error(['message' => __('That import run could not be found.', 'cadco-theme')], 404);

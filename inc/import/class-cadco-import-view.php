@@ -211,6 +211,19 @@ final class CADCO_Import_View
      */
     public static function history(array $runs): void
     {
+        // A lookup of every currently-retained run by its own id, built
+        // once, so a restore row can show which run it restores FROM (fix
+        // round 1, finding 4) without any extra filesystem read: the source
+        // run, if it hasn't been pruned since, is already sitting somewhere
+        // else in this exact $runs list — CADCO_Import_Archive::all() reads
+        // every retained manifest in one pass regardless.
+        $by_id = [];
+
+        foreach ($runs as $run) {
+            if (isset($run['run_id']) && is_string($run['run_id'])) {
+                $by_id[$run['run_id']] = $run;
+            }
+        }
         ?>
         <table class="widefat striped cadco-import-history">
             <thead>
@@ -223,7 +236,7 @@ final class CADCO_Import_View
             </tr>
             </thead>
             <tbody>
-            <?php foreach ($runs as $run) : self::history_row($run); endforeach; ?>
+            <?php foreach ($runs as $run) : self::history_row($run, $by_id); endforeach; ?>
             </tbody>
         </table>
         <?php
@@ -236,15 +249,26 @@ final class CADCO_Import_View
      * esc_html()/esc_attr()/esc_url() here, per the brief's escaping
      * requirement and this system's own prior XSS findings.
      *
+     * Fix round 1, finding 1: a passed-but-never-applied run (Review was
+     * reached and archived, but the operator never clicked Apply, or the
+     * apply run never finished) still offers Restore — the workbook is
+     * valid and restoring from it is meaningful — but the row carries a
+     * `cadco-import-history-unapplied` class and run_result_summary()
+     * prefixes its Result with "Not applied", so what used to read as
+     * "236 created" (a past-tense fact) cannot be mistaken for one when it
+     * is really only ever what applying THIS plan would still do.
+     *
      * @param array<string, mixed> $run one manifest, shaped as CADCO_Import_Archive::all()/get() return it
+     * @param array<string, array<string, mixed>> $by_id every retained run's own manifest, keyed by run_id
      */
-    private static function history_row(array $run): void
+    private static function history_row(array $run, array $by_id): void
     {
-        $run_id = (string) ($run['run_id'] ?? '');
-        $label  = (string) ($run['label'] ?? '');
-        $passed = !empty($run['passed']);
+        $run_id  = (string) ($run['run_id'] ?? '');
+        $label   = (string) ($run['label'] ?? '');
+        $passed  = !empty($run['passed']);
+        $applied = !empty($run['applied']);
         ?>
-        <tr>
+        <tr<?php echo ($passed && !$applied) ? ' class="cadco-import-history-unapplied"' : ''; ?>>
             <td><?php echo esc_html(self::format_run_date((string) ($run['created'] ?? ''))); ?></td>
             <td>
                 <input
@@ -257,7 +281,10 @@ final class CADCO_Import_View
                 >
                 <span class="cadco-import-history-label-status" aria-live="polite"></span>
             </td>
-            <td><?php echo esc_html((string) ($run['filename'] ?? '')); ?></td>
+            <td>
+                <?php echo esc_html((string) ($run['filename'] ?? '')); ?>
+                <?php self::lineage_note($run, $by_id); ?>
+            </td>
             <td><?php echo esc_html(self::run_result_summary($run)); ?></td>
             <td>
                 <?php if ($passed) : ?>
@@ -283,12 +310,58 @@ final class CADCO_Import_View
     }
 
     /**
+     * "Restore of <date>" under a restore's own filename (fix round 1,
+     * finding 4) — makes the lineage between a restore and its source
+     * visible on the list itself, not just inside the restore banner on the
+     * one Review page that briefly followed it. Renders nothing for a run
+     * with no `restored_from` (every ordinary import).
+     *
+     * Degrades honestly rather than silently when the source has since
+     * fallen out of the retention window: still names the relationship,
+     * just without a date it no longer has anywhere to read from.
+     *
+     * @param array<string, mixed> $run
+     * @param array<string, array<string, mixed>> $by_id
+     */
+    private static function lineage_note(array $run, array $by_id): void
+    {
+        $restored_from = $run['restored_from'] ?? null;
+
+        if (!is_string($restored_from) || $restored_from === '') {
+            return;
+        }
+
+        $origin = $by_id[$restored_from] ?? null;
+        $date   = $origin !== null
+            ? self::format_run_date((string) ($origin['created'] ?? ''))
+            : __('an earlier run no longer kept', 'cadco-theme');
+        ?>
+        <br><span class="cadco-import-history-lineage">
+            <?php
+            printf(
+                /* translators: %s: the date the restored run was originally taken, or a note that it is no longer kept */
+                esc_html__('Restore of %s', 'cadco-theme'),
+                esc_html($date)
+            );
+            ?>
+        </span>
+        <?php
+    }
+
+    /**
      * The Result column's text (task brief: "counts, or the issue count for
      * a failed run"). A passed run lists every non-zero count from its
      * manifest (created/updated/renamed/trashed/restored — 'skip' is
      * deliberately excluded, an unchanged row is not a result worth
      * naming); a failed run reports its issue count instead, since it has
      * no plan at all.
+     *
+     * Fix round 1, finding 1: `applied: false` on a passed run means Review
+     * was reached but Apply was never clicked (or never finished) — those
+     * counts are only ever a forecast of what applying this plan WOULD do,
+     * not a record of what it DID. Prefixing "Not applied —" keeps that
+     * distinction on the screen instead of letting a forecast read as a
+     * past-tense fact.
      *
      * @param array<string, mixed> $run
      */
@@ -324,7 +397,14 @@ final class CADCO_Import_View
             }
         }
 
-        return $parts === [] ? __('no changes', 'cadco-theme') : implode(' · ', $parts);
+        $summary = $parts === [] ? __('no changes', 'cadco-theme') : implode(' · ', $parts);
+
+        if (empty($run['applied'])) {
+            /* translators: %s: what this run's plan would still do if applied, e.g. "236 created" or "no changes" */
+            return sprintf(__('Not applied — %s', 'cadco-theme'), $summary);
+        }
+
+        return $summary;
     }
 
     public static function upload_form(): void
@@ -546,6 +626,16 @@ final class CADCO_Import_View
      * the "escaped on output" half of the brief's label requirement; the
      * write side only sanitizes, which is not a substitute.
      *
+     * Fix round 1, finding 6: `notice-warning` alone, without `inline`, is
+     * exactly what wp-admin/js/common.js looks for to relocate a notice to
+     * just after the page header — this screen has no `.wp-header-end`, so
+     * an un-inlined notice here would jump above the tab nav and stage bar
+     * instead of staying in flow between the success notice and the counts
+     * summary where review() places it and where its margin is tuned. The
+     * `inline` class opts this banner out of that relocation, the same as
+     * WordPress's own admin screens do for any notice meant to stay exactly
+     * where it was rendered.
+     *
      * @param array{run_id:string, label:string, filename:string, created:string} $restore
      */
     private static function restore_banner(array $restore): void
@@ -555,7 +645,7 @@ final class CADCO_Import_View
         $name     = $label !== '' ? $label : $filename;
         $date     = self::format_run_date((string) $restore['created']);
         ?>
-        <div class="notice notice-warning cadco-import-restore-banner">
+        <div class="notice notice-warning inline cadco-import-restore-banner">
             <p>
                 <strong><?php esc_html_e('Restoring a previous import — this is not a fresh upload.', 'cadco-theme'); ?></strong>
             </p>

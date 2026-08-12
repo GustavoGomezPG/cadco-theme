@@ -191,7 +191,22 @@
 							return;
 						}
 
-						saved = value;
+						// The server sanitizes the label on the way in
+						// (CADCO_Import_Admin::ajax_label() —
+						// sanitize_text_field(), length-capped) and echoes
+						// back what it actually stored. Fix round 1,
+						// finding 5: this used to keep showing the raw
+						// typed value regardless, so a label containing
+						// markup that got stripped server-side (e.g. a
+						// "<script>" a prior report round confirmed gets
+						// removed) still displayed as if it had been saved
+						// verbatim, until the next full page load.
+						var stored = (result.data && typeof result.data.label === 'string')
+							? result.data.label
+							: value;
+
+						input.value = stored;
+						saved = stored;
 
 						if (status) { status.textContent = labelConfig.i18n.labelSaved; }
 					})

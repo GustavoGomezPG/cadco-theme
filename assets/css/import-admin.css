@@ -219,6 +219,27 @@
 	color: #646970;
 }
 
+/* Fix round 1, finding 4: names which earlier run a restore was taken from,
+   directly under its filename. */
+.cadco-import-history-lineage {
+	display: inline-block;
+	margin-top: .2em;
+	font-size: 12px;
+	color: #646970;
+}
+
+/* Fix round 1, finding 1: a passed-but-never-applied run's Result column is
+   only ever a forecast, not a fact — the whole row reads quieter than an
+   applied one so it cannot be mistaken for one at a glance, on top of
+   run_result_summary()'s own "Not applied —" text prefix. */
+.cadco-import-history-unapplied td {
+	color: #646970;
+}
+
+.cadco-import-history-unapplied td:first-child {
+	border-left: 3px solid #dba617; /* WordPress's own admin "pending/warning" amber */
+}
+
 /* ==========================================================================
    Restore banner (design spec §8.3): "a restore can never be mistaken for
    a fresh import" — the one place this screen deliberately breaks its own
