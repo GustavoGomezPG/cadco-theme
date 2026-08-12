@@ -14,5 +14,6 @@ return array(
     'DeepCopy\\' => array($vendorDir . '/myclabs/deep-copy/src/DeepCopy'),
     'Composer\\Pcre\\' => array($vendorDir . '/composer/pcre/src'),
     'Complex\\' => array($vendorDir . '/markbaker/complex/classes/src'),
+    'CADCO\\Tests\\Fixtures\\' => array($baseDir . '/tests/fixtures'),
     'CADCO\\Tests\\' => array($baseDir . '/tests'),
 );

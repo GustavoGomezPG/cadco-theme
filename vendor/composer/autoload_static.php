@@ -34,6 +34,7 @@ class ComposerStaticInit41845e9252827fa2c372045a460b4a3f
         array (
             'Composer\\Pcre\\' => 14,
             'Complex\\' => 8,
+            'CADCO\\Tests\\Fixtures\\' => 21,
             'CADCO\\Tests\\' => 12,
         ),
     );
@@ -71,6 +72,10 @@ class ComposerStaticInit41845e9252827fa2c372045a460b4a3f
         array (
             0 => __DIR__ . '/..' . '/markbaker/complex/classes/src',
         ),
+        'CADCO\\Tests\\Fixtures\\' => 
+        array (
+            0 => __DIR__ . '/../..' . '/tests/fixtures',
+        ),
         'CADCO\\Tests\\' => 
         array (
             0 => __DIR__ . '/../..' . '/tests',
@@ -78,6 +83,7 @@ class ComposerStaticInit41845e9252827fa2c372045a460b4a3f
     );
 
     public static $classMap = array (
+        'CADCO\\Tests\\Fixtures\\FixtureBuilder' => __DIR__ . '/../..' . '/tests/fixtures/FixtureBuilder.php',
         'Complex\\Complex' => __DIR__ . '/..' . '/markbaker/complex/classes/src/Complex.php',
         'Complex\\Exception' => __DIR__ . '/..' . '/markbaker/complex/classes/src/Exception.php',
         'Complex\\Functions' => __DIR__ . '/..' . '/markbaker/complex/classes/src/Functions.php',

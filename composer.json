@@ -12,7 +12,8 @@
     },
     "autoload-dev": {
         "psr-4": {
-            "CADCO\\Tests\\": "tests/"
+            "CADCO\\Tests\\": "tests/",
+            "CADCO\\Tests\\Fixtures\\": "tests/fixtures/"
         }
     },
     "config": {

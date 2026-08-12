@@ -6,6 +6,7 @@ $vendorDir = dirname(__DIR__);
 $baseDir = dirname($vendorDir);
 
 return array(
+    'CADCO\\Tests\\Fixtures\\FixtureBuilder' => $baseDir . '/tests/fixtures/FixtureBuilder.php',
     'Complex\\Complex' => $vendorDir . '/markbaker/complex/classes/src/Complex.php',
     'Complex\\Exception' => $vendorDir . '/markbaker/complex/classes/src/Exception.php',
     'Complex\\Functions' => $vendorDir . '/markbaker/complex/classes/src/Functions.php',
