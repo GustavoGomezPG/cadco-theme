@@ -556,3 +556,55 @@ Both workflows strip development files (`docs/`, `README.md`, `.gitignore`, `.gi
 3. **Set the trigger branch.** The development workflow triggers on pushes to `development`. If your branch is named differently (e.g., `staging`), update the `branches:` value in the workflow file.
 
 4. **Trigger a deployment.** Push to `development` to deploy to the dev environment. To deploy to production, go to Actions → "Deploy to WP Engine Production" → "Run workflow".
+
+---
+
+## Product import
+
+The catalogue is driven by a single Excel workbook. `inc/import/` parses it,
+reports every inconsistency, previews what it would change, and applies nothing
+until the workbook is clean.
+
+Run it from **Products → Import**.
+
+### The pipeline
+
+```
+Reader → Normaliser → Validator → Planner → Applier
+```
+
+The dry run is not a separate mode — it is the pipeline stopping after the
+Planner, so the preview and the applied result come from one code path and
+cannot drift apart. The first four units are pure PHP and are unit-tested with
+no WordPress loaded (`composer test`).
+
+### Rules worth knowing
+
+- **Columns are read by header name, never by position.** Two sheets in the
+  same workbook disagree about column order, and the previous revision had
+  different sheets entirely. Reordering columns is safe; renaming them is not.
+- **Sheets beginning with `_` are ignored,** so the workbook can carry its own
+  correction log. Any other unrecognised sheet is an error.
+- **Validation is all-or-nothing.** Any problem in any tier blocks the whole
+  import. This is deliberate: the catalogue is only as trustworthy as the sheet.
+- **`Model #` is the key; `UPC#` detects renames.** A row whose model number is
+  new but whose UPC matches an existing product is offered as a rename, which
+  preserves the post ID, URL and images. Renames are never applied without
+  being ticked.
+- **Re-running an unchanged workbook writes nothing.** Each product stores a
+  hash of its source row.
+- **Categories are fully derived** from the sheet name and the `Type` column.
+  A comma-separated `Type` places a product in several sub-categories.
+- **Removed products are trashed, never deleted.**
+
+### Rewrite rules
+
+`inc/cadco-woocommerce.php` registers one literal rewrite rule per category
+term and flushes on term changes. The applier therefore does all taxonomy work
+first and flushes **once** at the end of a run, rather than 30+ times.
+
+### Out of scope
+
+Images, spec sheets and manuals are not imported — most links in the workbook
+point to SharePoint locations requiring a CADCO login. The URLs are stored as
+`_cadco_*` meta so a later phase can consume them.

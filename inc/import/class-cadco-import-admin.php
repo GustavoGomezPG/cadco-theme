@@ -22,6 +22,7 @@ final class CADCO_Import_Admin
         add_action('admin_menu', [self::class, 'menu']);
         add_action('admin_enqueue_scripts', [self::class, 'assets']);
         add_action('wp_ajax_cadco_import_batch', [self::class, 'ajax_batch']);
+        add_action('admin_init', [self::class, 'maybe_export_redirects']);
     }
 
     public static function menu(): void
@@ -450,6 +451,17 @@ final class CADCO_Import_Admin
             <li><strong><?php echo (int) $counts['skip']; ?></strong> <?php esc_html_e('unchanged', 'cadco-theme'); ?></li>
         </ul>
 
+        <?php if (get_option('cadco_import_redirects', []) !== []) : ?>
+            <p>
+                <a class="button" href="<?php echo esc_url(wp_nonce_url(
+                    admin_url('edit.php?post_type=product&page=cadco-import&action=export-redirects'),
+                    self::NONCE
+                )); ?>">
+                    <?php esc_html_e('Download redirect map', 'cadco-theme'); ?>
+                </a>
+            </p>
+        <?php endif; ?>
+
         <?php if ($plan->renames() !== []) : ?>
             <h2><?php esc_html_e('Renames', 'cadco-theme'); ?></h2>
             <p class="description">
@@ -652,5 +664,43 @@ final class CADCO_Import_Admin
         }
 
         wp_send_json_success($batch);
+    }
+
+    /**
+     * Download the legacy-URL redirect map as CSV.
+     *
+     * Renamed products keep their post ID and their page, but their address
+     * changes with the model number. This map pairs the old model number with
+     * the new URL so the redirects can be loaded into Yoast or the server
+     * config — the importer deliberately does not create them itself, because
+     * redirect handling is the SEO plugin's job on this site.
+     */
+    public static function maybe_export_redirects(): void
+    {
+        if (($_GET['page'] ?? '') !== self::SLUG || ($_GET['action'] ?? '') !== 'export-redirects') {
+            return;
+        }
+
+        check_admin_referer(self::NONCE);
+
+        if (!current_user_can(self::CAPABILITY)) {
+            wp_die(esc_html__('You are not allowed to do that.', 'cadco-theme'));
+        }
+
+        $map    = (array) get_option('cadco_import_redirects', []);
+        $handle = fopen('php://output', 'w');
+
+        nocache_headers();
+        header('Content-Type: text/csv; charset=utf-8');
+        header('Content-Disposition: attachment; filename=cadco-redirects.csv');
+
+        fputcsv($handle, ['Old model number', 'New URL'], ',', '"', '');
+
+        foreach ($map as $old => $url) {
+            fputcsv($handle, [$old, $url], ',', '"', '');
+        }
+
+        fclose($handle);
+        exit;
     }
 }
