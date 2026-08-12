@@ -213,7 +213,19 @@ final class CADCO_Import_Applier
      */
     public static function write_product(array $row, ?int $post_id): int
     {
-        $sku     = trim((string) ($row['Model #'] ?? ''));
+        // The validator's character-set rule (Tier A) is the honest fix for
+        // a bad Model # — it is the primary key, so silently altering it
+        // would re-key a product without anyone noticing, and blocking is
+        // more appropriate than stripping. This is defence in depth for
+        // that, not a substitute: write_product() is a public static that
+        // can be, and in Task 10's own verification has been, called
+        // directly with a row that never went through the validator, so it
+        // must not depend on that rule having run. WooCommerce's own SKU
+        // setter does not constrain the character set the way its GTIN
+        // setter does, so an unstripped tag here would reach the front end
+        // via WooCommerce core's own <span class="sku"> block markup, which
+        // renders the SKU unescaped.
+        $sku     = wp_strip_all_tags(trim((string) ($row['Model #'] ?? '')));
         $product = $post_id === null ? new WC_Product_Simple() : wc_get_product($post_id);
 
         if (!$product instanceof WC_Product) {

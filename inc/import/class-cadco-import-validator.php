@@ -75,6 +75,27 @@ final class CADCO_Import_Validator
                     'Rewrite it as NNNNNN-NNNNN-N, for example 654796-52113-5.'
                 ));
             }
+
+            // Model # is the primary key: it becomes the SKU, the slug, and
+            // the identity the planner matches products by. Silently
+            // altering it (the way a stray character gets stripped from a
+            // product name) would re-key a product without anyone noticing,
+            // so a bad value blocks instead. The character set is generous
+            // — every one of the 238 real model numbers across both
+            // workbooks uses only letters, digits, spaces and ()+-  — with
+            // enough headroom that a legitimate new model number should
+            // never trip it.
+            if ($model !== '' && preg_match('/^[A-Za-z0-9 .()+\-\/]+$/', $model) !== 1) {
+                $report->add(new CADCO_Import_Issue(
+                    'A',
+                    self::sheet($row),
+                    self::row_no($row),
+                    'Model #',
+                    $model,
+                    'Model # contains characters outside the safe set.',
+                    'Use only letters, numbers, spaces, and . ( ) + - /'
+                ));
+            }
         }
 
         foreach ($models as $model => $matching) {

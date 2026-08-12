@@ -253,6 +253,35 @@ final class ValidatorTest extends TestCase
         self::assertSame('Certifications', $b[0]->column);
     }
 
+    public function test_a_model_number_with_markup_is_tier_a(): void
+    {
+        // Model # is the primary key: it becomes the SKU, and WooCommerce's
+        // own <span class="sku"> block renders it unescaped, so a script
+        // tag here reaches the front end unmodified — the same class of
+        // vulnerability as an unsanitised product name.
+        $report = \CADCO_Import_Validator::validate([
+            self::row(['Model #' => 'SKU<script>alert(1)</script>', 'UPC#' => '654796-11111-1']),
+        ]);
+
+        $a = $report->by_tier()['A'] ?? [];
+
+        self::assertNotSame([], $a);
+        self::assertSame('Model #', $a[0]->column);
+        self::assertStringContainsString('SKU<script>alert(1)</script>', $a[0]->found);
+    }
+
+    public function test_a_real_model_number_with_parentheses_passes(): void
+    {
+        // 'CPG-10FC(220)' is one of the six real parenthesised model
+        // numbers across both workbooks — the safe character set has to
+        // admit these or the rule would block genuine data.
+        $report = \CADCO_Import_Validator::validate([
+            self::row(['Model #' => 'CPG-10FC(220)', 'UPC#' => '654796-11111-1']),
+        ]);
+
+        self::assertTrue($report->passed(), self::describe($report));
+    }
+
     public function test_every_issue_names_sheet_row_and_a_fix(): void
     {
         $report = \CADCO_Import_Validator::validate([self::row(['Weight' => ''])]);
