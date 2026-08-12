@@ -561,22 +561,121 @@ Both workflows strip development files (`docs/`, `README.md`, `.gitignore`, `.gi
 
 ## Product import
 
-The catalogue is driven by a single Excel workbook. `inc/import/` parses it,
-reports every inconsistency, previews what it would change, and applies nothing
-until the workbook is clean.
+The catalogue is driven by a single Excel workbook — it is the single source of
+truth. `inc/import/` parses it, reports every inconsistency, previews exactly
+what it would change, and applies nothing until the whole workbook is clean.
 
 Run it from **Products → Import**.
 
 ### The pipeline
 
 ```
-Reader → Normaliser → Validator → Planner → Applier
+Reader → Normaliser → Validator → Planner → Applier → Reporter
 ```
 
-The dry run is not a separate mode — it is the pipeline stopping after the
-Planner, so the preview and the applied result come from one code path and
-cannot drift apart. The first four units are pure PHP and are unit-tested with
-no WordPress loaded (`composer test`).
+Reader, Normaliser, Validator and Planner are pure PHP with no WordPress
+dependency, and are unit-tested directly (`composer test`). The Reporter is
+the admin screen and archive layer (`CADCO_Import_Admin`, `CADCO_Import_View`,
+`CADCO_Import_Archive`) that renders the Validator's report and the Planner's
+plan to the browser and writes them to the run archive; the Applier is the
+only unit that touches the database.
+
+A **dry run is not a separate mode** — it is this same pipeline stopping after
+the Planner, so the preview shown on Review and the result of clicking Apply
+come from one code path and cannot drift apart. Whatever Review shows is
+exactly what Apply will do.
+
+`Model #` is the primary key: it becomes the SKU, the slug, and the identity
+every later run matches a product by. `UPC#` never identifies a product on its
+own — it only corroborates a row whose `Model #` doesn't match anything, so a
+row can be recognised as a *rename* of an existing product rather than a new
+one.
+
+### Validation is all-or-nothing
+
+Every row is checked against three tiers, and **any issue in any tier blocks
+the entire import** — nothing is written until the whole workbook passes:
+
+| Tier | Checks | Example |
+|---|---|---|
+| A — Identity | `Model #` and `UPC#` are present, well-formed and unique; `Parent Product` names a model that exists in the workbook | A duplicated `Model #`, a UPC not in `NNNNNN-NNNNN-N` format |
+| B — Consistency | The same real-world value isn't spelled several different ways across rows | `MET (=UL & CSA)` vs `MET (= UL & CSA)`, `Grey` vs `Gray` |
+| C — Completeness | Required columns are filled in | A blank `Product Name` |
+
+`Model #` also carries its own character rule under Tier A: only letters,
+digits, spaces and `. ( ) + - /` are allowed. This exists because `Model #`
+becomes the WooCommerce SKU, and WooCommerce's block-based product templates
+render the SKU into their markup **unescaped** — so a bad character in a model
+number is a good reason to reject the row outright, not something to quietly
+sanitise on the way in.
+
+### Untrusted input
+
+Workbook text that becomes site content — product name, short description,
+`Model #`/SKU — is run through `wp_strip_all_tags()` before it is written.
+That means markup is **stripped outright**, not merely escaped on output: a
+product name containing a `<script>` tag has the tag removed from the stored
+value itself, because a product name is never legitimately HTML.
+
+### The three-stage wizard
+
+The admin screen is a wizard with three stages — **Upload → Review → Apply** —
+shown as a stage bar across the top of the screen, each stage carrying its own
+status and a subtitle of real figures (rows read, issues found), never static
+copy. The primary action button sits beside the stage bar and is only ever
+real and clickable once Review is clean; on every other state it's a disabled
+button that says why, not a greyed-out one with no explanation.
+
+Review has a change-navigator sidebar — every section, its count, always on
+screen, with a muted (zero-count) section still present but not linked as
+live — and eight sections:
+
+| Section | Shows |
+|---|---|
+| Workbook | The uploaded file, rows read, and the validation report if there is one |
+| Categories | New product categories/tags/brands as a tree (parents, children, and how many products land in each child); removed terms; and a loud in-use warning for any term the workbook no longer implies but which still holds products — that term is never listed as a removal, because the Applier will not remove it |
+| Products | Products being created |
+| Updates | Products being updated, with a per-field diff for each |
+| Renames | Rows matched to an existing product by `UPC#` rather than `Model #` |
+| Removals | Products being trashed because no row in the workbook matches them |
+| Cleaned up | Normalisation changes made to the data on the way in |
+| Redirects | The full redirect map that will exist after applying, keyed by path, with a download link |
+
+### History, archiving and restore
+
+Every uploaded workbook — including one that fails validation — is archived
+under `wp-content/uploads/cadco-imports/<run-id>/` as `workbook.xlsx`,
+`report.csv`, `plan.json` and `manifest.json` (the manifest records what the
+run was and whether it was ever applied). The directory is locked down with
+its own `index.php` and `.htaccess` so the archive — real SKUs, UPCs and
+supplier data — can't be browsed or listed. Retention keeps the **20** most
+recent runs; older ones are pruned automatically, except that a run less than
+an hour old is never pruned regardless of count.
+
+The **History** tab lists every retained run, newest first, each with an
+editable free-text label that persists across page loads.
+
+**Restore** re-applies an archived workbook. It is **not a replay of the saved
+`plan.json`** — the archived workbook is re-read, re-validated and re-planned
+against the catalogue exactly as it stands right now, through the same
+pipeline as any other upload. That is what lets Review show the operator
+precisely what the restore will do before they commit to it, including
+picking up any product changes made since the run being restored. Restore is
+implemented as Post/Redirect/Get: the restore request creates a brand-new
+archived run (with its own id, linked back to the run it restores from) and
+redirects to a read-only Review of that new run, carrying a banner naming the
+original run and its date so a restore can never be mistaken for a fresh
+import.
+
+In restore mode only, a workbook row that matches no live product is looked
+up among **trashed** products — by `Model #`/SKU first, then by `UPC#` — and
+if found, that trashed product is **untrashed and reused in place**, keeping
+its original post ID and attachments, rather than being recreated as a new
+product. Outside of a restore, a product a human trashed on purpose stays
+trashed on the next ordinary import.
+
+Products are always trashed rather than deleted, so a removal is recoverable
+even without a formal restore.
 
 ### Rules worth knowing
 
@@ -585,17 +684,16 @@ no WordPress loaded (`composer test`).
   different sheets entirely. Reordering columns is safe; renaming them is not.
 - **Sheets beginning with `_` are ignored,** so the workbook can carry its own
   correction log. Any other unrecognised sheet is an error.
-- **Validation is all-or-nothing.** Any problem in any tier blocks the whole
-  import. This is deliberate: the catalogue is only as trustworthy as the sheet.
-- **`Model #` is the key; `UPC#` detects renames.** A row whose model number is
-  new but whose UPC matches an existing product is offered as a rename, which
-  preserves the post ID, URL and images. Renames are never applied without
-  being ticked.
 - **Re-running an unchanged workbook writes nothing.** Each product stores a
-  hash of its source row.
+  content hash of its source row (`_cadco_import_hash`); per-field diffs shown
+  on Review come from a stored snapshot of the previous import
+  (`_cadco_import_snapshot`).
 - **Categories are fully derived** from the sheet name and the `Type` column.
   A comma-separated `Type` places a product in several sub-categories.
-- **Removed products are trashed, never deleted.**
+- **Redirects have two independent sources.** The legacy half of the map is
+  derived at export time from each product's `_cadco_legacy_url` meta; the
+  rename half is persisted across runs in the `cadco_import_redirects` option.
+  The exported CSV is keyed by path, never by model number.
 
 ### Rewrite rules
 
@@ -613,14 +711,42 @@ Images, spec sheets and manuals are not imported — most links in the workbook
 point to SharePoint locations requiring a CADCO login. The URLs are stored as
 `_cadco_*` meta so a later phase can consume them.
 
+### The `vendor/` directory is committed on purpose
+
+`composer.json` requires `phpoffice/phpspreadsheet` (the Reader's dependency)
+as a real, non-dev requirement, and `vendor/` is checked into this repository
+— not gitignored — because the WP Engine deploy has **no build step**: it
+rsyncs the theme directory as-is, so anything the import needs at runtime has
+to already be sitting in the tree it deploys from.
+
+That makes it your responsibility, whenever you touch `composer.json` or
+`composer.lock`, to install with dev dependencies excluded and the autoloader
+optimised before committing:
+
+```bash
+composer install --no-dev -o
+```
+
+Running a plain `composer install` (or `composer update`) pulls in
+`phpunit/phpunit` and its dependencies under `vendor/`, since they're declared
+in `require-dev` for local testing. **Never commit those** — PHPUnit has no
+business shipping to production. Concretely: **`git add -A` (or `git add
+vendor`) is unsafe in this repo whenever dev dependencies are installed
+locally** — it will happily stage `vendor/phpunit/`, `vendor/sebastian/`, and
+the rest alongside your change. Stage `vendor/` paths individually, or run
+`composer install --no-dev -o` immediately before staging so the dev packages
+simply aren't on disk to be added.
+
 ### Running the tests
 
 ```bash
-composer test        # PHP units: reader, normaliser, validator, planner
-npm run test:e2e      # Browser: upload, report, dry run, apply, product page
+composer test        # PHP units, no WordPress required (~116 tests, ~287 assertions)
+npm run test:e2e     # Browser: wizard, review, apply, history, restore (~29 tests, ~6 minutes)
 ```
 
-`composer test` covers the four pure units with no WordPress loaded. It cannot
+`composer test` covers the pure pipeline units — Reader, Normaliser,
+Validator, Planner, Plan and Report — plus the Archive and its run-id
+security boundary, with no WordPress loaded. It cannot
 see the parts of the system that only exist inside a real HTTP request — file
 uploads, nonces travelling through a real cookie session, the capability gate,
 whether the admin screen's JS actually gets enqueued, or whether the browser
