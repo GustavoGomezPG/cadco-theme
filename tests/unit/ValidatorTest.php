@@ -196,6 +196,63 @@ final class ValidatorTest extends TestCase
         self::assertTrue($na->passed(), self::describe($na));
     }
 
+    public function test_a_numeric_model_number_does_not_crash_the_validator(): void
+    {
+        // 'Model #' is used as an array key internally, and PHP coerces a
+        // canonical-integer string key back to int. Left uncast, that int
+        // reaches CADCO_Import_Issue's `string $found` parameter and is
+        // fatal under strict_types.
+        $report = \CADCO_Import_Validator::validate([
+            self::row(['Model #' => '1418', 'UPC#' => '654796-11111-1']),
+            self::row(['Model #' => '1418', 'UPC#' => '654796-22222-2', '__sheet' => 'FAST COOKING OVENS']),
+        ]);
+
+        $a = $report->by_tier()['A'] ?? [];
+
+        self::assertNotSame([], $a);
+        self::assertStringContainsString('1418', $a[0]->found);
+    }
+
+    public function test_a_numeric_consistency_value_does_not_crash_the_validator(): void
+    {
+        // Same coercion hazard as the Model # case, reached through
+        // array_keys() on a Tier B column's distinct spellings.
+        $report = \CADCO_Import_Validator::validate([
+            self::row(['Model #' => 'A', 'UPC#' => '654796-11111-1', 'Color' => '2024']),
+            self::row(['Model #' => 'B', 'UPC#' => '654796-22222-2', 'Color' => 'Beige']),
+        ]);
+
+        self::assertTrue($report->passed(), self::describe($report));
+    }
+
+    public function test_literal_na_in_a_required_field_is_tier_c(): void
+    {
+        // Required fields cannot opt out with 'n/a' — that is what
+        // distinguishes them from the na-acceptable columns.
+        $report = \CADCO_Import_Validator::validate([self::row(['Weight' => 'n/a'])]);
+
+        $c = $report->by_tier()['C'] ?? [];
+
+        self::assertNotSame([], $c);
+        self::assertSame('Weight', $c[0]->column);
+    }
+
+    public function test_a_variant_inside_a_multi_value_column_is_tier_b(): void
+    {
+        // 'Certifications' holds several comma-separated values in one
+        // cell. A variant of one of those values must be caught even when
+        // the other values in the cell differ between rows.
+        $report = \CADCO_Import_Validator::validate([
+            self::row(['Model #' => 'A', 'UPC#' => '654796-11111-1', 'Certifications' => 'NSF, MET (=UL & CSA)']),
+            self::row(['Model #' => 'B', 'UPC#' => '654796-22222-2', 'Certifications' => 'ETL, MET (= UL & CSA)']),
+        ]);
+
+        $b = $report->by_tier()['B'] ?? [];
+
+        self::assertNotSame([], $b);
+        self::assertSame('Certifications', $b[0]->column);
+    }
+
     public function test_every_issue_names_sheet_row_and_a_fix(): void
     {
         $report = \CADCO_Import_Validator::validate([self::row(['Weight' => ''])]);

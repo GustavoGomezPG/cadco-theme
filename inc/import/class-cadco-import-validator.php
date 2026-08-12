@@ -84,7 +84,7 @@ final class CADCO_Import_Validator
                     self::sheet($matching[0]),
                     self::row_no($matching[0]),
                     'Model #',
-                    $model,
+                    (string) $model,
                     sprintf('Model # appears %d times (%s).', count($matching), self::locations($matching)),
                     'List each product once. Use a comma-separated Type for several sub-categories instead of repeating the row.'
                 ));
@@ -134,20 +134,23 @@ final class CADCO_Import_Validator
      */
     private static function tier_b(array $rows, CADCO_Import_Report $report): void
     {
+        $multi_value = cadco_import_multi_value_attributes();
+
         foreach (cadco_import_consistency_columns() as $column) {
             $spellings = [];
 
             foreach ($rows as $row) {
-                $values = $column === 'Specialties'
-                    ? CADCO_Import_Normaliser::bullets(self::get($row, $column))
-                    : array_filter([self::get($row, $column)], static fn ($v) => $v !== '');
-
-                foreach ($values as $value) {
+                foreach (self::column_values($row, $column, $multi_value) as $value) {
                     $spellings[$value] ??= $row;
                 }
             }
 
-            foreach (self::variant_groups(array_keys($spellings)) as $group) {
+            // array_keys() coerces a canonical-integer spelling (e.g. a bare
+            // '2024') to int; strval() puts it back so every downstream
+            // string operation gets a string, not an int under strict_types.
+            $distinct = array_map('strval', array_keys($spellings));
+
+            foreach (self::variant_groups($distinct) as $group) {
                 $first = (array) $spellings[$group[0]];
 
                 $report->add(new CADCO_Import_Issue(
@@ -161,6 +164,51 @@ final class CADCO_Import_Validator
                 ));
             }
         }
+    }
+
+    /**
+     * The distinct values one cell contributes to a Tier B column.
+     *
+     * 'Specialties' is one tag per line, split with the normaliser's own
+     * bullet rules. Columns declared in cadco_import_multi_value_attributes()
+     * (currently just 'Certifications') hold several comma- or
+     * semicolon-separated values in one cell — the applier splits them into
+     * separate attribute terms, so a variant hiding inside one of those
+     * parts is exactly the kind of thing this tier exists to catch, and
+     * comparing the cell whole would miss it whenever a sibling value
+     * differs. Every other column is a single whole-cell value.
+     *
+     * @param array<string, mixed> $row
+     * @param list<string>         $multi_value cadco_import_multi_value_attributes()
+     * @return list<string>
+     */
+    private static function column_values(array $row, string $column, array $multi_value): array
+    {
+        if ($column === 'Specialties') {
+            return CADCO_Import_Normaliser::bullets(self::get($row, $column));
+        }
+
+        $raw = self::get($row, $column);
+
+        if ($raw === '') {
+            return [];
+        }
+
+        if (!in_array($column, $multi_value, true)) {
+            return [$raw];
+        }
+
+        $parts = [];
+
+        foreach (preg_split('/[,;]/', $raw) as $part) {
+            $part = trim((string) preg_replace('/\s+/u', ' ', $part));
+
+            if ($part !== '') {
+                $parts[] = $part;
+            }
+        }
+
+        return $parts;
     }
 
     /**
@@ -188,6 +236,13 @@ final class CADCO_Import_Validator
      * 'metulcsa' to 'etlulcsa'. The digits rule is what stops 'NEMA 5-15P'
      * matching 'NEMA 6-15P'. A report that cries wolf is a report CADCO stops
      * reading, so false positives cost more here than misses.
+     *
+     * A value only ever joins the first group that claims it, so a chain
+     * A~B, B~C, A≁C reports [A, B] and leaves C for the next run rather than
+     * merging all three into one group. That is acceptable under the
+     * all-or-nothing policy — any single issue blocks the import, so C
+     * surfaces the moment CADCO fixes A and B and re-uploads — but it does
+     * mean a report can under-count on a single pass.
      *
      * @param list<string> $values distinct spellings
      * @return list<list<string>>
@@ -227,8 +282,16 @@ final class CADCO_Import_Validator
         $ka = self::fuzzy_key($a);
         $kb = self::fuzzy_key($b);
 
-        if ($ka === '' || $kb === '' || $ka === $kb) {
-            return $ka === $kb;
+        if ($ka === '' || $kb === '') {
+            // A punctuation-only value (e.g. '--') reduces to an empty
+            // fuzzy key. An empty key never counts as a match, including
+            // against another empty key — '--' and '-' are not variants of
+            // the same value, they are both simply not text.
+            return false;
+        }
+
+        if ($ka === $kb) {
+            return true;
         }
 
         if (self::digits($a) !== self::digits($b)) {
@@ -262,7 +325,12 @@ final class CADCO_Import_Validator
 
         foreach ($rows as $row) {
             foreach ($required as $column) {
-                if (self::get($row, $column) === '') {
+                $value = self::get($row, $column);
+
+                // A required field cannot opt out with 'n/a' — that is what
+                // makes it required rather than na-acceptable. Checked
+                // case-insensitively because the workbook is hand-typed.
+                if ($value === '' || strcasecmp($value, 'n/a') === 0) {
                     $report->add(new CADCO_Import_Issue(
                         'C',
                         self::sheet($row),
