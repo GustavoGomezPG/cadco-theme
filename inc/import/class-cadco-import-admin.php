@@ -22,8 +22,10 @@ final class CADCO_Import_Admin
         add_action('admin_menu', [self::class, 'menu']);
         add_action('admin_enqueue_scripts', [self::class, 'assets']);
         add_action('wp_ajax_cadco_import_batch', [self::class, 'ajax_batch']);
+        add_action('wp_ajax_cadco_import_label', [self::class, 'ajax_label']);
         add_action('admin_init', [self::class, 'maybe_export_redirects']);
         add_action('admin_init', [self::class, 'maybe_export_report']);
+        add_action('admin_init', [self::class, 'maybe_export_archived_report']);
     }
 
     public static function menu(): void
@@ -72,6 +74,8 @@ final class CADCO_Import_Admin
                 'doneWithFailures' => __('Done — {applied} of {total} changes applied. {failed} failed; see the list below.', 'cadco-theme'),
                 /* translators: {count} is replaced with the number of failed rows */
                 'failuresHeading'  => __('{count} row(s) failed and were not applied:', 'cadco-theme'),
+                'labelSaved'       => __('Saved.', 'cadco-theme'),
+                'labelFailed'      => __('Could not save the label.', 'cadco-theme'),
             ],
         ]);
     }
@@ -82,16 +86,26 @@ final class CADCO_Import_Admin
      * The planner runs only when validation passes, so a failing workbook can
      * never produce a plan that somebody might approve.
      *
+     * $trashed is [] for every ordinary import — a product deliberately
+     * removed must stay removed. It is populated only when this pipeline is
+     * run on behalf of a restore (handle_restore(), and ajax_batch() re-
+     * running the same pipeline at apply time for a run the transient has
+     * flagged as one), from CADCO_Import_Repository::trashed_products(). The
+     * asymmetry is deliberate and lives here, at the one place both the
+     * normal and restore paths funnel through, rather than inside the
+     * planner itself (design spec §8.4).
+     *
+     * @param list<array{post_id:int,sku:string,upc:string,hash:string,snapshot?:array<string,string>}> $trashed
      * @return array{report:CADCO_Import_Report,plan:?CADCO_Import_Plan,rows:array,changes:array}
      */
-    public static function run_pipeline(string $path): array
+    public static function run_pipeline(string $path, array $trashed = []): array
     {
         $read       = CADCO_Import_Reader::read($path);
         $normalised = CADCO_Import_Normaliser::normalise($read['rows']);
         $report     = CADCO_Import_Validator::validate($normalised['rows'], $read['errors']);
 
         $plan = $report->passed()
-            ? CADCO_Import_Planner::plan($normalised['rows'], CADCO_Import_Repository::current_products())
+            ? CADCO_Import_Planner::plan($normalised['rows'], CADCO_Import_Repository::current_products(), $trashed)
             : null;
 
         return [
@@ -120,7 +134,19 @@ final class CADCO_Import_Admin
         CADCO_Import_View::tabs($tab);
 
         if ($tab === 'history') {
-            CADCO_Import_View::history_empty();
+            // Read manifests only (task brief) — the history list never
+            // opens a workbook, a report or a plan, so it stays fast no
+            // matter how many runs are retained. CADCO_Import_Archive::all()
+            // already degrades a missing/corrupt manifest to "not listed"
+            // rather than fataling the whole screen.
+            $runs = CADCO_Import_Archive::all();
+
+            if ($runs === []) {
+                CADCO_Import_View::history_empty();
+            } else {
+                CADCO_Import_View::history($runs);
+            }
+
             echo '</div>';
 
             return;
@@ -145,6 +171,15 @@ final class CADCO_Import_Admin
         } elseif (isset($_POST['cadco_import_upload'])) {
             check_admin_referer(self::NONCE);
             $result = self::handle_upload();
+        } elseif (($_GET['action'] ?? '') === 'restore' && isset($_GET['run_id'])) {
+            // A restore link (History tab) carries its own nonce
+            // (wp_nonce_url(), same NONCE action as every other request on
+            // this screen) — checked here, before the run id is validated or
+            // touches the filesystem, same as the POST upload above.
+            // current_user_can(self::CAPABILITY) already gated this whole
+            // method at the top, before this branch is even reached.
+            check_admin_referer(self::NONCE);
+            $result = self::handle_restore((string) $_GET['run_id']);
         }
 
         CADCO_Import_View::stage_bar(self::screen_state($result), self::stage_bar_context($result));
@@ -264,9 +299,122 @@ final class CADCO_Import_Admin
         $size                = filesize($path);
         $result['size']      = $size !== false ? $size : 0;
 
-        // Archive the run: the workbook exactly as uploaded, the report, and
-        // the plan it produced. When a later import surprises somebody, this
-        // is the only record of what the workbook said at the time.
+        return self::archive_and_track($archive, $result, (string) $file['name'], false);
+    }
+
+    /**
+     * Restore (design spec §8.3, task brief step 3): load a previously
+     * archived workbook back into the wizard at Review, as an ordinary
+     * import from there — re-validated, re-planned against the catalogue as
+     * it is now, with the full diff on screen before anything is written.
+     * This is deliberately NOT a replay of the archived plan.json: that plan
+     * references post IDs that may no longer exist, and replaying it could
+     * trash products legitimately added since the run being restored.
+     *
+     * $run_id arrives from the browser (a History-tab link) — the security
+     * boundary CADCO_Import_Archive::is_valid_run_id() exists for. Validated
+     * here, first, before it is used to build any path; render() has already
+     * checked the nonce and the capability before this is ever called.
+     *
+     * The archived workbook is copied into a brand new run directory and
+     * run through exactly the same archive-and-track path a fresh upload
+     * takes (self::archive_and_track()) — a restore is a real, new import
+     * run in its own right, and gets its own history entry; the run being
+     * restored is left completely untouched, so its own `created`/`applied`
+     * facts keep describing what actually happened *then*, not this restore.
+     *
+     * The one difference from a plain upload: the pipeline is run with
+     * CADCO_Import_Repository::trashed_products() as its third argument, so
+     * the planner can offer an untrash for a product this run's workbook
+     * still lists but the current catalogue has trashed since (design spec
+     * §8.4). A normal import never does this — see run_pipeline()'s
+     * docblock.
+     *
+     * @return array{report:CADCO_Import_Report,plan:?CADCO_Import_Plan,rows:array,changes:array,filename:string,size:int,restore:array{run_id:string,label:string,filename:string,created:string}}|null
+     */
+    private static function handle_restore(string $run_id): ?array
+    {
+        if (!CADCO_Import_Archive::is_valid_run_id($run_id)) {
+            CADCO_Import_View::notice('error', __('That import run could not be found.', 'cadco-theme'));
+
+            return null;
+        }
+
+        $source_manifest = CADCO_Import_Archive::get($run_id);
+
+        if ($source_manifest === null) {
+            CADCO_Import_View::notice('error', __('That import run could not be found.', 'cadco-theme'));
+
+            return null;
+        }
+
+        $source_dir  = self::archive_dir($run_id);
+        $source_path = $source_dir !== null ? $source_dir . '/workbook.xlsx' : '';
+
+        if ($source_dir === null || !is_readable($source_path)) {
+            CADCO_Import_View::notice('error', __('That run\'s workbook is no longer available to restore.', 'cadco-theme'));
+
+            return null;
+        }
+
+        $archive = CADCO_Import_Archive::create(get_current_user_id());
+        $dir     = $archive['dir'];
+        $path    = $dir . '/workbook.xlsx';
+
+        if (!copy($source_path, $path)) {
+            CADCO_Import_View::notice('error', __('The archived workbook could not be copied.', 'cadco-theme'));
+
+            return null;
+        }
+
+        $filename = (string) ($source_manifest['filename'] ?? basename($path));
+
+        $result              = self::run_pipeline($path, CADCO_Import_Repository::trashed_products());
+        $result['filename']  = $filename;
+        $size                = filesize($path);
+        $result['size']      = $size !== false ? $size : 0;
+
+        $result = self::archive_and_track($archive, $result, $filename, true);
+
+        // The restore banner (task brief step 3) names the run being
+        // restored and its date — read from the ORIGINAL manifest, not the
+        // new run just archived above, so a restore can never be mistaken
+        // for a fresh import. Escaped on output by CADCO_Import_View.
+        $result['restore'] = [
+            'run_id'   => $run_id,
+            'label'    => (string) ($source_manifest['label'] ?? ''),
+            'filename' => (string) ($source_manifest['filename'] ?? ''),
+            'created'  => (string) ($source_manifest['created'] ?? ''),
+        ];
+
+        return $result;
+    }
+
+    /**
+     * The shared tail of both handle_upload() and handle_restore(): archive
+     * the run's report and plan, write its manifest (`applied: false` until
+     * mark_applied() flips it in ajax_batch()), prune old runs, and record
+     * the run in the per-user transient ajax_batch() reads at apply time.
+     *
+     * $is_restore is carried into the transient so ajax_batch() knows, at
+     * offset 0, to re-run the pipeline with trashed candidates too — the
+     * plan actually applied must match the plan Review showed, or an
+     * operator approving "1 untrash" on screen would silently get a create
+     * instead once the batch loop rebuilds the plan for itself.
+     *
+     * @param array{run_id:string,dir:string} $archive
+     * @param array{report:CADCO_Import_Report,plan:?CADCO_Import_Plan,rows:array,changes:array,filename:string,size:int} $result
+     * @return array{report:CADCO_Import_Report,plan:?CADCO_Import_Plan,rows:array,changes:array,filename:string,size:int}
+     */
+    private static function archive_and_track(array $archive, array $result, string $filename, bool $is_restore): array
+    {
+        $dir  = $archive['dir'];
+        $path = $dir . '/workbook.xlsx';
+
+        // Archive the run: the workbook exactly as uploaded (or restored),
+        // the report, and the plan it produced. When a later import
+        // surprises somebody, this is the only record of what the workbook
+        // said at the time.
         file_put_contents($dir . '/report.csv', $result['report']->to_csv());
 
         if ($result['plan'] instanceof CADCO_Import_Plan) {
@@ -291,7 +439,7 @@ final class CADCO_Import_Admin
             'run_id'   => $archive['run_id'],
             'created'  => gmdate('Y-m-d\TH:i:s\Z'),
             'user_id'  => get_current_user_id(),
-            'filename' => $file['name'],
+            'filename' => $filename,
             'label'    => '',
             'passed'   => $result['report']->passed(),
             'rows'     => count($result['rows']),
@@ -310,14 +458,43 @@ final class CADCO_Import_Admin
         // Only the workbook path and archive directory are stored here. The
         // job queue itself — built once apply starts — lives on disk inside
         // this same directory rather than in this transient's value; see
-        // ajax_batch() for why.
+        // ajax_batch() for why. `restore` records whether this run's apply
+        // must re-supply trashed candidates to the planner (see this
+        // method's own docblock).
         set_transient(
             'cadco_import_run_' . get_current_user_id(),
-            ['path' => $path, 'dir' => $dir],
+            ['path' => $path, 'dir' => $dir, 'restore' => $is_restore],
             HOUR_IN_SECONDS
         );
 
         return $result;
+    }
+
+    /**
+     * The directory a validated run id names, or null for anything that
+     * doesn't check out.
+     *
+     * CADCO_Import_Archive::base_dir() is private, so this mirrors its exact
+     * formula (wp_upload_dir()'s basedir + 'cadco-imports' + the run id) —
+     * the same duplication tests/e2e/helpers.js's cleanupUploadRuns()
+     * already carries for the same reason. is_valid_run_id() runs first,
+     * always, before the id is used to build anything — never a looser
+     * check, never after the path already exists — matching the exact
+     * discipline CADCO_Import_Archive::get()/set_label() themselves use.
+     */
+    private static function archive_dir(string $run_id): ?string
+    {
+        if (!CADCO_Import_Archive::is_valid_run_id($run_id)) {
+            return null;
+        }
+
+        $dir = trailingslashit(wp_upload_dir()['basedir']) . 'cadco-imports/' . $run_id;
+
+        if (is_link($dir) || !is_dir($dir)) {
+            return null;
+        }
+
+        return $dir;
     }
 
     /**
@@ -381,7 +558,15 @@ final class CADCO_Import_Admin
         $term_diff    = CADCO_Import_Term_Diff::compare($result['rows'], self::existing_terms());
         $redirect_map = self::redirect_map();
 
-        CADCO_Import_View::review($result['plan'], $result['changes'], $result['rows'], $term_diff, $workbook, $redirect_map);
+        CADCO_Import_View::review(
+            $result['plan'],
+            $result['changes'],
+            $result['rows'],
+            $term_diff,
+            $workbook,
+            $redirect_map,
+            $result['restore'] ?? null
+        );
     }
 
     /**
@@ -494,7 +679,15 @@ final class CADCO_Import_Admin
         }
 
         if ($offset === 0) {
-            $result = self::run_pipeline($run['path']);
+            // A run the transient marked as a restore (set in
+            // archive_and_track(), called from handle_restore()) must plan
+            // with the same trashed candidates Review showed, or an
+            // operator approving "1 untrash" on screen would silently get a
+            // create instead once this offset-0 request rebuilds the plan
+            // for itself — see run_pipeline()'s docblock for why a normal
+            // import must never do this.
+            $trashed = !empty($run['restore']) ? CADCO_Import_Repository::trashed_products() : [];
+            $result  = self::run_pipeline($run['path'], $trashed);
 
             if (!$result['report']->passed() || $result['plan'] === null) {
                 wp_send_json_error(['message' => __('The workbook no longer validates.', 'cadco-theme')], 400);
@@ -741,5 +934,98 @@ final class CADCO_Import_Admin
 
         echo $report->to_csv();
         exit;
+    }
+
+    /**
+     * Download a past run's report.csv from the archive (History tab's
+     * "View report" action for a failed run — task brief step 1, design
+     * spec §8.1: "A failed run has no plan to restore, so it offers only its
+     * report.").
+     *
+     * $run_id arrives from the browser, so the same discipline as every
+     * other handler that turns one into a path applies: nonce, then
+     * capability, then archive_dir()'s is_valid_run_id() check, all before
+     * the filesystem is touched. Reads the report.csv archived at upload
+     * time directly (already exactly what that run's screen showed) rather
+     * than re-running the pipeline — unlike maybe_export_report() above,
+     * there is no "current" transient to re-validate from; this run may not
+     * even be the one the operator has open right now.
+     */
+    public static function maybe_export_archived_report(): void
+    {
+        if (($_GET['page'] ?? '') !== self::SLUG || ($_GET['action'] ?? '') !== 'export-archived-report') {
+            return;
+        }
+
+        check_admin_referer(self::NONCE);
+
+        if (!current_user_can(self::CAPABILITY)) {
+            wp_die(esc_html__('You are not allowed to do that.', 'cadco-theme'));
+        }
+
+        $dir = self::archive_dir((string) ($_GET['run_id'] ?? ''));
+
+        if ($dir === null) {
+            wp_die(esc_html__('That import run could not be found.', 'cadco-theme'));
+        }
+
+        $path = $dir . '/report.csv';
+
+        if (is_link($path) || !is_readable($path)) {
+            wp_die(esc_html__('That run\'s report is no longer available.', 'cadco-theme'));
+        }
+
+        $csv = file_get_contents($path);
+
+        if ($csv === false) {
+            wp_die(esc_html__('That run\'s report could not be read.', 'cadco-theme'));
+        }
+
+        nocache_headers();
+        header('Content-Type: text/csv; charset=utf-8');
+        header('Content-Disposition: attachment; filename=cadco-import-report.csv');
+
+        echo $csv;
+        exit;
+    }
+
+    /**
+     * Inline label editing (task brief step 2): an AJAX endpoint, nonce- and
+     * capability-checked, that calls CADCO_Import_Archive::set_label().
+     *
+     * $run_id arrives from the browser here too — validated with
+     * is_valid_run_id() before it is used for anything, same as every other
+     * entry point a run id reaches (restore above, CADCO_Import_Archive's
+     * own get()/set_label()). set_label() re-validates it again internally;
+     * that redundancy is intentional defence in depth, not a substitute for
+     * checking here first.
+     *
+     * The label itself is operator-typed, untrusted input: sanitized on the
+     * way in (sanitize_text_field() strips tags/extra whitespace; length is
+     * capped so one run cannot grow its manifest without bound) and, per the
+     * brief, escaped again on the way out wherever CADCO_Import_View prints
+     * it — sanitizing on write is not a substitute for escaping on output.
+     */
+    public static function ajax_label(): void
+    {
+        check_ajax_referer(self::NONCE);
+
+        if (!current_user_can(self::CAPABILITY)) {
+            wp_send_json_error(['message' => __('Not allowed.', 'cadco-theme')], 403);
+        }
+
+        $run_id = (string) ($_POST['run_id'] ?? '');
+
+        if (!CADCO_Import_Archive::is_valid_run_id($run_id)) {
+            wp_send_json_error(['message' => __('That import run could not be found.', 'cadco-theme')], 400);
+        }
+
+        $label = mb_substr(sanitize_text_field(wp_unslash((string) ($_POST['label'] ?? ''))), 0, 190);
+
+        if (!CADCO_Import_Archive::set_label($run_id, $label)) {
+            wp_send_json_error(['message' => __('That import run could not be found.', 'cadco-theme')], 404);
+        }
+
+        wp_send_json_success(['label' => $label]);
     }
 }

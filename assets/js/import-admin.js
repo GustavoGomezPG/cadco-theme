@@ -140,6 +140,76 @@
 		});
 	}
 
+	/**
+	 * Inline label editing (History tab, task brief step 2). This has to sit
+	 * ahead of the #cadco-import-apply early return just below: that button
+	 * exists only on the Import tab's Review state, but a label input lives
+	 * on the History tab, where #cadco-import-apply is not on the page at
+	 * all — reaching that return first would skip this block on the one tab
+	 * it is meant to run on.
+	 *
+	 * Saves on blur and on Enter, and only when the value actually changed
+	 * (typing into a field and tabbing back out unchanged should not fire a
+	 * request). CADCO_Import_Admin::ajax_label() nonce- and capability-checks
+	 * the request, then validates the run id with is_valid_run_id() before
+	 * it ever reaches the filesystem — this is just the wiring; the security
+	 * boundary lives server-side.
+	 */
+	var labelInputs = document.querySelectorAll('.cadco-import-history-label');
+
+	if (labelInputs.length && typeof window.cadcoImport !== 'undefined') {
+		var labelConfig = window.cadcoImport;
+
+		Array.prototype.forEach.call(labelInputs, function (input) {
+			var status = input.parentNode
+				? input.parentNode.querySelector('.cadco-import-history-label-status')
+				: null;
+			var saved = input.value;
+
+			function save() {
+				if (input.value === saved) {
+					return;
+				}
+
+				var value = input.value;
+				var body = new FormData();
+
+				body.append('action', 'cadco_import_label');
+				body.append('_wpnonce', labelConfig.nonce);
+				body.append('run_id', input.getAttribute('data-run-id'));
+				body.append('label', value);
+
+				window.fetch(labelConfig.ajaxUrl, {
+					method: 'POST',
+					body: body,
+					credentials: 'same-origin'
+				})
+					.then(function (response) { return response.json(); })
+					.then(function (result) {
+						if (!result.success) {
+							if (status) { status.textContent = labelConfig.i18n.labelFailed; }
+							return;
+						}
+
+						saved = value;
+
+						if (status) { status.textContent = labelConfig.i18n.labelSaved; }
+					})
+					.catch(function () {
+						if (status) { status.textContent = labelConfig.i18n.labelFailed; }
+					});
+			}
+
+			input.addEventListener('blur', save);
+			input.addEventListener('keydown', function (event) {
+				if (event.key === 'Enter') {
+					event.preventDefault();
+					input.blur();
+				}
+			});
+		});
+	}
+
 	var button = document.getElementById('cadco-import-apply');
 
 	if (!button || typeof window.cadcoImport === 'undefined') {

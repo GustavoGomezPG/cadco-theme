@@ -189,7 +189,7 @@
 }
 
 /* ==========================================================================
-   History tab — empty state (content arrives in a later task)
+   History tab — empty state
    ========================================================================== */
 
 .cadco-import-history-empty {
@@ -197,6 +197,42 @@
 	background: #fff;
 	border: 1px solid #dcdcde;
 	color: #646970;
+}
+
+/* ==========================================================================
+   History tab — the run list (design spec §8.1)
+   ========================================================================== */
+
+.cadco-import-history {
+	margin-top: 1em;
+}
+
+.cadco-import-history-label {
+	width: 100%;
+	max-width: 22em;
+}
+
+.cadco-import-history-label-status {
+	display: inline-block;
+	margin-left: .5em;
+	font-size: 12px;
+	color: #646970;
+}
+
+/* ==========================================================================
+   Restore banner (design spec §8.3): "a restore can never be mistaken for
+   a fresh import" — the one place this screen deliberately breaks its own
+   quiet-colour rule a second time (the other is the blocked CTA / in-use
+   warning), because applying this plan writes over the current catalogue
+   on purpose and the operator must never lose track of that mid-review.
+   ========================================================================== */
+
+.cadco-import-restore-banner {
+	margin: 1em 0 0;
+}
+
+.cadco-import-restore-banner p {
+	margin: .5em 0;
 }
 
 /* ==========================================================================

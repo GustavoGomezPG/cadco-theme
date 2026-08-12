@@ -193,6 +193,140 @@ final class CADCO_Import_View
         <?php
     }
 
+    /**
+     * The History tab's list (task brief step 1, design spec §8.1): Date,
+     * Label (edited inline), original filename, Result, and Actions. Every
+     * fact here comes straight off each run's manifest.json
+     * (CADCO_Import_Archive::all(), called from CADCO_Import_Admin::render()
+     * — "Read manifests only," per the brief) — never a re-opened workbook,
+     * report or plan, so this list stays fast no matter how many runs are
+     * retained.
+     *
+     * Restore is offered only for a run that passed validation (and
+     * therefore has an archived workbook.xlsx and plan.json to restore
+     * from); a failed run offers only its report — design spec §8.1: "A
+     * failed run has no plan to restore, so it offers only its report."
+     *
+     * @param list<array<string, mixed>> $runs newest first — CADCO_Import_Archive::all()'s own order
+     */
+    public static function history(array $runs): void
+    {
+        ?>
+        <table class="widefat striped cadco-import-history">
+            <thead>
+            <tr>
+                <th scope="col"><?php esc_html_e('Date', 'cadco-theme'); ?></th>
+                <th scope="col"><?php esc_html_e('Label', 'cadco-theme'); ?></th>
+                <th scope="col"><?php esc_html_e('Filename', 'cadco-theme'); ?></th>
+                <th scope="col"><?php esc_html_e('Result', 'cadco-theme'); ?></th>
+                <th scope="col"><?php esc_html_e('Actions', 'cadco-theme'); ?></th>
+            </tr>
+            </thead>
+            <tbody>
+            <?php foreach ($runs as $run) : self::history_row($run); endforeach; ?>
+            </tbody>
+        </table>
+        <?php
+    }
+
+    /**
+     * One History row. Every value it prints is untrusted — an archived
+     * filename, an operator-typed label, a run id derived from user input on
+     * the restore/report links below — so every one of them goes through
+     * esc_html()/esc_attr()/esc_url() here, per the brief's escaping
+     * requirement and this system's own prior XSS findings.
+     *
+     * @param array<string, mixed> $run one manifest, shaped as CADCO_Import_Archive::all()/get() return it
+     */
+    private static function history_row(array $run): void
+    {
+        $run_id = (string) ($run['run_id'] ?? '');
+        $label  = (string) ($run['label'] ?? '');
+        $passed = !empty($run['passed']);
+        ?>
+        <tr>
+            <td><?php echo esc_html(self::format_run_date((string) ($run['created'] ?? ''))); ?></td>
+            <td>
+                <input
+                    type="text"
+                    class="cadco-import-history-label regular-text"
+                    data-run-id="<?php echo esc_attr($run_id); ?>"
+                    value="<?php echo esc_attr($label); ?>"
+                    placeholder="<?php esc_attr_e('Add a label…', 'cadco-theme'); ?>"
+                    aria-label="<?php esc_attr_e('Label for this import run', 'cadco-theme'); ?>"
+                >
+                <span class="cadco-import-history-label-status" aria-live="polite"></span>
+            </td>
+            <td><?php echo esc_html((string) ($run['filename'] ?? '')); ?></td>
+            <td><?php echo esc_html(self::run_result_summary($run)); ?></td>
+            <td>
+                <?php if ($passed) : ?>
+                    <a
+                        class="button"
+                        href="<?php echo esc_url(wp_nonce_url(
+                            admin_url('edit.php?post_type=product&page=cadco-import&action=restore&run_id=' . rawurlencode($run_id)),
+                            CADCO_Import_Admin::NONCE
+                        )); ?>"
+                    ><?php esc_html_e('Restore', 'cadco-theme'); ?></a>
+                <?php else : ?>
+                    <a
+                        class="button"
+                        href="<?php echo esc_url(wp_nonce_url(
+                            admin_url('edit.php?post_type=product&page=cadco-import&action=export-archived-report&run_id=' . rawurlencode($run_id)),
+                            CADCO_Import_Admin::NONCE
+                        )); ?>"
+                    ><?php esc_html_e('View report', 'cadco-theme'); ?></a>
+                <?php endif; ?>
+            </td>
+        </tr>
+        <?php
+    }
+
+    /**
+     * The Result column's text (task brief: "counts, or the issue count for
+     * a failed run"). A passed run lists every non-zero count from its
+     * manifest (created/updated/renamed/trashed/restored — 'skip' is
+     * deliberately excluded, an unchanged row is not a result worth
+     * naming); a failed run reports its issue count instead, since it has
+     * no plan at all.
+     *
+     * @param array<string, mixed> $run
+     */
+    private static function run_result_summary(array $run): string
+    {
+        if (empty($run['passed'])) {
+            $issues = (int) ($run['issues'] ?? 0);
+
+            return sprintf(
+                /* translators: %d: number of validation issues found */
+                _n('failed, %d issue', 'failed, %d issues', $issues, 'cadco-theme'),
+                $issues
+            );
+        }
+
+        $counts = is_array($run['counts'] ?? null) ? $run['counts'] : [];
+
+        $labels = [
+            'create'  => __('created', 'cadco-theme'),
+            'update'  => __('updated', 'cadco-theme'),
+            'rename'  => __('renamed', 'cadco-theme'),
+            'trash'   => __('trashed', 'cadco-theme'),
+            'untrash' => __('restored', 'cadco-theme'),
+        ];
+
+        $parts = [];
+
+        foreach ($labels as $key => $label) {
+            $n = (int) ($counts[$key] ?? 0);
+
+            if ($n > 0) {
+                $parts[] = sprintf('%d %s', $n, $label);
+            }
+        }
+
+        return $parts === [] ? __('no changes', 'cadco-theme') : implode(' · ', $parts);
+    }
+
     public static function upload_form(): void
     {
         ?>
@@ -285,6 +419,11 @@ final class CADCO_Import_View
      * @param array<string, array{new: list<array<string, mixed>>, removed: list<array<string, mixed>>, in_use: list<array<string, mixed>>}> $term_diff
      * @param array{filename:string, size:int, rows:int, issues:int, sheets:list<array{name:string, rows:int}>} $workbook
      * @param array<string, string> $redirect_map
+     * @param array{run_id:string, label:string, filename:string, created:string}|null $restore
+     *        Non-null only when this Review is a restore (task brief step
+     *        3, design spec §8.3) — the run being restored, so
+     *        restore_banner() can name it, never anything about the new
+     *        run this restore is itself about to become.
      */
     public static function review(
         CADCO_Import_Plan $plan,
@@ -292,9 +431,14 @@ final class CADCO_Import_View
         array $rows,
         array $term_diff,
         array $workbook,
-        array $redirect_map
+        array $redirect_map,
+        ?array $restore = null
     ): void {
         $counts = $plan->counts();
+
+        if ($restore !== null) {
+            self::restore_banner($restore);
+        }
         ?>
         <ul class="cadco-import-counts">
             <li><strong><?php echo (int) $counts['create']; ?></strong> <?php esc_html_e('to create', 'cadco-theme'); ?></li>
@@ -386,6 +530,67 @@ final class CADCO_Import_View
         // CADCO_Import_View::stage_bar()/cta() that draws #cadco-import-apply
         // now — see class-cadco-import-admin.php's render(), which calls
         // stage_bar() before review().
+    }
+
+    /**
+     * The restore banner (task brief step 3, design spec §8.3): "Show a
+     * restore banner on Review naming the run and its date, so a restore
+     * can never be mistaken for a fresh import." $restore names the
+     * ORIGINAL archived run being restored — see review()'s own docblock
+     * for why that, and not the fresh run this restore is itself about to
+     * become, is what belongs here.
+     *
+     * Every value is untrusted: the label is operator-typed
+     * (CADCO_Import_Admin::ajax_label()), the filename is whatever the
+     * original upload was named. Both go through esc_html() here — this is
+     * the "escaped on output" half of the brief's label requirement; the
+     * write side only sanitizes, which is not a substitute.
+     *
+     * @param array{run_id:string, label:string, filename:string, created:string} $restore
+     */
+    private static function restore_banner(array $restore): void
+    {
+        $label    = (string) $restore['label'];
+        $filename = (string) $restore['filename'];
+        $name     = $label !== '' ? $label : $filename;
+        $date     = self::format_run_date((string) $restore['created']);
+        ?>
+        <div class="notice notice-warning cadco-import-restore-banner">
+            <p>
+                <strong><?php esc_html_e('Restoring a previous import — this is not a fresh upload.', 'cadco-theme'); ?></strong>
+            </p>
+            <p>
+                <?php
+                printf(
+                    /* translators: 1: the restored run's label or original filename, 2: the date that run was taken */
+                    esc_html__('Re-checking "%1$s", taken %2$s, against the catalogue as it stands right now. Applying this plan restores the catalogue to match that earlier workbook — including bringing back, in place, any product it removed since.', 'cadco-theme'),
+                    esc_html($name),
+                    esc_html($date)
+                );
+                ?>
+            </p>
+        </div>
+        <?php
+    }
+
+    /**
+     * A run's `created` UTC ISO-8601 timestamp (design spec §8.2), formatted
+     * in the site's own timezone and date/time format. Shared by the
+     * restore banner and the history table (below) so both name a run's
+     * date the same way. Degrades to a plain, honest "unknown date" rather
+     * than a fatal or a blank cell for a manifest whose `created` is
+     * missing or malformed — the same defensive posture
+     * CADCO_Import_Archive itself takes toward a hand-edited manifest.
+     */
+    private static function format_run_date(string $created): string
+    {
+        $timestamp = $created !== '' ? strtotime($created) : false;
+
+        if ($timestamp === false) {
+            return __('an unknown date', 'cadco-theme');
+        }
+
+        return (string) wp_date(get_option('date_format') . ' ' . get_option('time_format'), $timestamp);
     }
 
     /**
