@@ -38,10 +38,20 @@ final class CADCO_Import_Plan
 
     /**
      * @param array<string, array{0: string, 1: string}> $diff column => [before, after]
+     * @param bool $snapshot_unreadable true when a snapshot postmeta row exists for
+     *        this product but could not be decoded — as opposed to $diff simply
+     *        being empty because no snapshot was ever stored. The two look
+     *        identical to $diff (both empty) but call for different messages on
+     *        the admin screen; see CADCO_Import_Admin::render_update_table().
      */
-    public function add_update(array $row, int $post_id, array $diff): void
+    public function add_update(array $row, int $post_id, array $diff, bool $snapshot_unreadable = false): void
     {
-        $this->updates[] = ['row' => $row, 'post_id' => $post_id, 'diff' => $diff];
+        $this->updates[] = [
+            'row'                 => $row,
+            'post_id'             => $post_id,
+            'diff'                => $diff,
+            'snapshot_unreadable' => $snapshot_unreadable,
+        ];
     }
 
     public function add_rename(array $row, int $post_id, string $old_sku): void

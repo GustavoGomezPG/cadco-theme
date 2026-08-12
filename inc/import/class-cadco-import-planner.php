@@ -66,10 +66,23 @@ final class CADCO_Import_Planner
                     continue;
                 }
 
+                // A missing snapshot (products imported before Task 15, or a
+                // snapshot the repository could not decode) is a statement
+                // about what we know, not about what changed — diff()'s own
+                // contract is to report every key on either side, which for
+                // an empty $before would claim every column was "added".
+                // That decision belongs here, at the one call site that
+                // knows *why* $before might be empty, not inside diff()
+                // itself; see diff()'s docblock for the contract this
+                // deliberately stays out of.
+                $snapshot = $match['snapshot'] ?? [];
+                $diff     = $snapshot === [] ? [] : self::diff($snapshot, self::comparable($row));
+
                 $plan->add_update(
                     $row,
                     (int) $match['post_id'],
-                    self::diff($match['snapshot'] ?? [], self::comparable($row))
+                    $diff,
+                    (bool) ($match['snapshot_unreadable'] ?? false)
                 );
                 continue;
             }
@@ -145,18 +158,18 @@ final class CADCO_Import_Planner
     /**
      * column => [before, after] for every key that differs between two
      * comparable() payloads, in either direction. A key present on only one
-     * side is reported with '' standing in for the missing side.
+     * side is reported with '' standing in for the missing side — including
+     * when $before itself is entirely empty, in which case every key of
+     * $after is reported as added. This method has no opinion on *why*
+     * $before might be empty; it diffs exactly the two arrays it is given.
      *
-     * An empty $before is a deliberate special case, not just a small one:
-     * comparable() drops blank cells, and every column the validator requires
-     * is guaranteed non-blank, so a real stored payload can never decode to
-     * []. The only way $before arrives here empty is that no snapshot was
-     * ever stored for this product — it predates diff tracking (see
-     * CADCO_Import_Repository::current_products()). Walking the union in
-     * that case would report every column of $after as newly "added", which
-     * would tell the operator the whole record changed when in truth nothing
-     * is known either way. An empty diff — rendered by the caller as "no
-     * previous snapshot" — is the honest answer.
+     * A genuinely missing snapshot is a real, common case for this pipeline
+     * (see CADCO_Import_Repository::current_products()) and deliberately
+     * not handled here — reporting every column as "added" would be
+     * misleading in that situation, but recognising "no snapshot exists"
+     * is a judgement about provenance, not a property of two arrays, so it
+     * belongs at the call site that knows the snapshot's origin
+     * (CADCO_Import_Planner::plan()), not inside a pure diff.
      *
      * @param array<string, string> $before
      * @param array<string, string> $after
@@ -164,10 +177,6 @@ final class CADCO_Import_Planner
      */
     public static function diff(array $before, array $after): array
     {
-        if ($before === []) {
-            return [];
-        }
-
         $diff = [];
 
         foreach (array_unique(array_merge(array_keys($before), array_keys($after))) as $column) {

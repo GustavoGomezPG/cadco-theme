@@ -21,7 +21,7 @@ final class CADCO_Import_Repository
      * not be resurrected as an "update" by the next one, and a genuinely
      * returning product is correctly treated as a create.
      *
-     * @return list<array{post_id:int,sku:string,upc:string,hash:string,snapshot:array<string,string>}>
+     * @return list<array{post_id:int,sku:string,upc:string,hash:string,snapshot:array<string,string>,snapshot_unreadable:bool}>
      */
     public static function current_products(): array
     {
@@ -53,20 +53,28 @@ final class CADCO_Import_Repository
 
         return array_map(
             static function (array $row): array {
-                // json_decode() returns null both for a missing snapshot
-                // (meta_value is SQL NULL, cast to '' by PHP's string
-                // coercion) and for one that is somehow corrupt — either way
-                // this must decode to [], never null, because
-                // CADCO_Import_Planner::diff() is typed to take an array and
-                // treats [] itself as "no snapshot" (see its docblock).
-                $decoded = json_decode((string) ($row['snapshot'] ?? ''), true);
+                // Unlike sku/upc/hash above, snap.meta_value is deliberately
+                // not wrapped in COALESCE(..., ''): a genuinely missing
+                // postmeta row must stay distinguishable, as PHP null, from
+                // one that exists but holds something json_decode() cannot
+                // parse. Both end up presented to the planner as an empty
+                // 'snapshot' array — CADCO_Import_Planner::diff() is typed
+                // to take an array, and either way there is no usable
+                // payload to diff against — but they are not the same
+                // situation, and 'snapshot_unreadable' is how the two stay
+                // told apart for the admin screen (see render_update_table()):
+                // "this product predates diff tracking" is true of the
+                // first and false, misleadingly so, of the second.
+                $raw     = $row['snapshot'] ?? null;
+                $decoded = $raw === null ? null : json_decode((string) $raw, true);
 
                 return [
-                    'post_id'  => (int) $row['post_id'],
-                    'sku'      => (string) $row['sku'],
-                    'upc'      => (string) $row['upc'],
-                    'hash'     => (string) $row['hash'],
-                    'snapshot' => is_array($decoded) ? $decoded : [],
+                    'post_id'             => (int) $row['post_id'],
+                    'sku'                 => (string) $row['sku'],
+                    'upc'                 => (string) $row['upc'],
+                    'hash'                => (string) $row['hash'],
+                    'snapshot'            => is_array($decoded) ? $decoded : [],
+                    'snapshot_unreadable' => $raw !== null && !is_array($decoded),
                 ];
             },
             $rows ?: []

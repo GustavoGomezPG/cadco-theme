@@ -566,17 +566,32 @@ final class CADCO_Import_Admin
             $sku = (string) ($update['row']['Model #'] ?? '');
 
             if ($update['diff'] === []) {
-                $rows[] = ['sku' => $sku, 'no_snapshot' => true, 'field' => '', 'before' => '', 'after' => ''];
+                // Two different situations both leave diff() with nothing to
+                // show, and they call for different messages: a snapshot
+                // that simply doesn't exist yet (this product predates diff
+                // tracking) is not the same claim as a snapshot that exists
+                // but came back unreadable (see
+                // CADCO_Import_Repository::current_products()) — the second
+                // is exactly the state a corrupted stored value would leave
+                // behind, and telling the operator it "predates diff
+                // tracking" would be false.
+                $rows[] = [
+                    'sku'    => $sku,
+                    'note'   => !empty($update['snapshot_unreadable']) ? 'unreadable' : 'no_snapshot',
+                    'field'  => '',
+                    'before' => '',
+                    'after'  => '',
+                ];
                 continue;
             }
 
             foreach ($update['diff'] as $field => $pair) {
                 $rows[] = [
-                    'sku'         => $sku,
-                    'no_snapshot' => false,
-                    'field'       => (string) $field,
-                    'before'      => (string) $pair[0],
-                    'after'       => (string) $pair[1],
+                    'sku'    => $sku,
+                    'note'   => null,
+                    'field'  => (string) $field,
+                    'before' => (string) $pair[0],
+                    'after'  => (string) $pair[1],
                 ];
             }
         }
@@ -593,8 +608,10 @@ final class CADCO_Import_Admin
             <?php foreach (array_slice($rows, 0, 200) as $row) : ?>
                 <tr>
                     <td><code><?php echo esc_html($row['sku']); ?></code></td>
-                    <?php if ($row['no_snapshot']) : ?>
+                    <?php if ($row['note'] === 'no_snapshot') : ?>
                         <td colspan="3"><em><?php esc_html_e('no previous snapshot — this product predates diff tracking', 'cadco-theme'); ?></em></td>
+                    <?php elseif ($row['note'] === 'unreadable') : ?>
+                        <td colspan="3"><em><?php esc_html_e('previous snapshot could not be read — it will be rebuilt on this import', 'cadco-theme'); ?></em></td>
                     <?php else : ?>
                         <td><?php echo esc_html($row['field']); ?></td>
                         <td><code><?php echo esc_html($row['before']); ?></code></td>

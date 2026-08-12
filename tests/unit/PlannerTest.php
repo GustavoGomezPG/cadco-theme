@@ -247,6 +247,19 @@ final class PlannerTest extends TestCase
         );
     }
 
+    public function test_diff_treats_a_wholly_empty_before_as_every_key_added(): void
+    {
+        // diff() is a pure function of the two arrays it is given — it has
+        // no opinion on why $before might be empty. Recognising "no
+        // snapshot exists" and choosing not to show a diff for it is a
+        // decision plan() makes at its call site, not something diff()
+        // special-cases for itself. See both methods' docblocks.
+        self::assertSame(
+            ['a' => ['', 'b']],
+            \CADCO_Import_Planner::diff([], ['a' => 'b'])
+        );
+    }
+
     public function test_an_update_carries_a_real_per_field_diff(): void
     {
         $before = \CADCO_Import_Planner::comparable(self::row());
