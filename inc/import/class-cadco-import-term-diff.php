@@ -123,10 +123,19 @@ final class CADCO_Import_Term_Diff
 
             if ($new_children !== []) {
                 $new[] = [
-                    'name'     => $parent,
-                    'parent'   => '',
-                    'products' => 0,
-                    'children' => $new_children,
+                    'name'           => $parent,
+                    'parent'         => '',
+                    'products'       => 0,
+                    'children'       => $new_children,
+                    // Whether the parent term itself is new, distinct from
+                    // "an existing parent just gained a new child" — a
+                    // top-level term with this name doesn't exist yet iff no
+                    // $existing_top_id_by_name entry was found for it above.
+                    // Consumers (CADCO_Import_View::term_diff_totals()) need
+                    // this to count new terms correctly: a parent entry here
+                    // always carries at least one new child, but does not
+                    // always mean the parent itself is being created.
+                    'parent_is_new'  => $parent_term_id === null,
                 ];
             }
         }

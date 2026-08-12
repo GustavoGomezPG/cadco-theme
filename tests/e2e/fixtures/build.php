@@ -74,6 +74,27 @@ switch ($scenario) {
         ]));
         break;
 
+    case 'xss-review':
+        // Covers the Review screen itself, before any apply — the existing
+        // 'xss' scenario only ever proved the *front-end product page*
+        // strips markup post-apply (CADCO_Import_Applier::write_product()
+        // running Product Name through wp_strip_all_tags()). Nothing had
+        // exercised the review tables (Task 7) that render straight from
+        // the still-raw, unstripped workbook row: create_table()'s Product
+        // Name column and section_categories()'s new-category tree, both of
+        // which rely on esc_html() rather than stripping. The payload lands
+        // in both a product name and a Type (category), one row, so a
+        // single upload exercises both.
+        FixtureBuilder::write($out, FixtureBuilder::completeSheets([
+            $target => [FixtureBuilder::row([
+                'Model #'      => 'E2E-XSS-REVIEW-1',
+                'UPC#'         => '654796-99031-1',
+                'Product Name' => 'XSS Review <script>window.__xssReview=1</script> Probe',
+                'Type'         => 'XssCategory <script>window.__xssReviewCat=1</script> Marker',
+            ])],
+        ]));
+        break;
+
     case 'rename':
         // UPC must match the product build.php's caller seeds directly in
         // the database beforehand (see helpers.js: seedRenameSource()); the

@@ -65,6 +65,14 @@
 	 */
 	var navLinks = document.querySelectorAll('.cadco-import-navigator .cadco-import-nav-link[aria-controls]');
 
+	/** Clears aria-current from every live link and sets it on exactly one. */
+	function setActiveNavLink(link) {
+		Array.prototype.forEach.call(navLinks, function (other) {
+			other.removeAttribute('aria-current');
+		});
+		link.setAttribute('aria-current', 'true');
+	}
+
 	Array.prototype.forEach.call(navLinks, function (link) {
 		link.addEventListener('click', function (event) {
 			var target = document.getElementById(link.getAttribute('aria-controls'));
@@ -75,15 +83,62 @@
 
 			event.preventDefault();
 
-			Array.prototype.forEach.call(navLinks, function (other) {
-				other.removeAttribute('aria-current');
-			});
-			link.setAttribute('aria-current', 'true');
+			setActiveNavLink(link);
 
 			target.scrollIntoView({ behavior: 'smooth', block: 'start' });
 			target.focus({ preventScroll: true });
 		});
 	});
+
+	/**
+	 * Scroll-spy: with no hide/show tabs, "active" has to track wherever the
+	 * operator has actually scrolled to, or aria-current goes stale the
+	 * moment they scroll manually instead of clicking a nav link — the
+	 * navigator would keep claiming "Workbook" is current while they read
+	 * Renames. IntersectionObserver is the plain way to do this: watch a
+	 * thin band near the top of the viewport (just below the fixed
+	 * #wpadminbar) and mark whichever section is crossing it as current.
+	 *
+	 * Deliberately simple, not exhaustive (the brief's own instruction):
+	 * this does not try to be exactly right at every scroll-position edge
+	 * case, only to track "roughly which section is in view" well enough
+	 * that aria-current stays honest during ordinary reading.
+	 */
+	if (typeof IntersectionObserver !== 'undefined') {
+		var linkBySectionId = {};
+
+		Array.prototype.forEach.call(navLinks, function (link) {
+			linkBySectionId[link.getAttribute('aria-controls')] = link;
+		});
+
+		var observer = new IntersectionObserver(
+			function (entries) {
+				entries.forEach(function (entry) {
+					if (!entry.isIntersecting) {
+						return;
+					}
+
+					var link = linkBySectionId[entry.target.id];
+
+					if (link) {
+						setActiveNavLink(link);
+					}
+				});
+			},
+			// A thin activation band starting just under the admin bar: a
+			// section counts as "current" while its top has scrolled past
+			// that band but the rest of it hasn't yet scrolled past too.
+			{ rootMargin: '-40px 0px -85% 0px', threshold: 0 }
+		);
+
+		Object.keys(linkBySectionId).forEach(function (sectionId) {
+			var section = document.getElementById(sectionId);
+
+			if (section) {
+				observer.observe(section);
+			}
+		});
+	}
 
 	var button = document.getElementById('cadco-import-apply');
 

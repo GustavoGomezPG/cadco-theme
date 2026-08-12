@@ -305,7 +305,8 @@ final class CADCO_Import_View
             <li><strong><?php echo (int) $counts['skip']; ?></strong> <?php esc_html_e('unchanged', 'cadco-theme'); ?></li>
         </ul>
         <?php
-        $term_totals = self::term_diff_totals($term_diff);
+        $term_totals       = self::term_diff_totals($term_diff);
+        $redirect_forecast = self::legacy_redirect_forecast($rows);
 
         $nav = [
             'workbook' => [
@@ -350,8 +351,15 @@ final class CADCO_Import_View
             ],
             'redirects' => [
                 'label' => __('Redirects', 'cadco-theme'),
-                'meta'  => (string) count($redirect_map),
-                'muted' => $redirect_map === [],
+                // The forecast, not count($redirect_map) — see
+                // legacy_redirect_forecast()'s docblock for why the latter
+                // is empty on exactly the first-import scenario this
+                // feature exists for.
+                'meta'  => (string) $redirect_forecast['will_export'],
+                'muted' => $redirect_forecast['will_export'] === 0
+                    && $redirect_map === []
+                    && $redirect_forecast['skipped'] === []
+                    && $redirect_forecast['collisions'] === [],
             ],
         ];
 
@@ -367,7 +375,7 @@ final class CADCO_Import_View
                 self::section_renames($plan);
                 self::section_removals($plan);
                 self::section_cleaned_up($changes);
-                self::section_redirects($redirect_map, $rows);
+                self::section_redirects($redirect_map, $redirect_forecast);
                 ?>
             </div>
         </div>
@@ -442,9 +450,12 @@ final class CADCO_Import_View
 
     /**
      * Totals the term diff (design spec §7) across all three taxonomies for
-     * the navigator's Categories badge: every new leaf (a top-level category
-     * only counts here via its children — compare_categories() never lists a
-     * parent as new on its own), every removed term, every in-use term.
+     * the navigator's Categories badge: every new term, every removed term,
+     * every in-use term. A product_cat "new" entry always carries at least
+     * one new child, but is only itself a new term when its own
+     * `parent_is_new` says so — an existing parent that merely gained a
+     * child must not be double-counted as a new term of its own (see
+     * CADCO_Import_Term_Diff::compare()'s `parent_is_new`).
      *
      * @param array<string, array{new: list<array<string, mixed>>, removed: list<array<string, mixed>>, in_use: list<array<string, mixed>>}> $term_diff
      * @return array{new:int, removed:int, in_use:int}
@@ -458,7 +469,7 @@ final class CADCO_Import_View
         foreach ($term_diff as $taxonomy => $bucket) {
             if ($taxonomy === 'product_cat') {
                 foreach ($bucket['new'] as $parent) {
-                    $new += count($parent['children']);
+                    $new += count($parent['children']) + (!empty($parent['parent_is_new']) ? 1 : 0);
                 }
             } else {
                 $new += count($bucket['new']);
@@ -557,7 +568,7 @@ final class CADCO_Import_View
         ?>
         <h2 id="cadco-heading-categories">
             <?php esc_html_e('Categories', 'cadco-theme'); ?>
-            <span class="count<?php echo ($totals['new'] + $totals['removed']) === 0 ? ' is-zero' : ''; ?>"><?php echo (int) $totals['new']; ?></span>
+            <span class="count<?php echo $totals['new'] === 0 ? ' is-zero' : ''; ?>"><?php echo (int) $totals['new']; ?></span>
         </h2>
         <p class="description">
             <?php
@@ -777,16 +788,26 @@ final class CADCO_Import_View
     }
 
     /**
+     * The header count and the navigator badge (see review()) both read
+     * from $forecast — how many redirects *this plan* will produce — not
+     * from count($redirect_map), which is how many exist on the site right
+     * now (see legacy_redirect_forecast()'s docblock for why that was
+     * wrong on a first import). The table below $redirect_map still shows
+     * the real, currently-downloadable map when one exists; the two are
+     * different facts and both are worth showing, just not conflated into
+     * one count.
+     *
      * @param array<string, string> $redirect_map
-     * @param list<array<string, mixed>> $rows
+     * @param array{will_export:int, skipped:list<string>, collisions:array<string,list<string>>} $forecast
      */
-    private static function section_redirects(array $redirect_map, array $rows): void
+    private static function section_redirects(array $redirect_map, array $forecast): void
     {
         self::section_open('redirects');
+        $will_export = $forecast['will_export'];
         ?>
         <h2 id="cadco-heading-redirects">
             <?php esc_html_e('Redirects', 'cadco-theme'); ?>
-            <span class="count<?php echo $redirect_map === [] ? ' is-zero' : ''; ?>"><?php echo count($redirect_map); ?></span>
+            <span class="count<?php echo $will_export === 0 ? ' is-zero' : ''; ?>"><?php echo (int) $will_export; ?></span>
         </h2>
         <?php if ($redirect_map === []) : ?>
             <p class="description"><?php esc_html_e('No redirects exist yet for this catalogue.', 'cadco-theme'); ?></p>
@@ -817,7 +838,7 @@ final class CADCO_Import_View
                 </a>
             </p>
         <?php endif; ?>
-        <?php self::legacy_redirect_preview($rows); ?>
+        <?php self::legacy_redirect_preview($forecast); ?>
         <?php
         self::section_close();
     }
@@ -1056,6 +1077,57 @@ final class CADCO_Import_View
     }
 
     /**
+     * How many of the rows just validated carry a legacy URL that will
+     * become a redirect once this plan is applied, which ones don't
+     * resolve to a product page, and which resolved paths collide.
+     *
+     * This existed only as CADCO_Import_Admin::redirect_map()'s "existing
+     * redirects on the site" count until review()'s navigator badge is what
+     * caught the gap it left: redirect_map() derives from *published
+     * products*, so on a first import — 0 products, the exact scenario this
+     * whole feature exists for — it is empty and the badge read "0" while
+     * the sentence directly underneath it said "236 legacy URLs will
+     * redirect…". A section about to describe 236 forthcoming redirects
+     * must not be the one section the navigator calls muted and marks
+     * non-interactive. Design spec §6.1's own mock agrees: it shows
+     * "Redirects 225" beside "Products +236" on what is unmistakably a
+     * first-import plan — the only number that can be 225 there is this
+     * forecast, not existing state.
+     *
+     * @param list<array<string, mixed>> $rows
+     * @return array{will_export:int, skipped:list<string>, collisions:array<string,list<string>>}
+     */
+    private static function legacy_redirect_forecast(array $rows): array
+    {
+        $will_export = 0;
+        $skipped     = [];
+        $by_path     = [];
+
+        foreach ($rows as $row) {
+            $url = trim((string) ($row['Website URL'] ?? ''));
+
+            if ($url === '') {
+                continue;
+            }
+
+            $path  = CADCO_Import_Planner::legacy_path($url);
+            $model = (string) ($row['Model #'] ?? '');
+
+            if ($path === '') {
+                $skipped[] = $model;
+                continue;
+            }
+
+            $will_export++;
+            $by_path[$path][] = $model;
+        }
+
+        $collisions = array_filter($by_path, static fn (array $models): bool => count($models) > 1);
+
+        return ['will_export' => $will_export, 'skipped' => $skipped, 'collisions' => $collisions];
+    }
+
+    /**
      * Forecast, from the rows just validated, what the legacy half of the
      * redirect map (see CADCO_Import_Admin::redirect_map()) will contain once
      * this plan is applied — before anything is written, so the operator sees
@@ -1091,34 +1163,19 @@ final class CADCO_Import_View
      * a list is more useful than a count, and it is what lets an operator
      * actually go fix (or explain) the workbook.
      *
-     * @param list<array<string, mixed>> $rows
+     * The computation itself lives in legacy_redirect_forecast() so the
+     * navigator badge and the Redirects section's own heading count can
+     * share the exact same numbers this paragraph states, rather than each
+     * computing "how many redirects" its own way and risking disagreement
+     * (see review()/section_redirects()).
+     *
+     * @param array{will_export:int, skipped:list<string>, collisions:array<string,list<string>>} $forecast
      */
-    private static function legacy_redirect_preview(array $rows): void
+    private static function legacy_redirect_preview(array $forecast): void
     {
-        $will_export = 0;
-        $skipped     = [];
-        $by_path     = [];
-
-        foreach ($rows as $row) {
-            $url = trim((string) ($row['Website URL'] ?? ''));
-
-            if ($url === '') {
-                continue;
-            }
-
-            $path  = CADCO_Import_Planner::legacy_path($url);
-            $model = (string) ($row['Model #'] ?? '');
-
-            if ($path === '') {
-                $skipped[] = $model;
-                continue;
-            }
-
-            $will_export++;
-            $by_path[$path][] = $model;
-        }
-
-        $collisions = array_filter($by_path, static fn (array $models): bool => count($models) > 1);
+        $will_export = $forecast['will_export'];
+        $skipped     = $forecast['skipped'];
+        $collisions  = $forecast['collisions'];
 
         if ($will_export === 0 && $skipped === [] && $collisions === []) {
             return;

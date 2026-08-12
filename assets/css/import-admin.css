@@ -275,8 +275,12 @@
 	text-decoration: none;
 }
 
-.cadco-import-nav-link:hover,
-.cadco-import-nav-link:focus {
+/* Scoped to the real link only — a.cadco-import-nav-link, never the muted
+   <span> below, which shares the class for layout but must never look
+   interactive (Finding 4: an inert entry lighting up on hover reads as
+   clickable when it is not). */
+a.cadco-import-nav-link:hover,
+a.cadco-import-nav-link:focus {
 	background: #f6f7f7;
 }
 
@@ -298,12 +302,11 @@
 /* A zero-count section (design/task brief: "the absence of renames is
    itself information worth seeing") is still listed, but muted and
    non-interactive — a plain <span>, not a link, so nothing to click and
-   nothing a screen reader should treat as actionable. */
+   nothing a screen reader should treat as actionable. Layout
+   (display/flex-direction/gap/padding) already comes from the base
+   .cadco-import-nav-link rule above, which this <span> also carries — only
+   colour and cursor need overriding here. */
 .cadco-import-nav-item.is-muted .cadco-import-nav-link {
-	display: flex;
-	flex-direction: column;
-	gap: .15em;
-	padding: .65em .9em;
 	color: #a7aaad;
 	cursor: default;
 }
@@ -322,9 +325,12 @@
 	margin-bottom: 1.5em;
 	background: #fff;
 	border: 1px solid #dcdcde;
-}
-
-.cadco-import-section:target {
+	/* Unconditional, not scoped to :target: the navigator's click handler
+	   (assets/js/import-admin.js) calls preventDefault(), so the URL hash
+	   never changes and :target never matches — scrollIntoView() would
+	   otherwise park the section's <h2> right under the 32px fixed
+	   #wpadminbar, clipping the exact heading the operator just clicked to
+	   reach. */
 	scroll-margin-top: 40px;
 }
 
@@ -384,7 +390,6 @@
 	color: #00a32a;
 }
 
-.cadco-import-term-removed .cadco-import-term-new,
 .cadco-import-term-removed {
 	color: #646970;
 }

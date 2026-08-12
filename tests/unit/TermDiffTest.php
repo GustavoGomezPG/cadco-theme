@@ -34,6 +34,44 @@ final class TermDiffTest extends TestCase
         self::assertSame(1, $new[0]['children'][1]['products']);
     }
 
+    public function test_a_wholly_new_parent_is_marked_parent_is_new(): void
+    {
+        // Nothing existing at all, so "Convection Ovens" itself is being
+        // created, not just gaining a child.
+        $diff = \CADCO_Import_Term_Diff::compare([
+            self::row('BLC-113', 'CONVECTION OVENS', 'Bakerlux Classic'),
+        ], []);
+
+        self::assertTrue($diff['product_cat']['new'][0]['parent_is_new']);
+    }
+
+    public function test_a_new_child_under_an_existing_parent_does_not_mark_the_parent_new(): void
+    {
+        // "Convection Ovens" already exists on the site; only its child
+        // "Bakerlux Station" is new. The parent entry that carries that new
+        // child must not be counted as a new parent itself — a caller
+        // summing "how many terms will this plan create" needs to tell the
+        // two situations apart (see CADCO_Import_View::term_diff_totals()).
+        $diff = \CADCO_Import_Term_Diff::compare(
+            [
+                self::row('BLC-113', 'CONVECTION OVENS', 'Bakerlux Classic'),
+                self::row('BLS-113', 'CONVECTION OVENS', 'Bakerlux Station'),
+            ],
+            [
+                ['taxonomy' => 'product_cat', 'term_id' => 22, 'name' => 'Convection Ovens', 'parent' => 0, 'count' => 0],
+                ['taxonomy' => 'product_cat', 'term_id' => 26, 'name' => 'Bakerlux Classic', 'parent' => 22, 'count' => 0],
+            ]
+        );
+
+        $new = $diff['product_cat']['new'];
+
+        self::assertCount(1, $new, 'one parent entry, carrying only the new child');
+        self::assertSame('Convection Ovens', $new[0]['name']);
+        self::assertFalse($new[0]['parent_is_new'], 'the parent already existed');
+        self::assertCount(1, $new[0]['children']);
+        self::assertSame('Bakerlux Station', $new[0]['children'][0]['name']);
+    }
+
     public function test_an_existing_term_is_not_reported_as_new(): void
     {
         $diff = \CADCO_Import_Term_Diff::compare(

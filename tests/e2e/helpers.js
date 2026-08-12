@@ -165,7 +165,7 @@ function cleanupUploadRuns() {
  * the PHP unit suite trusts). Written to a temp file outside the repo so
  * nothing generated needs to be gitignored.
  *
- * @param {'xss'|'rename'} scenario
+ * @param {'xss'|'xss-review'|'rename'} scenario
  * @returns {string} absolute path to the generated .xlsx
  */
 function buildFixture(scenario) {

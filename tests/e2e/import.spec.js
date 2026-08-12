@@ -280,6 +280,73 @@ test.describe('Product import', () => {
 		}
 	});
 
+	// Gap: the test above proves the *front-end product page* is safe, which
+	// only exercises CADCO_Import_Applier::write_product()'s
+	// wp_strip_all_tags() call — a step that only runs once a workbook is
+	// actually applied. Nothing had ever loaded a workbook carrying markup
+	// and inspected the Review screen itself (Task 7): the plan tables
+	// (create_table()) and the new Categories tree (section_categories())
+	// both render straight from the still-raw, unstripped workbook row, via
+	// esc_html() rather than stripping. Two prior XSS findings in this
+	// system are exactly why that gap matters. This never clicks Apply, so
+	// it is checking the review screen alone, before anything is stripped
+	// by anything downstream.
+	//
+	// Unlike the test above, this one *does* assert the raw markup is
+	// visible as literal text: esc_html() neutralises a tag by encoding it
+	// (`&lt;script&gt;`), it does not remove it the way
+	// wp_strip_all_tags() does, so "the words on both sides of the tag, and
+	// the tag's own text, are all still there" is the correct proof of
+	// escaping — the same words-survive check as above, plus the literal
+	// tag text this time, because escaping and stripping leave different,
+	// both legitimate, marks on the page.
+	test('a script tag in a product name or category is inert on the review screen before anything is applied', async ({ page }) => {
+		const fixture = buildFixture('xss-review');
+
+		await page.goto(IMPORT_PATH);
+		await page.setInputFiles('input[type="file"]', fixture);
+		await page.getByRole('button', { name: /check workbook/i }).click();
+
+		// Confirms the workbook was clean and Review actually rendered —
+		// this test never clicks it, on purpose: the assertions below must
+		// hold before any apply, not after.
+		await expect(page.locator('#cadco-import-apply')).toBeVisible();
+
+		let dialogFired = false;
+		page.once('dialog', (dialog) => { dialogFired = true; dialog.dismiss(); });
+
+		// The security property: nothing from either payload ever ran, and
+		// no script element carrying either payload exists anywhere in the
+		// review page at all.
+		const productPayloadRan = await page.evaluate(() => window.__xssReview);
+		const categoryPayloadRan = await page.evaluate(() => window.__xssReviewCat);
+		expect(productPayloadRan).toBeUndefined();
+		expect(categoryPayloadRan).toBeUndefined();
+		expect(dialogFired).toBe(false);
+		await expect(page.locator('script', { hasText: 'window.__xssReview' })).toHaveCount(0);
+
+		// Products to create: the row for E2E-XSS-REVIEW-1 shows the product
+		// name's surrounding words and the neutralised tag as literal text.
+		// Scoped to #cadco-section-products specifically, not just any
+		// table.widefat containing that text — the Workbook section's own
+		// summary table shows this fixture's generated filename
+		// ("cadco-e2e-xss-review-<timestamp>-<pid>.xlsx"), and Playwright's
+		// hasText does a case-insensitive substring match, so the digits
+		// straight after "review-" can coincide with the "-1" this model
+		// number ends in and match the wrong table.
+		const productRow = page.locator('#cadco-section-products tbody tr').filter({ hasText: 'E2E-XSS-REVIEW-1' }).first();
+		await expect(productRow).toContainText('XSS Review');
+		await expect(productRow).toContainText('Probe');
+		await expect(productRow).toContainText('<script>window.__xssReview=1</script>');
+
+		// The Categories tree (Task 7's new section): the new category's
+		// name carries the same payload, and must render exactly as inert.
+		const categoriesSection = page.locator('#cadco-section-categories');
+		await expect(categoriesSection).toContainText('XssCategory');
+		await expect(categoriesSection).toContainText('Marker');
+		await expect(categoriesSection).toContainText('<script>window.__xssReviewCat=1</script>');
+	});
+
 	// Gap: rename approval is by UPC (the checkbox's `value`), not array
 	// index. This is the one code path that actually depends on the JS
 	// reading `.cadco-rename:checked` and encoding it into `approved[]`
