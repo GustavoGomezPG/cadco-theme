@@ -3492,7 +3492,8 @@ Performs the writes, in batches. Order matters: all taxonomy work first, then pr
 - Consumes: `CADCO_Import_Plan` (Task 7), `CADCO_Import_Repository` (Task 9), the field map (Task 2).
 - Produces:
   - `CADCO_Import_Applier::prepare_terms(array $rows): array` — deletes the pre-existing tree once (guarded by the `cadco_import_taxonomy_reset` option), then creates categories/tags/brands. Returns `['categories'=>int,'tags'=>int,'brands'=>int]`.
-  - `CADCO_Import_Applier::apply_batch(CADCO_Import_Plan $plan, int $offset, int $size): array` returning `['done'=>int,'total'=>int,'complete'=>bool,'log'=>list<string>]`.
+  - `CADCO_Import_Applier::build_queue(CADCO_Import_Plan $plan): array` — the ordered job list, built once per run.
+  - `CADCO_Import_Applier::apply_jobs(array $queue, int $offset, int $size): array` returning `['done'=>int,'total'=>int,'complete'=>bool,'log'=>list<string>]`.
   - `CADCO_Import_Applier::finalise(): void` — orphan cleanup, related-product links, single rewrite flush.
   - `CADCO_Import_Applier::write_product(array $row, ?int $post_id): int`
 
@@ -3561,18 +3562,20 @@ final class CADCO_Import_Applier
     }
 
     /**
-     * One slice of the plan.
+     * Run one slice of a previously built queue.
      *
-     * The work is flattened into a single ordered list so that a batch can
-     * span operation types and the progress bar advances evenly. Renames that
-     * were not approved are dropped here rather than earlier, so the plan the
-     * operator saw stays intact.
+     * The queue is passed in rather than derived from a plan, and that is
+     * load-bearing. Re-planning per request would be wrong: once the first
+     * batch has written its products, a fresh plan sees them as unchanged and
+     * files them under skips, so the queue shrinks — and a fixed offset into a
+     * shrinking list silently steps over rows that were never applied. The
+     * caller builds the queue once and persists it.
      *
+     * @param list<array<string, mixed>> $queue
      * @return array{done:int,total:int,complete:bool,log:list<string>}
      */
-    public static function apply_batch(CADCO_Import_Plan $plan, int $offset, int $size): array
+    public static function apply_jobs(array $queue, int $offset, int $size): array
     {
-        $queue = self::queue($plan);
         $total = count($queue);
         $log   = [];
 
@@ -3591,9 +3594,15 @@ final class CADCO_Import_Applier
     }
 
     /**
+     * Flatten an approved plan into one ordered list of jobs.
+     *
+     * Flat so a batch can span operation types and the progress bar advances
+     * evenly. Renames that were not approved are dropped here rather than
+     * earlier, so the plan the operator reviewed stays intact.
+     *
      * @return list<array<string, mixed>>
      */
-    private static function queue(CADCO_Import_Plan $plan): array
+    public static function build_queue(CADCO_Import_Plan $plan): array
     {
         $queue = [];
 
@@ -4095,7 +4104,7 @@ The first half of the UI: upload a workbook, see what is wrong with it. Since va
 - Produces:
   - `CADCO_Import_Admin::init(): void`
   - `CADCO_Import_Admin::run_pipeline(string $path): array` returning `['report'=>CADCO_Import_Report,'plan'=>?CADCO_Import_Plan,'rows'=>array,'changes'=>array]`.
-  - Transient `cadco_import_run_{user_id}` holding the uploaded path and normalised rows between requests.
+  - Transient `cadco_import_run_{user_id}` holding the uploaded workbook path and, once the run starts, the built job queue. The queue is built once and reused for every batch — see the note on `ajax_batch()`.
 
 - [ ] **Step 1: Create `inc/import/class-cadco-import-admin.php`**
 
@@ -4383,9 +4392,9 @@ final class CADCO_Import_Admin
                     <th><?php esc_html_e('UPC', 'cadco-theme'); ?></th>
                 </tr></thead>
                 <tbody>
-                <?php foreach ($plan->renames() as $i => $rename) : ?>
+                <?php foreach ($plan->renames() as $rename) : ?>
                     <tr>
-                        <td><input type="checkbox" class="cadco-rename" value="<?php echo (int) $i; ?>" checked></td>
+                        <td><input type="checkbox" class="cadco-rename" value="<?php echo esc_attr($rename['upc']); ?>" checked></td>
                         <td><code><?php echo esc_html($rename['old_sku']); ?></code></td>
                         <td><code><?php echo esc_html($rename['new_sku']); ?></code></td>
                         <td><?php echo esc_html($rename['upc']); ?></td>
@@ -4441,8 +4450,14 @@ final class CADCO_Import_Admin
     }
 
     /**
-     * One batch. Re-runs the pipeline from the stored file each time so that
-     * the applier always works from the same plan the operator approved.
+     * One batch of the apply run.
+     *
+     * The queue is built ONCE, on the first request, and persisted. It is
+     * tempting to re-plan every request from the stored workbook — that is
+     * what an earlier draft did, and it is silently wrong: after the first
+     * batch has written its products, a fresh plan sees them as unchanged and
+     * files them under skips. The queue shrinks, and a fixed offset into a
+     * shrinking list steps straight over rows that were never applied.
      */
     public static function ajax_batch(): void
     {
@@ -4452,38 +4467,50 @@ final class CADCO_Import_Admin
             wp_send_json_error(['message' => __('Not allowed.', 'cadco-theme')], 403);
         }
 
-        $run = get_transient('cadco_import_run_' . get_current_user_id());
+        $key    = 'cadco_import_run_' . get_current_user_id();
+        $run    = get_transient($key);
+        $offset = max(0, (int) ($_POST['offset'] ?? 0));
+        $size   = max(1, min(100, (int) ($_POST['size'] ?? 25)));
 
         if (!is_array($run) || !isset($run['path']) || !is_readable($run['path'])) {
             wp_send_json_error(['message' => __('The uploaded workbook has expired. Please upload it again.', 'cadco-theme')], 400);
         }
 
-        $result = self::run_pipeline($run['path']);
-
-        if (!$result['report']->passed() || $result['plan'] === null) {
-            wp_send_json_error(['message' => __('The workbook no longer validates.', 'cadco-theme')], 400);
-        }
-
-        $plan     = $result['plan'];
-        $approved = array_map('intval', (array) ($_POST['approved'] ?? []));
-
-        foreach (array_keys($plan->renames()) as $i) {
-            if (in_array($i, $approved, true)) {
-                $plan->approve_rename((int) $i);
-            }
-        }
-
-        $offset = max(0, (int) ($_POST['offset'] ?? 0));
-
         if ($offset === 0) {
+            $result = self::run_pipeline($run['path']);
+
+            if (!$result['report']->passed() || $result['plan'] === null) {
+                wp_send_json_error(['message' => __('The workbook no longer validates.', 'cadco-theme')], 400);
+            }
+
+            $plan = $result['plan'];
+
+            // Renames are approved by UPC rather than by position. The UPC is
+            // unique per rename and stable across requests; an array index is
+            // neither if the plan is ever rebuilt in a different order.
+            $approved = array_map('strval', (array) ($_POST['approved'] ?? []));
+
+            foreach ($plan->renames() as $i => $rename) {
+                if (in_array((string) $rename['upc'], $approved, true)) {
+                    $plan->approve_rename((int) $i);
+                }
+            }
+
             CADCO_Import_Applier::prepare_terms($result['rows']);
+
+            $run['queue'] = CADCO_Import_Applier::build_queue($plan);
+            set_transient($key, $run, HOUR_IN_SECONDS);
         }
 
-        $size  = max(1, (int) ($_POST['size'] ?? 25));
-        $batch = CADCO_Import_Applier::apply_batch($plan, $offset, $size);
+        if (!isset($run['queue']) || !is_array($run['queue'])) {
+            wp_send_json_error(['message' => __('The import run has expired. Please start again.', 'cadco-theme')], 400);
+        }
+
+        $batch = CADCO_Import_Applier::apply_jobs($run['queue'], $offset, $size);
 
         if ($batch['complete']) {
             CADCO_Import_Applier::finalise();
+            delete_transient($key);
         }
 
         wp_send_json_success($batch);
