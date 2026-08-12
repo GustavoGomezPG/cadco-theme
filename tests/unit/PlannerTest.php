@@ -132,6 +132,26 @@ final class PlannerTest extends TestCase
         self::assertSame(2, $plan->counts()['trash']);
     }
 
+    public function test_ambiguity_is_permanent_however_many_products_share_a_upc(): void
+    {
+        // An odd number of collisions is the case that breaks a sentinel
+        // written with isset(): the third insert sees isset() === false,
+        // because the stored value is null, and overwrites the sentinel.
+        foreach ([3, 4, 5] as $collisions) {
+            $current = [];
+
+            for ($i = 0; $i < $collisions; $i++) {
+                $current[] = self::current(10 + $i, 'OLD-' . $i, '654796-52113-5', 'stale');
+            }
+
+            $plan = \CADCO_Import_Planner::plan([self::row()], $current);
+
+            self::assertSame(0, $plan->counts()['rename'], "$collisions colliding products must not yield a rename");
+            self::assertSame(1, $plan->counts()['create'], "$collisions colliding products: the row is a create");
+            self::assertSame($collisions, $plan->counts()['trash'], "$collisions colliding products must all trash");
+        }
+    }
+
     public function test_numeric_skus_and_upcs_do_not_crash_the_planner(): void
     {
         $rows = [

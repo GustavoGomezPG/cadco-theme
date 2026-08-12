@@ -39,8 +39,14 @@ final class CADCO_Import_Planner
             // A UPC shared by several products is ambiguous, so it is not
             // usable for rename detection. Validation blocks that case anyway;
             // this keeps the planner safe if it is ever called directly.
+            //
+            // array_key_exists, not isset: isset() is false for a key whose
+            // value is null, so a third product sharing a UPC would see
+            // isset() === false and overwrite the ambiguity sentinel with
+            // itself, resurrecting a false unique match. Ambiguity must be
+            // permanent once set, however many products collide.
             if ($upc !== '') {
-                $by_upc[$upc] = isset($by_upc[$upc]) ? null : $product;
+                $by_upc[$upc] = array_key_exists($upc, $by_upc) ? null : $product;
             }
 
             $unseen[(int) $product['post_id']] = $product;
@@ -64,7 +70,7 @@ final class CADCO_Import_Planner
                 continue;
             }
 
-            if ($upc !== '' && isset($by_upc[$upc]) && $by_upc[$upc] !== null) {
+            if ($upc !== '' && array_key_exists($upc, $by_upc) && $by_upc[$upc] !== null) {
                 $match = $by_upc[$upc];
                 unset($unseen[(int) $match['post_id']]);
 
