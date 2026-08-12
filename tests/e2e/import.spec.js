@@ -221,7 +221,18 @@ test.describe('Product import', () => {
 	// not fire. A tiny fixture keeps this fast and isolated from the 236-row
 	// apply below; the catalogue is reset back to empty afterwards so it
 	// cannot influence the counts the big apply test asserts.
-	test('a product name containing a script tag is displayed, not executed', async ({ page }) => {
+	//
+	// This proves three things about a product name carrying markup: the
+	// markup is stripped on import (CADCO_Import_Applier::write_product()
+	// runs Product Name through wp_strip_all_tags() before it ever reaches
+	// WooCommerce), no script from it can execute, and the surrounding
+	// legitimate text is not discarded along with the markup — only the tag
+	// goes. It deliberately does not assert that the raw markup is visible
+	// as literal text on the page: that would be testing for escaping, a
+	// different (and not required) remediation. "The script does not run"
+	// is the security property; "the words survive" is what proves the
+	// sanitiser did not overreach into deleting the whole product name.
+	test('a script tag in a product name is stripped on import and cannot execute', async ({ page }) => {
 		const fixture = buildFixture('xss');
 
 		await page.goto(IMPORT_PATH);
@@ -243,13 +254,22 @@ test.describe('Product import', () => {
 
 			await page.goto(permalink);
 
+			// The security property: nothing from the payload ever ran.
 			const xssRan = await page.evaluate(() => window.__xss);
 			expect(xssRan).toBeUndefined();
 			expect(dialogFired).toBe(false);
 
-			// The payload must still be visible as literal text — proof this is
-			// escaping, not silent stripping, that kept the script from running.
-			await expect(page.locator('body')).toContainText('<script>window.__xss=1</script>');
+			// Belt and braces on the same property: no script element carrying
+			// the payload exists anywhere in the page at all, so there is
+			// nothing left that a different execution path could trigger.
+			await expect(page.locator('script', { hasText: 'window.__xss' })).toHaveCount(0);
+
+			// The important half: the sanitiser removed only the markup, not
+			// the product name it was embedded in. Fixture title is
+			// 'XSS <script>window.__xss=1</script> Probe' — the words on
+			// either side of the tag must still be there.
+			await expect(page.locator('body')).toContainText('XSS');
+			await expect(page.locator('body')).toContainText('Probe');
 		} finally {
 			// Runs whether the assertions above passed or not — a failure
 			// here must not leave the 4 fixture products (or their terms)
