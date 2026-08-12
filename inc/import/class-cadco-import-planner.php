@@ -204,4 +204,50 @@ final class CADCO_Import_Planner
 
         return $diff;
     }
+
+    /**
+     * The path segment of a legacy product URL, or '' for anything that is
+     * not one.
+     *
+     * The workbook's 'Website URL' column is untrusted spreadsheet data, not
+     * a value this system produced — two rows in the real workbook put a
+     * spec-sheet PDF there instead of a product page. Redirecting a PDF path
+     * to a new product URL would be wrong, so the shape check
+     * (`#^/product/[^/]+$#`) is deliberately strict: only exactly
+     * `/product/<something>` passes. Trailing slash is trimmed first so
+     * 'http://.../product/cap-f/' and '.../product/cap-f' extract the same
+     * path.
+     *
+     * Uses parse_url() rather than WordPress's wp_parse_url() — this class is
+     * exercised by the unit suite with no WordPress loaded (see
+     * PlannerTest::setUpBeforeClass()), and plain PHP is all that pure
+     * parsing needs.
+     */
+    public static function legacy_path(string $url): string
+    {
+        $path = self::path_of($url);
+
+        return preg_match('#^/product/[^/]+$#', $path) === 1 ? $path : '';
+    }
+
+    /**
+     * The path segment of any URL, trailing slash trimmed, with no shape
+     * guard.
+     *
+     * Separate from legacy_path() on purpose. A renamed product's *old*
+     * permalink is on this site and already shaped
+     * '/products/<category>/<child>/<slug>/' — legacy_path()'s product-page
+     * guard exists specifically to reject the workbook's two PDF rows, and
+     * loosening it to also accept that shape would let a spec-sheet URL slip
+     * through some other way later. The rename case does not need a guard at
+     * all: its input is get_permalink() on a product this system already
+     * knows exists, never free-text from an uploaded workbook, so there is
+     * nothing to reject.
+     */
+    public static function path_of(string $url): string
+    {
+        $path = parse_url($url, PHP_URL_PATH);
+
+        return is_string($path) ? rtrim($path, '/') : '';
+    }
 }

@@ -408,6 +408,61 @@ test.describe('Product import', () => {
 		expect(final.brands).toBe(6);
 	});
 
+	// Task 16: the redirect map used to hold only approved renames — the
+	// legacy `Website URL` half (the old cadco-ltd.com site) was never
+	// implemented, so every one of the real product URLs from the old site
+	// would 404 once this one goes live. This proves the derived half end to
+	// end, against the real corrected workbook's real data: a known
+	// product's legacy path resolves to its real new URL, and the two rows
+	// where 'Website URL' actually holds a spec-sheet PDF (a data-entry
+	// error in the source workbook) are skipped rather than exported as a
+	// redirect from a PDF path.
+	//
+	// 225, not 232: the corrected workbook has 234 rows with a non-blank
+	// 'Website URL', of which 232 are shaped like a real product page
+	// (/product/<slug>) rather than one of the two PDF rows — but those 232
+	// are not all *distinct* paths. 7 pairs of genuinely different products
+	// (different SKU, different post) carry the exact same legacy URL — e.g.
+	// XHC-020-S1 and XHC-020-P1 both claim
+	// '/product/xhc-020-p1' — a real duplicate in the source data, confirmed
+	// by direct inspection, not a bug in path extraction. redirect_map() is
+	// keyed by the 'from' path, so a legacy URL claimed twice can only ever
+	// redirect to one of the two new pages; the second claimant silently
+	// loses the collision. 232 legacy paths therefore collapse to 225 unique
+	// map entries. See task-16-report.md for the full list of collisions.
+	test('the redirect map exports a legacy path for a known product and skips the two PDF rows', async ({ page }) => {
+		await page.goto(IMPORT_PATH);
+		const nonce = await page.evaluate(() => window.cadcoImport.nonce);
+
+		const response = await page.request.get(
+			`/wp-admin/edit.php?post_type=product&page=cadco-import&action=export-redirects&_wpnonce=${nonce}`
+		);
+		expect(response.status()).toBe(200);
+
+		const csv = await response.text();
+		const lines = csv.trim().split('\n');
+
+		expect(lines[0]).toContain('Old path');
+		expect(lines[0]).toContain('New URL');
+
+		const rows = lines.slice(1);
+		expect(rows).toHaveLength(225);
+
+		// fputcsv() only quotes a field that needs it (contains the
+		// delimiter, the enclosure, a newline, or whitespace) — the header
+		// row is quoted because 'Old path' and 'New URL' contain spaces, but
+		// a plain path or URL is not, so data rows are unquoted.
+		const blcRow = rows.find((line) => line.startsWith('/product/xaf-113,'));
+		expect(blcRow).toBeTruthy();
+		expect(blcRow).toContain('/products/convection-ovens/bakerlux-classic/blc-113/');
+
+		// VK-VH-FK -> varikwik-hood-filter-2.pdf, PS-TBS-HD ->
+		// wt-hd-warming-shelves-accessories-spec-rv1-stainless-1.pdf. Neither
+		// is a product page, so neither may appear as a redirect source.
+		expect(csv).not.toContain('varikwik-hood-filter');
+		expect(csv).not.toContain('wt-hd-warming-shelves');
+	});
+
 	test('an imported product page renders with its specs', async ({ page }) => {
 		await page.goto('/products/convection-ovens/bakerlux-classic/blc-113/');
 

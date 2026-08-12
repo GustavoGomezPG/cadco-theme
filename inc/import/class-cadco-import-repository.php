@@ -81,6 +81,50 @@ final class CADCO_Import_Repository
         );
     }
 
+    /**
+     * Every product carrying a legacy `_cadco_legacy_url`, with its current
+     * permalink alongside.
+     *
+     * Deliberately a live query rather than anything cached or persisted —
+     * CADCO_Import_Admin::redirect_map() derives the legacy half of the
+     * redirect map from this at export time (design rationale in the class
+     * docblock there), specifically so a product recategorised after import
+     * exports its *current* URL, not whatever it was on the run that first
+     * wrote the meta.
+     *
+     * Same non-trash restriction as current_products(): a trashed product's
+     * old-site URL should 404, not redirect to a page that no longer exists.
+     * Blank _cadco_legacy_url is excluded at the SQL level — write_meta()
+     * deletes the meta entirely for a blank 'Website URL' cell rather than
+     * storing '', but the exclusion costs nothing and does not depend on
+     * that.
+     *
+     * @return list<array{post_id:int,legacy:string,permalink:string}>
+     */
+    public static function legacy_urls(): array
+    {
+        global $wpdb;
+
+        $rows = $wpdb->get_results(
+            "SELECT p.ID AS post_id, pm.meta_value AS legacy
+               FROM {$wpdb->posts} p
+         INNER JOIN {$wpdb->postmeta} pm ON pm.post_id = p.ID AND pm.meta_key = '_cadco_legacy_url'
+              WHERE p.post_type = 'product'
+                AND p.post_status NOT IN ('trash', 'auto-draft')
+                AND pm.meta_value <> ''",
+            ARRAY_A
+        ) ?: [];
+
+        return array_map(
+            static fn (array $row): array => [
+                'post_id'   => (int) $row['post_id'],
+                'legacy'    => (string) $row['legacy'],
+                'permalink' => (string) get_permalink((int) $row['post_id']),
+            ],
+            $rows
+        );
+    }
+
     public static function find_by_sku(string $sku): ?int
     {
         $id = wc_get_product_id_by_sku($sku);

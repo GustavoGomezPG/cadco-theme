@@ -284,6 +284,39 @@ final class PlannerTest extends TestCase
         self::assertSame([], $plan->updates()[0]['diff']);
     }
 
+    public function test_legacy_path_extracts_the_path_from_a_full_url(): void
+    {
+        self::assertSame('/product/xaf-113', \CADCO_Import_Planner::legacy_path('https://www.cadco-ltd.com/product/xaf-113'));
+        self::assertSame('/product/cap-f',   \CADCO_Import_Planner::legacy_path('http://www.cadco-ltd.com/product/cap-f/'));
+    }
+
+    public function test_legacy_path_rejects_anything_that_is_not_a_product_page(): void
+    {
+        // Two rows in the real workbook put a spec-sheet PDF in this column.
+        // A redirect from a PDF path would be wrong, so these yield nothing.
+        self::assertSame('', \CADCO_Import_Planner::legacy_path('https://www.cadco-ltd.com/edit/resources/spec-sheets/varikwik-hood-filter-2.pdf'));
+        self::assertSame('', \CADCO_Import_Planner::legacy_path(''));
+        self::assertSame('', \CADCO_Import_Planner::legacy_path('not a url'));
+    }
+
+    public function test_path_of_extracts_any_path_with_no_shape_guard(): void
+    {
+        // Used for the rename case: the *old* permalink is on this site, so
+        // it looks like /products/<cat>/<child>/<slug>/, not /product/<slug>.
+        // legacy_path()'s product-page guard exists to reject the PDF rows,
+        // and must not be loosened to also accept this shape — path_of() is
+        // the separate, guard-free extraction the rename case uses instead.
+        self::assertSame(
+            '/products/convection-ovens/bakerlux-classic/xaf-113',
+            \CADCO_Import_Planner::path_of('https://cadco.local/products/convection-ovens/bakerlux-classic/xaf-113/')
+        );
+    }
+
+    public function test_path_of_returns_empty_string_for_an_unparsable_url(): void
+    {
+        self::assertSame('', \CADCO_Import_Planner::path_of(''));
+    }
+
     private static function current(int $id, string $sku, string $upc, string $hash): array
     {
         return ['post_id' => $id, 'sku' => $sku, 'upc' => $upc, 'hash' => $hash];

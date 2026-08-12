@@ -205,8 +205,17 @@ final class CADCO_Import_Applier
             }
 
             if ($job['op'] === 'rename') {
+                // Read before write_product() changes the SKU and slug —
+                // this is the product's address as it exists right now, the
+                // one a search engine or a bookmark still points at.
+                $old_permalink = (string) get_permalink((int) $job['post_id']);
+
                 $id = self::write_product($job['row'], (int) $job['post_id']);
-                self::record_redirect((string) $job['old_sku'], $id);
+
+                self::record_redirect(
+                    CADCO_Import_Planner::path_of($old_permalink),
+                    (string) get_permalink($id)
+                );
 
                 return sprintf('Renamed %s to %s (#%d)', $job['old_sku'], $job['row']['Model #'], $id);
             }
@@ -564,17 +573,34 @@ final class CADCO_Import_Applier
     }
 
     /**
-     * Remember that a product used to live at a different model number.
+     * Remember that a product used to live at a different address.
+     *
+     * $from is a path (e.g. '/products/convection-ovens/bakerlux-classic/xaf-113'),
+     * not a SKU — see the class docblock note on run_job()'s rename branch.
+     * Renames are historical events a future workbook run cannot reconstruct
+     * (the old permalink is gone the moment write_product() changes the
+     * slug), so unlike the legacy-URL half of the redirect map (built at
+     * export time from _cadco_legacy_url — see
+     * CADCO_Import_Repository::legacy_urls()), this one has to stay
+     * persisted here, in an option that only ever grows across rename runs.
+     *
+     * A blank $from means path extraction failed (get_permalink() returned
+     * something unparsable) — nothing usable to redirect from, so nothing is
+     * recorded rather than writing a bogus '' key.
      */
-    private static function record_redirect(string $old_sku, int $post_id): void
+    private static function record_redirect(string $from, string $to): void
     {
+        if ($from === '') {
+            return;
+        }
+
         $map = (array) get_option('cadco_import_redirects', []);
 
-        // A canonical-integer SKU ('12345') used as an array key is silently
+        // A canonical-integer path segment used as an array key is silently
         // coerced to int by PHP. Casting here keeps the key's type explicit
         // and stops the option's shape from drifting depending on whether a
-        // given SKU happens to look numeric.
-        $map[(string) $old_sku] = get_permalink($post_id);
+        // given path happens to look numeric.
+        $map[(string) $from] = $to;
 
         update_option('cadco_import_redirects', $map, false);
     }

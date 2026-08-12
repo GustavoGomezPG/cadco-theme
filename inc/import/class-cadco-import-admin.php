@@ -401,7 +401,7 @@ final class CADCO_Import_Admin
         }
 
         self::notice('success', __('The workbook is clean. Review the plan below before applying it.', 'cadco-theme'));
-        self::render_plan($result['plan'], $result['changes']);
+        self::render_plan($result['plan'], $result['changes'], $result['rows']);
     }
 
     private static function render_report(CADCO_Import_Report $report): void
@@ -452,7 +452,7 @@ final class CADCO_Import_Admin
         }
     }
 
-    private static function render_plan(CADCO_Import_Plan $plan, array $changes): void
+    private static function render_plan(CADCO_Import_Plan $plan, array $changes, array $rows): void
     {
         $counts = $plan->counts();
         ?>
@@ -467,8 +467,9 @@ final class CADCO_Import_Admin
         <?php self::render_update_table($plan); ?>
         <?php self::render_create_table($plan); ?>
         <?php self::render_trash_table($plan); ?>
+        <?php self::render_legacy_redirect_preview($rows); ?>
 
-        <?php if (get_option('cadco_import_redirects', []) !== []) : ?>
+        <?php if (self::redirect_map() !== []) : ?>
             <p>
                 <a class="button" href="<?php echo esc_url(wp_nonce_url(
                     admin_url('edit.php?post_type=product&page=cadco-import&action=export-redirects'),
@@ -677,6 +678,126 @@ final class CADCO_Import_Admin
     }
 
     /**
+     * Forecast, from the rows just validated, what the legacy half of the
+     * redirect map (see redirect_map()) will contain once this plan is
+     * applied — before anything is written, so the operator sees it on the
+     * same screen as the rest of the plan rather than discovering it only
+     * after the fact on the download.
+     *
+     * Two things are worth flagging here, both real findings in the actual
+     * corrected workbook rather than hypothetical:
+     *
+     * - Two rows (VK-VH-FK, PS-TBS-HD) put a spec-sheet PDF in 'Website URL'
+     *   instead of a product page — a data-entry error, not this system's to
+     *   silently drop without a trace.
+     * - Seven legacy paths are each claimed by two different products (e.g.
+     *   '/product/xhc-020-p1' by both XHC-020-P1 and XHC-020-S1).
+     *   redirect_map() is keyed by path, so a path claimed twice can only
+     *   ever redirect to one of the two — the count exported is smaller than
+     *   the count of rows with a valid-looking legacy URL for exactly this
+     *   reason. Which one wins is arbitrary from here (whichever
+     *   CADCO_Import_Repository::legacy_urls() happens to return last for
+     *   that path), so this is surfaced as a question for CADCO to answer,
+     *   not silently resolved one way.
+     *
+     * Both are named rather than just counted: with only a handful of each,
+     * a list is more useful than a count, and it is what lets an operator
+     * actually go fix (or explain) the workbook.
+     *
+     * @param list<array<string, mixed>> $rows
+     */
+    private static function render_legacy_redirect_preview(array $rows): void
+    {
+        $will_export = 0;
+        $skipped     = [];
+        $by_path     = [];
+
+        foreach ($rows as $row) {
+            $url = trim((string) ($row['Website URL'] ?? ''));
+
+            if ($url === '') {
+                continue;
+            }
+
+            $path  = CADCO_Import_Planner::legacy_path($url);
+            $model = (string) ($row['Model #'] ?? '');
+
+            if ($path === '') {
+                $skipped[] = $model;
+                continue;
+            }
+
+            $will_export++;
+            $by_path[$path][] = $model;
+        }
+
+        $collisions = array_filter($by_path, static fn (array $models): bool => count($models) > 1);
+
+        if ($will_export === 0 && $skipped === [] && $collisions === []) {
+            return;
+        }
+        ?>
+        <p class="description">
+            <?php
+            printf(
+                /* translators: %d: number of legacy URLs that will become redirects once this plan is applied */
+                esc_html(_n(
+                    '%d legacy URL will redirect to its new product page once this plan is applied.',
+                    '%d legacy URLs will redirect to their new product pages once this plan is applied.',
+                    $will_export,
+                    'cadco-theme'
+                )),
+                $will_export
+            );
+            ?>
+        </p>
+        <?php if ($skipped !== []) : ?>
+            <p class="description">
+                <?php
+                printf(
+                    /* translators: %s: comma-separated list of model numbers whose Website URL is not a product page */
+                    esc_html__('Website URL is not a product page, so no redirect will be made for: %s', 'cadco-theme'),
+                    esc_html(implode(', ', $skipped))
+                );
+                ?>
+            </p>
+        <?php endif; ?>
+        <?php if ($collisions !== []) : ?>
+            <p class="description">
+                <?php
+                printf(
+                    /* translators: %d: number of legacy paths claimed by more than one product */
+                    esc_html(_n(
+                        '%d legacy URL is claimed by more than one product. A redirect can only point to one destination — CADCO should confirm which is right:',
+                        '%d legacy URLs are each claimed by more than one product. A redirect can only point to one destination — CADCO should confirm which is right in each case:',
+                        count($collisions),
+                        'cadco-theme'
+                    )),
+                    count($collisions)
+                );
+                ?>
+            </p>
+            <ul>
+                <?php foreach (array_slice($collisions, 0, 20, true) as $path => $models) : ?>
+                    <li><code><?php echo esc_html($path); ?></code> — <?php echo esc_html(implode(', ', $models)); ?></li>
+                <?php endforeach; ?>
+            </ul>
+            <?php if (count($collisions) > 20) : ?>
+                <p class="description">
+                    <?php
+                    printf(
+                        /* translators: %d: number of collisions not shown */
+                        esc_html__('%d more not shown.', 'cadco-theme'),
+                        count($collisions) - 20
+                    );
+                    ?>
+                </p>
+            <?php endif; ?>
+        <?php endif; ?>
+        <?php
+    }
+
+    /**
      * A silent cap on a plan the operator is approving would be worse than no
      * cap at all — so whenever array_slice(..., 0, 200) actually cut
      * something, say how many rows were hidden.
@@ -851,13 +972,75 @@ final class CADCO_Import_Admin
     }
 
     /**
-     * Download the legacy-URL redirect map as CSV.
+     * The full legacy-URL redirect map: from path => to URL.
+     *
+     * Two halves, built two different ways, merged here:
+     *
+     * - Legacy entries (the old cadco-ltd.com site) are *derived* every call
+     *   from CADCO_Import_Repository::legacy_urls() — every published
+     *   product's stored _cadco_legacy_url, run through
+     *   CADCO_Import_Planner::legacy_path() to reject anything that is not a
+     *   product page — rather than accumulated in an option. That is
+     *   deliberate, and fixes three things at once: the option this used to
+     *   grow in stops growing without bound; the map always reflects
+     *   *current* permalinks, so a product recategorised after import
+     *   exports the right target instead of a stale one; and a trashed
+     *   product drops out automatically instead of leaving a dead entry.
+     *
+     * - Rename entries are historical events no future workbook run can
+     *   reconstruct — a product renamed in one run carries no trace of its
+     *   old URL in the next run's workbook — so those stay persisted in the
+     *   `cadco_import_redirects` option, written by
+     *   CADCO_Import_Applier::record_redirect().
+     *
+     * Renames win on a key collision: they are the more specific record for
+     * that exact path (a real event this system carried out), where a
+     * legacy entry is only ever inferred from workbook data. Entries whose
+     * `from` equals their `to` are dropped — nothing to redirect. Sorted by
+     * `from` so repeated exports of an unchanged map produce byte-identical
+     * CSVs.
+     *
+     * @return array<string, string>
+     */
+    public static function redirect_map(): array
+    {
+        $map = [];
+
+        foreach (CADCO_Import_Repository::legacy_urls() as $product) {
+            $from = CADCO_Import_Planner::legacy_path($product['legacy']);
+
+            if ($from === '') {
+                continue;
+            }
+
+            $map[$from] = $product['permalink'];
+        }
+
+        foreach ((array) get_option('cadco_import_redirects', []) as $from => $to) {
+            $map[(string) $from] = (string) $to;
+        }
+
+        foreach ($map as $from => $to) {
+            if ($from === $to) {
+                unset($map[$from]);
+            }
+        }
+
+        ksort($map);
+
+        return $map;
+    }
+
+    /**
+     * Download the redirect map as CSV.
      *
      * Renamed products keep their post ID and their page, but their address
-     * changes with the model number. This map pairs the old model number with
-     * the new URL so the redirects can be loaded into Yoast or the server
-     * config — the importer deliberately does not create them itself, because
-     * redirect handling is the SEO plugin's job on this site.
+     * changes with the model number; every other product's address changed
+     * too, from the old site's /product/<slug> to this site's
+     * /products/<category>/<child>/<slug>/. This map pairs each old path
+     * with the new URL so the redirects can be loaded into Yoast or the
+     * server config — the importer deliberately does not create them itself,
+     * because redirect handling is the SEO plugin's job on this site.
      */
     public static function maybe_export_redirects(): void
     {
@@ -871,7 +1054,7 @@ final class CADCO_Import_Admin
             wp_die(esc_html__('You are not allowed to do that.', 'cadco-theme'));
         }
 
-        $map    = (array) get_option('cadco_import_redirects', []);
+        $map    = self::redirect_map();
         $handle = fopen('php://output', 'w');
 
         if ($handle === false) {
@@ -882,10 +1065,10 @@ final class CADCO_Import_Admin
         header('Content-Type: text/csv; charset=utf-8');
         header('Content-Disposition: attachment; filename=cadco-redirects.csv');
 
-        fputcsv($handle, array_map([CADCO_Import_Report::class, 'csv_safe'], ['Old model number', 'New URL']), ',', '"', '');
+        fputcsv($handle, array_map([CADCO_Import_Report::class, 'csv_safe'], ['Old path', 'New URL']), ',', '"', '');
 
-        foreach ($map as $old => $url) {
-            fputcsv($handle, array_map([CADCO_Import_Report::class, 'csv_safe'], [(string) $old, (string) $url]), ',', '"', '');
+        foreach ($map as $from => $to) {
+            fputcsv($handle, array_map([CADCO_Import_Report::class, 'csv_safe'], [(string) $from, (string) $to]), ',', '"', '');
         }
 
         fclose($handle);
