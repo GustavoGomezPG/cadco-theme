@@ -461,6 +461,7 @@ final class CADCO_Import_Admin
             <li><strong><?php echo (int) $counts['update']; ?></strong> <?php esc_html_e('to update', 'cadco-theme'); ?></li>
             <li><strong><?php echo (int) $counts['rename']; ?></strong> <?php esc_html_e('renames to approve', 'cadco-theme'); ?></li>
             <li><strong><?php echo (int) $counts['trash']; ?></strong> <?php esc_html_e('to trash', 'cadco-theme'); ?></li>
+            <li><strong><?php echo (int) $counts['untrash']; ?></strong> <?php esc_html_e('to restore', 'cadco-theme'); ?></li>
             <li><strong><?php echo (int) $counts['skip']; ?></strong> <?php esc_html_e('unchanged', 'cadco-theme'); ?></li>
         </ul>
 

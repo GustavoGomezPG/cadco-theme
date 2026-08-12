@@ -44,11 +44,13 @@ final class PlanTest extends TestCase
     public function test_an_untrash_is_counted_and_is_a_write(): void
     {
         $plan = new \CADCO_Import_Plan();
-        $plan->add_untrash(self::row(), 7);
+        $plan->add_untrash(self::row(), 7, 'XAF-113', 'upc');
 
         self::assertSame(1, $plan->counts()['untrash']);
         self::assertSame(1, $plan->total_writes(), 'restoring a trashed product is a write');
         self::assertSame(7, $plan->untrashes()[0]['post_id']);
+        self::assertSame('XAF-113', $plan->untrashes()[0]['old_sku']);
+        self::assertSame('upc', $plan->untrashes()[0]['matched_by']);
     }
 
     public function test_category_is_derived_from_sheet_name_and_type(): void

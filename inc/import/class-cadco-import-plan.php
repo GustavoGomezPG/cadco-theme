@@ -98,10 +98,27 @@ final class CADCO_Import_Plan
      * it under a new post ID. See CADCO_Import_Planner::plan() for why this
      * only ever happens when the caller explicitly supplies trashed
      * candidates.
+     *
+     * $old_sku and $matched_by record how the trashed product was
+     * identified — 'sku' or 'upc' — so the operator can be shown, the same
+     * way a rename is shown, that a UPC match is reusing post $post_id
+     * under a different model number than it was trashed with. Unlike a
+     * rename, this never needs per-item approval: a rename happens inside
+     * a routine import the operator did not specifically request, so it
+     * needs consent before an identity is asserted; a restore is already an
+     * explicit, deliberate action aimed at one named archived workbook, so
+     * requiring approval on top of that would be friction on an intent
+     * already given. The operator still needs to *see* the match, which is
+     * what these two fields are for.
      */
-    public function add_untrash(array $row, int $post_id): void
+    public function add_untrash(array $row, int $post_id, string $old_sku, string $matched_by): void
     {
-        $this->untrashes[] = ['row' => $row, 'post_id' => $post_id];
+        $this->untrashes[] = [
+            'row'        => $row,
+            'post_id'    => $post_id,
+            'old_sku'    => $old_sku,
+            'matched_by' => $matched_by,
+        ];
     }
 
     public function creates(): array

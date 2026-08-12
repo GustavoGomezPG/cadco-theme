@@ -374,6 +374,63 @@ final class PlannerTest extends TestCase
         self::assertSame(1, $plan->counts()['create']);
     }
 
+    public function test_trashed_upc_ambiguity_is_permanent_however_many_products_share_it(): void
+    {
+        // Two collisions is exactly the count at which a sentinel written
+        // with isset() happens to agree with the correct array_key_exists()
+        // form: p7 sets the sentinel, p8's isset() on a null value is
+        // false, so it also (correctly, by luck) stores null. The third
+        // insert is where a broken isset() sentinel diverges — its
+        // isset() on the stored null is false, so it overwrites the
+        // sentinel with itself and resurrects a false unique match. See
+        // test_ambiguity_is_permanent_however_many_products_share_a_upc for
+        // the same trap on the live index.
+        foreach ([3, 4, 5] as $collisions) {
+            $trashed = [];
+
+            for ($i = 0; $i < $collisions; $i++) {
+                $trashed[] = self::current(20 + $i, 'OLD-' . $i, '654796-52113-5', 'stale');
+            }
+
+            $plan = \CADCO_Import_Planner::plan([self::row()], [], $trashed);
+
+            self::assertSame(0, $plan->counts()['untrash'], "$collisions colliding trashed products must not untrash");
+            self::assertSame(1, $plan->counts()['create'], "$collisions colliding trashed products: the row is a create");
+        }
+    }
+
+    public function test_an_ambiguous_trashed_sku_never_untrashes(): void
+    {
+        // Trash is a cumulative store: create -> trash -> recreate -> trash
+        // leaves two trashed products sharing a SKU, something the live
+        // index cannot produce (current_products() excludes trash, and the
+        // validator forbids duplicate live SKUs). An arbitrary one of them
+        // must not be untrashed in place of the other.
+        $plan = \CADCO_Import_Planner::plan([self::row()], [], [
+            self::current(7, 'BLC-113', '111111-11111-1', 'stale'),
+            self::current(8, 'BLC-113', '222222-22222-2', 'stale'),
+        ]);
+
+        self::assertSame(0, $plan->counts()['untrash']);
+        self::assertSame(1, $plan->counts()['create']);
+    }
+
+    public function test_trashed_sku_ambiguity_is_permanent_however_many_products_share_it(): void
+    {
+        foreach ([3, 4, 5] as $collisions) {
+            $trashed = [];
+
+            for ($i = 0; $i < $collisions; $i++) {
+                $trashed[] = self::current(30 + $i, 'BLC-113', '000000-0000' . $i . '-0', 'stale');
+            }
+
+            $plan = \CADCO_Import_Planner::plan([self::row()], [], $trashed);
+
+            self::assertSame(0, $plan->counts()['untrash'], "$collisions colliding trashed SKUs must not untrash");
+            self::assertSame(1, $plan->counts()['create'], "$collisions colliding trashed SKUs: the row is a create");
+        }
+    }
+
     public function test_untrashes_count_as_writes(): void
     {
         $plan = \CADCO_Import_Planner::plan([self::row()], [], [
@@ -381,6 +438,23 @@ final class PlannerTest extends TestCase
         ]);
 
         self::assertSame(1, $plan->total_writes());
+    }
+
+    public function test_an_untrash_records_how_it_matched(): void
+    {
+        $sku_match = \CADCO_Import_Planner::plan([self::row()], [], [
+            self::current(7, 'BLC-113', '654796-52113-5', 'stale'),
+        ]);
+
+        self::assertSame('BLC-113', $sku_match->untrashes()[0]['old_sku']);
+        self::assertSame('sku', $sku_match->untrashes()[0]['matched_by']);
+
+        $upc_match = \CADCO_Import_Planner::plan([self::row()], [], [
+            self::current(7, 'XAF-113', '654796-52113-5', 'stale'),
+        ]);
+
+        self::assertSame('XAF-113', $upc_match->untrashes()[0]['old_sku'], 'the SKU it was trashed under, not the row\'s new one');
+        self::assertSame('upc', $upc_match->untrashes()[0]['matched_by']);
     }
 
     private static function current(int $id, string $sku, string $upc, string $hash): array

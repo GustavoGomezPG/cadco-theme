@@ -39,13 +39,26 @@ final class CADCO_Import_Planner
             $sku = (string) $product['sku'];
             $upc = (string) $product['upc'];
 
+            // Same ambiguity sentinel as $by_upc below: array_key_exists,
+            // not isset, so a third trashed product sharing a SKU or UPC
+            // cannot overwrite the ambiguity marker and resurrect a false
+            // match.
+            //
+            // Unlike the live index, this collision is not merely a safety
+            // margin against a validator that already forbids it elsewhere.
+            // current_products() excludes trash, and the workbook validator
+            // forbids duplicate live SKUs, so a live SKU collision is
+            // near-impossible. But trash is a cumulative store: a real
+            // create -> trash -> recreate -> trash cycle leaves two trashed
+            // products sharing a SKU, and WooCommerce's SKU-uniqueness
+            // check does not span trash. Left unhandled, an arbitrary one
+            // of them would be untrashed — wrong post ID, wrong
+            // attachments, exactly the failure this feature exists to
+            // prevent.
             if ($sku !== '') {
-                $trashed_by_sku[$sku] = $product;
+                $trashed_by_sku[$sku] = array_key_exists($sku, $trashed_by_sku) ? null : $product;
             }
 
-            // Same ambiguity sentinel as $by_upc below: array_key_exists,
-            // not isset, so a third trashed product sharing a UPC cannot
-            // overwrite the ambiguity marker and resurrect a false match.
             if ($upc !== '') {
                 $trashed_by_upc[$upc] = array_key_exists($upc, $trashed_by_upc) ? null : $product;
             }
@@ -128,15 +141,15 @@ final class CADCO_Import_Planner
             // add_create()) is what makes a restore a *restore*: the post
             // ID, and with it every media attachment and manual edit,
             // survives.
-            if ($sku !== '' && isset($trashed_by_sku[$sku])) {
+            if ($sku !== '' && array_key_exists($sku, $trashed_by_sku) && $trashed_by_sku[$sku] !== null) {
                 $match = $trashed_by_sku[$sku];
-                $plan->add_untrash($row, (int) $match['post_id']);
+                $plan->add_untrash($row, (int) $match['post_id'], (string) $match['sku'], 'sku');
                 continue;
             }
 
             if ($upc !== '' && array_key_exists($upc, $trashed_by_upc) && $trashed_by_upc[$upc] !== null) {
                 $match = $trashed_by_upc[$upc];
-                $plan->add_untrash($row, (int) $match['post_id']);
+                $plan->add_untrash($row, (int) $match['post_id'], (string) $match['sku'], 'upc');
                 continue;
             }
 
