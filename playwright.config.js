@@ -8,6 +8,7 @@ const { defineConfig } = require('@playwright/test');
 module.exports = defineConfig({
 	testDir: './tests/e2e',
 	globalSetup: require.resolve('./tests/e2e/global-setup.js'),
+	globalTeardown: require.resolve('./tests/e2e/global-teardown.js'),
 	timeout: 180000,
 	expect: { timeout: 15000 },
 	fullyParallel: false,

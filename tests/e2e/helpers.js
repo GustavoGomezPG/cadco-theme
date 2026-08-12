@@ -1,15 +1,29 @@
 const { execFileSync } = require('node:child_process');
+const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 
 const THEME = path.resolve(__dirname, '../..');
 
+// Overridable so the suite runs on any machine, not just the one it was
+// developed on. Falls back to the original developer's path for local runs
+// that don't set the variable.
 const WORKBOOKS = path.resolve(
-	'/Users/gustavogomez/Documents/Projects/CADCO/Products Excel Spreadsheet latest'
+	process.env.CADCO_WORKBOOKS
+		|| '/Users/gustavogomez/Documents/Projects/CADCO/Products Excel Spreadsheet latest'
 );
 
 const CORRECTED = path.join(WORKBOOKS, 'Product Index Spreadsheet 2026_Website_CORRECTED.xlsx');
 const SOURCE    = path.join(WORKBOOKS, 'Product Index Spreadsheet 2026_Website_.xlsx');
+
+for (const [name, file] of [['CORRECTED', CORRECTED], ['SOURCE', SOURCE]]) {
+	if (!fs.existsSync(file)) {
+		throw new Error(
+			`Workbook fixture '${name}' not found at ${file}. Set CADCO_WORKBOOKS to the ` +
+			`directory containing the CADCO product workbooks before running the E2E suite.`
+		);
+	}
+}
 
 /**
  * Run WP-CLI against the site.
@@ -151,6 +165,26 @@ function permalinkFor(postId) {
 }
 
 /**
+ * Find a product by SKU among trashed posts specifically, via a direct meta
+ * lookup rather than wc_get_product_id_by_sku() — that helper is not
+ * guaranteed to honour post_status, and the whole point of this lookup is to
+ * prove the post really is in the 'trash' status rather than merely being
+ * unfindable (which a hard delete would also produce).
+ */
+function trashedProductIdBySku(sku) {
+	const id = wp([
+		'post', 'list', '--post_type=product', '--post_status=trash',
+		'--meta_key=_sku', `--meta_value=${sku}`, '--field=ID', '--format=csv',
+	]).trim();
+
+	return id ? Number(id) : null;
+}
+
+function postStatus(postId) {
+	return wp(['post', 'list', `--include=${Number(postId)}`, '--post_status=any', '--field=post_status', '--format=csv']).trim();
+}
+
+/**
  * Temporarily remove a capability from the administrator role, run `fn`, and
  * restore it afterwards even if `fn` throws — the restoration must never be
  * skipped, or every later test would silently start running as an
@@ -178,6 +212,8 @@ module.exports = {
 	buildFixture,
 	seedRenameSource,
 	productIdBySku,
+	trashedProductIdBySku,
+	postStatus,
 	permalinkFor,
 	withoutCapability,
 	CORRECTED,

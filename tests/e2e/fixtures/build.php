@@ -41,6 +41,39 @@ switch ($scenario) {
         ]));
         break;
 
+    case 'trash-full':
+        // Two independent products. Paired with 'trash-reduced' below, which
+        // carries only the first: applying 'trash-reduced' after this one
+        // must trash the second rather than touching the first.
+        FixtureBuilder::write($out, FixtureBuilder::completeSheets([
+            $target => [
+                FixtureBuilder::row([
+                    'Model #'      => 'E2E-TRASH-1',
+                    'UPC#'         => '654796-99040-1',
+                    'Product Name' => 'Trash Test — kept',
+                ]),
+                FixtureBuilder::row([
+                    'Model #'      => 'E2E-TRASH-2',
+                    'UPC#'         => '654796-99040-2',
+                    'Product Name' => 'Trash Test — removed',
+                ]),
+            ],
+        ]));
+        break;
+
+    case 'trash-reduced':
+        // Identical first row to 'trash-full', second row simply absent —
+        // the plan this produces against a catalogue built from
+        // 'trash-full' must offer exactly one trash and zero creates.
+        FixtureBuilder::write($out, FixtureBuilder::completeSheets([
+            $target => [FixtureBuilder::row([
+                'Model #'      => 'E2E-TRASH-1',
+                'UPC#'         => '654796-99040-1',
+                'Product Name' => 'Trash Test — kept',
+            ])],
+        ]));
+        break;
+
     case 'rename':
         // UPC must match the product build.php's caller seeds directly in
         // the database beforehand (see helpers.js: seedRenameSource()); the

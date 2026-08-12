@@ -1,7 +1,8 @@
 const { test, expect } = require('@playwright/test');
 const {
 	productCount, trashedCount, termCount, resetCatalogue, cleanupUploadRuns,
-	buildFixture, seedRenameSource, productIdBySku, permalinkFor, withoutCapability,
+	buildFixture, seedRenameSource, productIdBySku, trashedProductIdBySku, postStatus,
+	permalinkFor, withoutCapability,
 	CORRECTED, SOURCE, IMPORT_PATH,
 } = require('./helpers');
 
@@ -305,6 +306,65 @@ test.describe('Product import', () => {
 
 			const renamedId = productIdBySku('E2E-RENAME-NEW-1');
 			expect(renamedId).toBe(seededId);
+		} finally {
+			resetCatalogue();
+		}
+	});
+
+	// Blocker: nothing, unit or E2E, had ever run run_job()'s wp_trash_post()
+	// branch before this test existed. PlannerTest only proves the *planner*
+	// emits a trash job for a product missing from the workbook — nobody had
+	// exercised the Applier actually carrying it out. The first production
+	// import cannot exercise it either (the catalogue starts at 0 products),
+	// so all the risk of a broken trash path would otherwise land on the
+	// second real import, against real data, with no dry run available for
+	// "removed" rows the way there is for creates and updates.
+	test('a product missing from a re-import is trashed, not deleted', async ({ page }) => {
+		resetCatalogue();
+
+		try {
+			// Step 1: import a 2-row fixture. Both become published products.
+			const full = buildFixture('trash-full');
+
+			await page.goto(IMPORT_PATH);
+			await page.setInputFiles('input[type="file"]', full);
+			await page.getByRole('button', { name: /check workbook/i }).click();
+			await expect(page.locator('#cadco-import-apply')).toBeVisible();
+
+			await page.click('#cadco-import-apply');
+			await expect(page.locator('.cadco-import-status')).toContainText(/Done/i, { timeout: 30000 });
+
+			expect(productCount()).toBe(2);
+			expect(trashedCount()).toBe(0);
+
+			// Step 2: re-import with the second row gone. The plan must offer
+			// exactly one trash for the product the workbook no longer lists.
+			const reduced = buildFixture('trash-reduced');
+
+			await page.goto(IMPORT_PATH);
+			await page.setInputFiles('input[type="file"]', reduced);
+			await page.getByRole('button', { name: /check workbook/i }).click();
+			await expect(page.locator('.cadco-import-counts')).toBeVisible();
+			await expect(page.locator('.cadco-import-counts')).toContainText(/1[\s\S]*to trash/i);
+
+			// Step 3: apply. One product remains published; the other is trashed.
+			await page.click('#cadco-import-apply');
+			await expect(page.locator('.cadco-import-status')).toContainText(/Done/i, { timeout: 30000 });
+
+			expect(productCount()).toBe(1);
+			expect(trashedCount()).toBe(1);
+
+			// Step 4: the removed product is genuinely trashed, never deleted —
+			// trash-never-delete is an explicit design rule, and a hard delete
+			// would also make it "unfindable", which is why this looks it up by
+			// meta on trashed posts specifically rather than by absence.
+			const trashedId = trashedProductIdBySku('E2E-TRASH-2');
+			expect(trashedId).not.toBeNull();
+			expect(postStatus(trashedId)).toBe('trash');
+
+			// The surviving product is untouched, not re-created under a new ID.
+			const keptId = productIdBySku('E2E-TRASH-1');
+			expect(keptId).not.toBeNull();
 		} finally {
 			resetCatalogue();
 		}

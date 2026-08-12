@@ -653,6 +653,22 @@ The suite resets the catalogue before and after running (`resetCatalogue()` in
 `wp-content/uploads/cadco-imports/` when it finishes. Do not point it at
 anything but a development site — it deletes all products and terms.
 
+**The suite also mutates the target site's admin account.**
+`global-setup.js` overwrites the first administrator's password with a
+random value generated for the run, so it can log in without a shared secret
+committed to the repo. `global-teardown.js` restores the original password
+hash afterwards — including when a test fails, since Playwright always runs
+global teardown once setup has completed — but a run that is killed hard
+enough to skip teardown (e.g. `kill -9`, a crashed CI runner) leaves that
+account's password set to the run's random value, recoverable only from
+`tests/e2e/.password-restore.json` (gitignored) if it still exists, or via
+`wp user update` otherwise. Point `CADCO_BASE_URL` at a site whose admin
+credential you are prepared to reset by hand in that scenario.
+
+Point the suite at your own copy of the CADCO workbooks with
+`CADCO_WORKBOOKS=/path/to/workbooks` if they are not at the path
+`tests/e2e/helpers.js` defaults to.
+
 Install once, then run:
 
 ```bash
