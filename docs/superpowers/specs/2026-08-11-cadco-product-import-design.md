@@ -258,8 +258,20 @@ sets `cadco_flush_category_rules` on `created_product_cat`,
 `edited_product_cat` and `delete_product_cat`.
 
 An import touching 30+ terms must therefore not flush per term. The Applier
-completes **all** taxonomy work first, then triggers a **single** flush at the
-end of the run.
+completes all taxonomy work for a given slice first — `prepare_terms()` and
+`apply_jobs()` both clear the flush flag the moment they are done touching
+terms, before it can fire — and `finalise()` flushes once, at the very end,
+if the run completes.
+
+In practice this is not a single flush for the whole run: `ajax_batch()`
+deliberately re-arms the flag after every *incomplete* batch, so that
+request's own shutdown hook still flushes before the response ends. Without
+this, an operator who abandons a run partway through leaves the rewrite
+rules unflushed and new category permalinks 404 until something unrelated
+happens to touch a term. The trade accepted is a flush per batch (ten times
+for a 236-row run at the default batch size of 25) rather than the
+worst-of-both-worlds outcome of a run that never recovers from being
+interrupted.
 
 ### 5.3 Tags
 

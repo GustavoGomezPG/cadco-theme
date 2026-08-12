@@ -600,8 +600,12 @@ no WordPress loaded (`composer test`).
 ### Rewrite rules
 
 `inc/cadco-woocommerce.php` registers one literal rewrite rule per category
-term and flushes on term changes. The applier therefore does all taxonomy work
-first and flushes **once** at the end of a run, rather than 30+ times.
+term and flushes on term changes. The applier does all taxonomy work for a
+batch first, so a batch that touches 30 terms flushes once rather than 30
+times — but it is not one flush for the whole run: the AJAX handler
+deliberately re-arms the flush after every incomplete batch as a safety net
+(an abandoned run must not leave category permalinks 404ing), so a 236-row
+run at the default batch size flushes once per batch.
 
 ### Out of scope
 
@@ -640,8 +644,9 @@ with Playwright to cover exactly that gap, including:
   would be slow and hard to aim reliably);
 - rename approval specifically — the checkbox's `value` is the UPC, and the
   server matches renames to approve by that UPC string, not by array index;
-- that a product name containing a `<script>` tag is escaped on the public
-  product page rather than executed.
+- that a product name containing a `<script>` tag is stripped on import
+  rather than escaped — a product name is never legitimately HTML, so the
+  markup is removed outright, not merely rendered inert.
 
 The suite resets the catalogue before and after running (`resetCatalogue()` in
 `tests/e2e/helpers.js`), and deletes every run archive it leaves under

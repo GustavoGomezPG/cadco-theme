@@ -8,11 +8,20 @@
  * First, every term is created before any product is written, so that
  * assigning a product to its categories never has to create one mid-flight.
  *
- * Second, the rewrite rules are flushed exactly once, at the very end.
- * inc/cadco-woocommerce.php registers one literal rewrite rule per category
- * term and sets a flush flag on created_product_cat, edited_product_cat and
- * delete_product_cat. A run that touches 30 terms would otherwise rebuild the
- * whole rule set 30 times.
+ * Second, the rewrite rules are flushed at most once per batch, never once
+ * per term. inc/cadco-woocommerce.php registers one literal rewrite rule per
+ * category term and sets a flush flag on created_product_cat,
+ * edited_product_cat and delete_product_cat. prepare_terms() and
+ * apply_jobs() both clear that flag the moment they are done touching terms,
+ * so a batch that walks 30 terms does not rebuild the whole rule set 30
+ * times. It is not one flush for the whole run, though: ajax_batch() (in
+ * CADCO_Import_Admin) deliberately re-arms the flag at the end of every
+ * incomplete batch, so a request's own shutdown hook still flushes before
+ * the response ends — without that, an operator who closes the tab
+ * mid-import leaves the rules unflushed and new category permalinks 404
+ * until something unrelated happens to touch a term. The trade-off is
+ * accepted deliberately: a 236-row run at batch size 25 flushes ten times,
+ * not once, but an abandoned run can never leave stale rewrite rules behind.
  */
 
 declare(strict_types=1);
@@ -115,8 +124,12 @@ final class CADCO_Import_Applier
         $done = min($offset + $size, $total);
 
         // Mirrors prepare_terms(): a batch that created or edited categories
-        // fires the theme's own shutdown-flush; clearing the flag here keeps
-        // that flush deferred to finalise(), the only place it should happen.
+        // fires the theme's own shutdown-flush; clearing the flag here stops
+        // that flush from firing once per term inside this batch. It does
+        // not mean the run gets only one flush overall — ajax_batch()
+        // deliberately re-arms this same flag after an incomplete batch, so
+        // every batch still ends in a flush via its own request's shutdown
+        // hook. See the class docblock.
         delete_option('cadco_flush_category_rules');
 
         return [
@@ -582,7 +595,9 @@ final class CADCO_Import_Applier
             }
         }
 
-        // Exactly one flush per run — see the class docblock.
+        // The flush guaranteed to happen if apply reaches completion —
+        // earlier batches may already have flushed too, via ajax_batch()'s
+        // safety-net re-arm for an incomplete batch. See the class docblock.
         delete_option('cadco_flush_category_rules');
         flush_rewrite_rules(false);
     }
