@@ -690,14 +690,18 @@ final class CADCO_Import_Admin
         $map    = (array) get_option('cadco_import_redirects', []);
         $handle = fopen('php://output', 'w');
 
+        if ($handle === false) {
+            wp_die(esc_html__('The redirect map could not be generated.', 'cadco-theme'));
+        }
+
         nocache_headers();
         header('Content-Type: text/csv; charset=utf-8');
         header('Content-Disposition: attachment; filename=cadco-redirects.csv');
 
-        fputcsv($handle, ['Old model number', 'New URL'], ',', '"', '');
+        fputcsv($handle, array_map([CADCO_Import_Report::class, 'csv_safe'], ['Old model number', 'New URL']), ',', '"', '');
 
         foreach ($map as $old => $url) {
-            fputcsv($handle, [$old, $url], ',', '"', '');
+            fputcsv($handle, array_map([CADCO_Import_Report::class, 'csv_safe'], [(string) $old, (string) $url]), ',', '"', '');
         }
 
         fclose($handle);

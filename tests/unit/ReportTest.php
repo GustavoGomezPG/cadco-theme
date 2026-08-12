@@ -66,4 +66,31 @@ final class ReportTest extends TestCase
         self::assertStringContainsString('"Kitchen Equipment"""', $csv);
         self::assertStringContainsString('"Variant, spelled two ways."', $csv);
     }
+
+    public function test_csv_neutralises_a_formula_shaped_value(): void
+    {
+        // A workbook cell can hold anything, including a string a spreadsheet
+        // application would execute as a formula when this report is
+        // reopened in Excel. The report is the artefact CADCO receives on
+        // every failed import, so this has to hold for every field, not just
+        // the obviously risky ones.
+        $report = new \CADCO_Import_Report();
+        $report->add(new \CADCO_Import_Issue('A', 'S', 1, 'UPC#', "=cmd|'/c calc'!A1", 'Malformed UPC.', ''));
+
+        $csv = $report->to_csv();
+
+        self::assertStringContainsString("\"'=cmd|'/c calc'!A1\"", $csv);
+        self::assertStringNotContainsString("\"=cmd|'/c calc'!A1\"", $csv);
+    }
+
+    public function test_csv_leaves_an_ordinary_value_unchanged(): void
+    {
+        $report = new \CADCO_Import_Report();
+        $report->add(new \CADCO_Import_Issue('A', 'S', 1, 'UPC#', '654796-55145-3', 'Duplicate UPC.', ''));
+
+        $csv = $report->to_csv();
+
+        self::assertStringContainsString('654796-55145-3', $csv);
+        self::assertStringNotContainsString("'654796-55145-3", $csv);
+    }
 }

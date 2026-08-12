@@ -90,10 +90,13 @@ final class CADCO_Import_Report
             return '';
         }
 
-        fputcsv($handle, ['Tier', 'Sheet', 'Row', 'Column', 'Found', 'Problem', 'How to fix'], ',', '"', '');
+        fputcsv($handle, array_map(
+            [self::class, 'csv_safe'],
+            ['Tier', 'Sheet', 'Row', 'Column', 'Found', 'Problem', 'How to fix']
+        ), ',', '"', '');
 
         foreach ($this->issues as $issue) {
-            fputcsv($handle, [
+            fputcsv($handle, array_map([self::class, 'csv_safe'], [
                 $issue->tier,
                 $issue->sheet,
                 $issue->row === null ? '' : (string) $issue->row,
@@ -101,7 +104,7 @@ final class CADCO_Import_Report
                 $issue->found,
                 $issue->message,
                 $issue->fix,
-            ], ',', '"', '');
+            ]), ',', '"', '');
         }
 
         rewind($handle);
@@ -109,5 +112,28 @@ final class CADCO_Import_Report
         fclose($handle);
 
         return $csv;
+    }
+
+    /**
+     * Neutralise a value that a spreadsheet application would treat as a formula.
+     *
+     * Every value in this export comes from the uploaded workbook, and the
+     * recipients open these files in Excel. A cell beginning '=', '+', '-', '@',
+     * tab or carriage return is executed on open, so a product name is enough to
+     * run code on someone else's machine. Prefixing an apostrophe is the standard
+     * mitigation: Excel treats the value as literal text and does not display it.
+     *
+     * Shared with CADCO_Import_Admin::maybe_export_redirects(), the other CSV
+     * export in this system — both exports carry values that trace back to the
+     * uploaded workbook, so the same defence applies to both rather than living
+     * twice.
+     */
+    public static function csv_safe(string $value): string
+    {
+        if ($value === '') {
+            return $value;
+        }
+
+        return preg_match('/^[=+\-@\t\r]/', $value) === 1 ? "'" . $value : $value;
     }
 }
