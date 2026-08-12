@@ -14,6 +14,185 @@ declare(strict_types=1);
 
 final class CADCO_Import_View
 {
+    /**
+     * The `Import` / `History` tab bar (design spec §5), using WordPress's own
+     * `nav-tab` convention so it reads as native chrome rather than a custom
+     * widget. `$active` is one of 'import' | 'history'.
+     */
+    public static function tabs(string $active): void
+    {
+        $import_url  = admin_url('edit.php?post_type=product&page=cadco-import');
+        $history_url = admin_url('edit.php?post_type=product&page=cadco-import&tab=history');
+        ?>
+        <nav class="nav-tab-wrapper cadco-import-tabs" aria-label="<?php esc_attr_e('Import sections', 'cadco-theme'); ?>">
+            <a href="<?php echo esc_url($import_url); ?>" class="nav-tab<?php echo $active === 'import' ? ' nav-tab-active' : ''; ?>">
+                <?php esc_html_e('Import', 'cadco-theme'); ?>
+            </a>
+            <a href="<?php echo esc_url($history_url); ?>" class="nav-tab<?php echo $active === 'history' ? ' nav-tab-active' : ''; ?>">
+                <?php esc_html_e('History', 'cadco-theme'); ?>
+            </a>
+        </nav>
+        <?php
+    }
+
+    /**
+     * The three-stage wizard bar (design spec §4.1, §5): Upload → Review →
+     * Apply, each carrying a status word, a numbered title and a subtitle of
+     * real figures — never static copy standing in for one. `$state` is one
+     * of 'upload' | 'invalid' | 'review' — the only states the controller
+     * ever resolves to *before* a page render; 'applying' and 'done' happen
+     * client-side, after this markup has already left the server, and never
+     * reach this method.
+     *
+     * $context carries:
+     *  - filename: string   the uploaded workbook's original name, or '' before any upload
+     *  - rows:     int       rows read from the workbook (0 before any upload)
+     *  - issues:   int       validation issues found (0 before any upload, or once clean)
+     */
+    public static function stage_bar(string $state, array $context): void
+    {
+        $filename = (string) ($context['filename'] ?? '');
+        $rows     = (int) ($context['rows'] ?? 0);
+        $issues   = (int) ($context['issues'] ?? 0);
+
+        // Only 'upload' leaves stage 1 itself current; both 'invalid' and
+        // 'review' mean a workbook was already read, so stage 2 (Review) is
+        // where the operator now stands — whether that review found problems
+        // or not.
+        $current = $state === 'upload' ? 1 : 2;
+
+        $subtitle_upload = $filename !== ''
+            ? $filename
+            : __('no workbook uploaded yet', 'cadco-theme');
+
+        if ($state === 'upload') {
+            $subtitle_review = __('waiting for a workbook', 'cadco-theme');
+        } else {
+            // Two independent nouns, each pluralised on its own count — a
+            // single _n() keyed to $rows would silently mis-pluralise
+            // "issue(s)" whenever the row and issue counts disagree, which is
+            // the common case (0 issues on nearly every row count).
+            $subtitle_review = sprintf(
+                '%1$s, %2$s',
+                sprintf(
+                    /* translators: %d: number of rows read from the workbook */
+                    _n('%d row', '%d rows', $rows, 'cadco-theme'),
+                    $rows
+                ),
+                sprintf(
+                    /* translators: %d: number of validation issues found */
+                    _n('%d issue', '%d issues', $issues, 'cadco-theme'),
+                    $issues
+                )
+            );
+        }
+
+        $stages = [
+            1 => ['title' => __('1. Upload', 'cadco-theme'), 'subtitle' => $subtitle_upload],
+            2 => ['title' => __('2. Review', 'cadco-theme'), 'subtitle' => $subtitle_review],
+            3 => ['title' => __('3. Apply', 'cadco-theme'), 'subtitle' => __('nothing written yet', 'cadco-theme')],
+        ];
+
+        $status_words = [
+            'complete' => __('Complete', 'cadco-theme'),
+            'current'  => __('Current', 'cadco-theme'),
+            'waiting'  => __('Waiting', 'cadco-theme'),
+        ];
+        ?>
+        <div class="cadco-import-stagebar">
+            <ol class="cadco-import-stages">
+                <?php foreach ($stages as $number => $stage) :
+                    $status = $number < $current ? 'complete' : ($number === $current ? 'current' : 'waiting');
+                    ?>
+                    <li class="cadco-import-stage is-<?php echo esc_attr($status); ?>">
+                        <span class="cadco-import-stage-status"><?php echo esc_html($status_words[$status]); ?></span>
+                        <span class="cadco-import-stage-title"><?php echo esc_html($stage['title']); ?></span>
+                        <span class="cadco-import-stage-subtitle"><?php echo esc_html($stage['subtitle']); ?></span>
+                    </li>
+                <?php endforeach; ?>
+            </ol>
+            <div class="cadco-import-cta">
+                <?php self::cta($state, $issues); ?>
+            </div>
+        </div>
+        <?php
+    }
+
+    /**
+     * The primary action, pinned beside the stage bar (design spec §5). It is
+     * the honest signal of whether this import can run: real and clickable
+     * only in 'review', and on every other state a disabled button that says
+     * *why*, not a greyed-out button with no explanation.
+     *
+     * The 'review' button keeps the exact id/classes/markup the batched-apply
+     * JS (assets/js/import-admin.js) and the E2E suite already depend on —
+     * #cadco-import-apply, #cadco-import-progress, #cadco-import-failures —
+     * moved here verbatim from the foot of plan(), not reinvented. The
+     * disabled placeholder deliberately carries no id: the E2E suite asserts
+     * zero elements match #cadco-import-apply on an invalid workbook, so the
+     * inert stand-in must never claim that id.
+     */
+    private static function cta(string $state, int $issues): void
+    {
+        if ($state === 'review') {
+            ?>
+            <button type="button" class="button button-primary" id="cadco-import-apply">
+                <?php esc_html_e('Apply plan', 'cadco-theme'); ?>
+            </button>
+            <div id="cadco-import-progress" hidden>
+                <progress value="0" max="100"></progress>
+                <p class="cadco-import-status"></p>
+            </div>
+            <div id="cadco-import-failures" class="notice notice-error" hidden>
+                <p class="cadco-import-failures-heading"></p>
+                <ul class="cadco-import-failures-list"></ul>
+            </div>
+            <?php
+            return;
+        }
+
+        // 'invalid' gets its own modifier class so the disabled CTA can
+        // carry the one red signal this screen allows itself (design spec
+        // §5's "status colour used sparingly and meaningfully… red only for
+        // blocking problems") — the plain "nothing uploaded yet" disabled
+        // state on 'upload' is not a problem, so it stays neutral grey.
+        $blocked = $state === 'invalid';
+
+        $label = $blocked
+            ? sprintf(
+                /* translators: %d: number of validation problems blocking the import */
+                _n('Fix %d problem to continue', 'Fix %d problems to continue', $issues, 'cadco-theme'),
+                $issues
+            )
+            : __('Upload a workbook to continue', 'cadco-theme');
+        ?>
+        <button
+            type="button"
+            class="button button-primary<?php echo $blocked ? ' cadco-import-cta-blocked' : ''; ?>"
+            disabled
+            aria-disabled="true"
+            title="<?php echo esc_attr($label); ?>"
+        >
+            <?php echo esc_html($label); ?>
+        </button>
+        <?php
+    }
+
+    /**
+     * The History tab's empty state (design spec §8). Runs are archived from
+     * Task 6 on, but the list itself — reading manifest.json per run — is
+     * Task 8's job; until then the tab exists and says so plainly rather than
+     * rendering nothing.
+     */
+    public static function history_empty(): void
+    {
+        ?>
+        <div class="cadco-import-history-empty">
+            <p><?php esc_html_e('No import runs yet. Once you check a workbook on the Import tab, it will appear here.', 'cadco-theme'); ?></p>
+        </div>
+        <?php
+    }
+
     public static function upload_form(): void
     {
         ?>
@@ -153,21 +332,13 @@ final class CADCO_Import_View
                 </tbody>
             </table>
         <?php endif; ?>
-
-        <p>
-            <button type="button" class="button button-primary" id="cadco-import-apply">
-                <?php esc_html_e('Apply this plan', 'cadco-theme'); ?>
-            </button>
-        </p>
-        <div id="cadco-import-progress" hidden>
-            <progress value="0" max="100"></progress>
-            <p class="cadco-import-status"></p>
-        </div>
-        <div id="cadco-import-failures" class="notice notice-error" hidden>
-            <p class="cadco-import-failures-heading"></p>
-            <ul class="cadco-import-failures-list"></ul>
-        </div>
         <?php
+        // The Apply button, its progress bar and its failures box are no
+        // longer rendered here: the wizard shell (design spec §5) pins the
+        // primary action beside the stage bar, above this content, so it is
+        // CADCO_Import_View::stage_bar()/cta() that draws #cadco-import-apply
+        // now — see class-cadco-import-admin.php's render(), which calls
+        // stage_bar() before plan().
     }
 
     /**

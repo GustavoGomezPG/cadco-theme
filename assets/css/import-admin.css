@@ -1,3 +1,7 @@
+/* ==========================================================================
+   Layout
+   ========================================================================== */
+
 .cadco-import h2 {
 	margin-top: 2em;
 }
@@ -23,35 +27,152 @@
 	word-break: break-word;
 }
 
-.cadco-import-counts {
+/* ==========================================================================
+   Tabs (Import / History)
+
+   Native wp-admin `nav-tab` markup, given breathing room above the stage
+   bar it sits on top of — everything else about how a tab looks comes from
+   core's own admin CSS, deliberately left alone.
+   ========================================================================== */
+
+.cadco-import-tabs {
+	margin: 1em 0 0;
+}
+
+/* ==========================================================================
+   Stage bar (design spec §5)
+
+   Three stages — Upload, Review, Apply — laid out left to right with the
+   primary action pinned beside them. Status colour is the one place this
+   screen uses colour to mean something (complete/current/waiting/blocked);
+   everywhere else stays quiet on purpose, because a screen about to rewrite
+   a catalogue should read as restrained, not decorated.
+   ========================================================================== */
+
+.cadco-import-stagebar {
 	display: flex;
 	flex-wrap: wrap;
-	gap: 1.5em;
-	margin: 1.5em 0;
-	padding: 1em 1.25em;
-	border: 1px solid #dcdcde;
-	border-left: 4px solid #2271b1;
+	align-items: center;
+	justify-content: space-between;
+	gap: 1.5em 2em;
+	margin: 1em 0 2em;
+	padding: 1.5em 1.75em;
 	background: #fff;
+	border: 1px solid #dcdcde;
+	border-top: none;
 }
 
-.cadco-import-counts li {
+.cadco-import-stages {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 2.5em;
 	margin: 0;
+	padding: 0;
+	list-style: none;
 }
 
-.cadco-import-counts strong {
+.cadco-import-stage {
+	min-width: 11em;
+}
+
+.cadco-import-stage-status {
 	display: block;
-	font-size: 22px;
-	line-height: 1.2;
+	margin-bottom: .35em;
+	font-size: 11px;
+	font-weight: 600;
+	letter-spacing: .04em;
+	text-transform: uppercase;
+	color: #646970; /* waiting: quiet grey, the default */
+}
+
+.cadco-import-stage-status::before {
+	content: '';
+	display: inline-block;
+	width: 8px;
+	height: 8px;
+	margin-right: .5em;
+	border-radius: 50%;
+	background: currentColor;
+	vertical-align: middle;
+}
+
+.cadco-import-stage-title {
+	display: block;
+	font-size: 15px;
+	font-weight: 600;
+	color: #1d2327;
+}
+
+.cadco-import-stage-subtitle {
+	display: block;
+	margin-top: .2em;
+	color: #646970;
+	font-size: 13px;
+}
+
+.cadco-import-stage.is-complete .cadco-import-stage-status {
+	color: #00a32a; /* WordPress's own "success" green (core admin notices) */
+}
+
+.cadco-import-stage.is-current .cadco-import-stage-status {
+	color: var(--wp-admin-theme-color, #2271b1);
+}
+
+.cadco-import-stage.is-current .cadco-import-stage-title {
+	color: var(--wp-admin-theme-color, #2271b1);
+}
+
+/* ==========================================================================
+   Stage bar CTA
+
+   The button itself is the honest signal (design spec §5): live only in
+   Review, otherwise disabled and, on an invalid workbook, labelled with why
+   it cannot proceed rather than just sitting greyed out.
+   ========================================================================== */
+
+.cadco-import-cta {
+	flex-shrink: 0;
+}
+
+.cadco-import-cta .button:disabled {
+	/* Core already renders :disabled as greyed-out; widen it slightly so a
+	   longer "Fix N problems…" label doesn't wrap awkwardly. */
+	white-space: normal;
+	max-width: 20em;
+	height: auto;
+	line-height: 1.4;
+	padding-top: .4em;
+	padding-bottom: .4em;
+}
+
+.cadco-import-cta .cadco-import-cta-blocked:disabled {
+	/* The one place this screen spends red: a disabled CTA that is disabled
+	   *because something is wrong*, not merely because nothing has happened
+	   yet — see cta()'s $blocked distinction. */
+	background: #fcf0f1;
+	border-color: #d63638;
+	color: #8a2424;
+	opacity: 1;
+}
+
+#cadco-import-progress {
+	margin-top: .75em;
 }
 
 #cadco-import-progress progress {
 	width: 100%;
-	max-width: 32em;
+	max-width: 22em;
 	height: 1.4em;
 }
 
+#cadco-import-progress .cadco-import-status {
+	margin: .4em 0 0;
+	font-size: 13px;
+}
+
 #cadco-import-failures {
-	margin-top: 1em;
+	margin-top: .75em;
+	max-width: 26em;
 }
 
 #cadco-import-failures .cadco-import-failures-heading {
@@ -65,4 +186,40 @@
 	font-size: 12px;
 	max-height: 16em;
 	overflow-y: auto;
+}
+
+/* ==========================================================================
+   History tab — empty state (content arrives in a later task)
+   ========================================================================== */
+
+.cadco-import-history-empty {
+	padding: 2em 1.75em;
+	background: #fff;
+	border: 1px solid #dcdcde;
+	color: #646970;
+}
+
+/* ==========================================================================
+   Plan counts panel
+   ========================================================================== */
+
+.cadco-import-counts {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 1.5em;
+	margin: 1.5em 0;
+	padding: 1em 1.25em;
+	border: 1px solid #dcdcde;
+	border-left: 4px solid var(--wp-admin-theme-color, #2271b1);
+	background: #fff;
+}
+
+.cadco-import-counts li {
+	margin: 0;
+}
+
+.cadco-import-counts strong {
+	display: block;
+	font-size: 22px;
+	line-height: 1.2;
 }

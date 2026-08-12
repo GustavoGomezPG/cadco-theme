@@ -108,7 +108,23 @@ final class CADCO_Import_Admin
             wp_die(esc_html__('You are not allowed to import products.', 'cadco-theme'));
         }
 
+        // The controller resolves the request to exactly one screen state
+        // (design spec §4.1) and hands it to the view; it never decides how
+        // that state looks. 'tab' just switches between the wizard and the
+        // (Task 8) history list — an unrecognised value falls back to the
+        // wizard rather than 500ing or rendering nothing.
+        $tab = (($_GET['tab'] ?? '') === 'history') ? 'history' : 'import';
+
         echo '<div class="wrap cadco-import"><h1>' . esc_html__('Import products', 'cadco-theme') . '</h1>';
+
+        CADCO_Import_View::tabs($tab);
+
+        if ($tab === 'history') {
+            CADCO_Import_View::history_empty();
+            echo '</div>';
+
+            return;
+        }
 
         $result = null;
 
@@ -131,6 +147,8 @@ final class CADCO_Import_Admin
             $result = self::handle_upload();
         }
 
+        CADCO_Import_View::stage_bar(self::screen_state($result), self::stage_bar_context($result));
+
         if ($result === null) {
             CADCO_Import_View::upload_form();
         } else {
@@ -138,6 +156,44 @@ final class CADCO_Import_Admin
         }
 
         echo '</div>';
+    }
+
+    /**
+     * Which of the wizard's screen states (design spec §4.1) this request
+     * resolves to. Only 'upload', 'invalid' and 'review' are possible here —
+     * 'applying' and 'done' are states the browser moves through itself, via
+     * the AJAX batch loop in assets/js/import-admin.js, after this response
+     * has already been sent; the server never renders them.
+     */
+    private static function screen_state(?array $result): string
+    {
+        if ($result === null) {
+            return 'upload';
+        }
+
+        return $result['report']->passed() ? 'review' : 'invalid';
+    }
+
+    /**
+     * The real figures the stage bar's subtitles report (design spec §5) —
+     * never static copy standing in for a count. Empty/zeroed before any
+     * workbook has been read, so CADCO_Import_View::stage_bar() falls back to
+     * its own "no workbook uploaded yet" / "waiting for a workbook" text
+     * rather than printing a filename or count that doesn't exist yet.
+     *
+     * @return array{filename:string,rows:int,issues:int}
+     */
+    private static function stage_bar_context(?array $result): array
+    {
+        if ($result === null) {
+            return ['filename' => '', 'rows' => 0, 'issues' => 0];
+        }
+
+        return [
+            'filename' => (string) ($result['filename'] ?? ''),
+            'rows'     => count($result['rows']),
+            'issues'   => $result['report']->count(),
+        ];
     }
 
     /**
@@ -155,7 +211,7 @@ final class CADCO_Import_Admin
     }
 
     /**
-     * @return array{report:CADCO_Import_Report,plan:?CADCO_Import_Plan,rows:array,changes:array}|null
+     * @return array{report:CADCO_Import_Report,plan:?CADCO_Import_Plan,rows:array,changes:array,filename:string}|null
      */
     private static function handle_upload(): ?array
     {
@@ -195,7 +251,12 @@ final class CADCO_Import_Admin
             return null;
         }
 
-        $result = self::run_pipeline($path);
+        $result             = self::run_pipeline($path);
+        // Kept alongside the pipeline's own output purely for the stage
+        // bar's "1. Upload" subtitle (design spec §5) — the original name is
+        // untrusted workbook-adjacent input, escaped wherever it is printed
+        // (CADCO_Import_View::stage_bar()), never used as a path.
+        $result['filename'] = (string) $file['name'];
 
         // Archive the run: the workbook exactly as uploaded, the report, and
         // the plan it produced. When a later import surprises somebody, this
