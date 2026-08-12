@@ -695,10 +695,19 @@ final class CADCO_Import_Admin
      *   redirect_map() is keyed by path, so a path claimed twice can only
      *   ever redirect to one of the two — the count exported is smaller than
      *   the count of rows with a valid-looking legacy URL for exactly this
-     *   reason. Which one wins is arbitrary from here (whichever
-     *   CADCO_Import_Repository::legacy_urls() happens to return last for
-     *   that path), so this is surfaced as a question for CADCO to answer,
-     *   not silently resolved one way.
+     *   reason. Which one wins is no longer arbitrary — see below — but it
+     *   is still a workbook-data problem worth CADCO's attention, so it is
+     *   surfaced here rather than silently resolved with nothing said.
+     *
+     * The winner shown for each collision is computed the same way
+     * CADCO_Import_Repository::legacy_urls()'s `ORDER BY sku ASC` resolves
+     * it for the real export — the alphabetically-last Model # — so this
+     * preview states the actual outcome, not just the conflict. It is
+     * computed independently here (sorting the model numbers already
+     * collected from $rows) rather than by calling redirect_map(), because
+     * this preview runs before anything has been written to the database at
+     * all; on a first import there is no product yet for legacy_urls() to
+     * find.
      *
      * Both are named rather than just counted: with only a handful of each,
      * a list is more useful than a count, and it is what lets an operator
@@ -768,8 +777,8 @@ final class CADCO_Import_Admin
                 printf(
                     /* translators: %d: number of legacy paths claimed by more than one product */
                     esc_html(_n(
-                        '%d legacy URL is claimed by more than one product. A redirect can only point to one destination — CADCO should confirm which is right:',
-                        '%d legacy URLs are each claimed by more than one product. A redirect can only point to one destination — CADCO should confirm which is right in each case:',
+                        '%d legacy URL is claimed by more than one product. A redirect can only point to one destination, so the alphabetically-last Model # wins — CADCO should confirm that is right:',
+                        '%d legacy URLs are each claimed by more than one product. A redirect can only point to one destination, so the alphabetically-last Model # wins in each case — CADCO should confirm that is right:',
                         count($collisions),
                         'cadco-theme'
                     )),
@@ -779,7 +788,21 @@ final class CADCO_Import_Admin
             </p>
             <ul>
                 <?php foreach (array_slice($collisions, 0, 20, true) as $path => $models) : ?>
-                    <li><code><?php echo esc_html($path); ?></code> — <?php echo esc_html(implode(', ', $models)); ?></li>
+                    <?php
+                    // Mirrors legacy_urls()'s 'ORDER BY sku ASC' + redirect_map()'s
+                    // last-write-wins merge: sorted ascending, the last
+                    // element is the one whose permalink the real export
+                    // will use.
+                    $ranked = $models;
+                    sort($ranked);
+                    $winner = (string) end($ranked);
+                    ?>
+                    <li>
+                        <code><?php echo esc_html($path); ?></code>
+                        — <?php echo esc_html(implode(', ', $models)); ?>
+                        — <strong><?php echo esc_html($winner); ?></strong>
+                        <?php esc_html_e('wins', 'cadco-theme'); ?>
+                    </li>
                 <?php endforeach; ?>
             </ul>
             <?php if (count($collisions) > 20) : ?>
@@ -999,6 +1022,13 @@ final class CADCO_Import_Admin
      * `from` equals their `to` are dropped — nothing to redirect. Sorted by
      * `from` so repeated exports of an unchanged map produce byte-identical
      * CSVs.
+     *
+     * A handful of legacy paths are claimed by two different products (see
+     * the plan preview, render_legacy_redirect_preview()) — legacy_urls()'s
+     * `ORDER BY sku ASC` is what makes the winner for those a stable fact
+     * (the alphabetically-last SKU) rather than whatever order MySQL
+     * happened to return rows in, so two exports of an unchanged catalogue
+     * are guaranteed to agree.
      *
      * @return array<string, string>
      */

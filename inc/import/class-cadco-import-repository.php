@@ -99,19 +99,41 @@ final class CADCO_Import_Repository
      * storing '', but the exclusion costs nothing and does not depend on
      * that.
      *
+     * Ordered by SKU ascending (post_id as a tie-breaker, which duplicate
+     * SKUs would need but the validator already forbids). This is load-
+     * bearing, not cosmetic: several rows in the real workbook carry the
+     * exact same legacy path for two different products (e.g.
+     * '/product/xhc-020-p1' claimed by both XHC-020-P1 and XHC-020-S1), and
+     * CADCO_Import_Admin::redirect_map() keys its map by that path, so the
+     * *last* row this method returns for a contested path is the one whose
+     * permalink wins. MySQL gives no ordering guarantee at all without an
+     * explicit ORDER BY — the previous version of this query had none, so
+     * the winner for a contested path could silently change between two
+     * exports of an unchanged catalogue (a different query plan, a
+     * different row order after a re-import), and CADCO would have no way
+     * to tell a real recategorisation from an arbitrary re-shuffle. Sorting
+     * by SKU makes the winner a stable, statable fact ("the
+     * alphabetically-last SKU wins") rather than an accident of MySQL's
+     * internals.
+     *
      * @return list<array{post_id:int,legacy:string,permalink:string}>
      */
     public static function legacy_urls(): array
     {
         global $wpdb;
 
+        // Same lookup table current_products() already joins for SKU.
+        $lookup = $wpdb->prefix . 'wc_product_meta_lookup';
+
         $rows = $wpdb->get_results(
             "SELECT p.ID AS post_id, pm.meta_value AS legacy
                FROM {$wpdb->posts} p
          INNER JOIN {$wpdb->postmeta} pm ON pm.post_id = p.ID AND pm.meta_key = '_cadco_legacy_url'
+          LEFT JOIN {$lookup} l           ON l.product_id = p.ID
               WHERE p.post_type = 'product'
                 AND p.post_status NOT IN ('trash', 'auto-draft')
-                AND pm.meta_value <> ''",
+                AND pm.meta_value <> ''
+           ORDER BY l.sku ASC, p.ID ASC",
             ARRAY_A
         ) ?: [];
 
