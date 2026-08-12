@@ -4992,3 +4992,384 @@ Run through this before opening a pull request.
       product is in the trash rather than gone
 - [ ] Cart, checkout and my-account remain absent; nothing is purchasable
 - [ ] No commit message mentions the tooling used to write it
+
+## Task 14: End-to-end test suite
+
+Tasks 1–13 prove the units work and that the pipeline behaves correctly when driven from PHP. This task proves the thing a person actually touches: uploading a workbook in wp-admin, reading the report, approving a plan, and watching it apply without the request timing out.
+
+**Files:**
+- Create: `package.json`
+- Create: `playwright.config.js`
+- Create: `tests/e2e/global-setup.js`
+- Create: `tests/e2e/helpers.js`
+- Create: `tests/e2e/import.spec.js`
+- Modify: `.gitattributes` (export-ignore the new dev files)
+- Modify: `README.md` (how to run it)
+
+**Interfaces:**
+- Consumes: the admin screen from Tasks 11–13, running at `https://cadco.local/wp-admin/edit.php?post_type=product&page=cadco-import`.
+- Produces: `npm run test:e2e`.
+
+**Environment (verified, do not re-derive):**
+- Site: `https://cadco.local`. Self-signed certificate — Playwright needs `ignoreHTTPSErrors: true`.
+- `wp` on PATH is a Local-aware wrapper. `wp eval`, `wp post list`, `wp term list` work from the theme directory. **`wp db query` does not** — it execs the `mysql` client against the wrong socket. Use `wp eval` with `$wpdb` for SQL.
+- Fixtures: the corrected workbook (passes clean, 236 products) and the uncorrected source workbook (fails validation) are both in
+  `/Users/gustavogomez/Documents/Projects/CADCO/Products Excel Spreadsheet latest/`.
+
+- [ ] **Step 1: Create `package.json`**
+
+```json
+{
+    "name": "cadco-theme",
+    "private": true,
+    "scripts": {
+        "test:e2e": "playwright test",
+        "test:e2e:headed": "playwright test --headed"
+    },
+    "devDependencies": {
+        "@playwright/test": "^1.49.0"
+    }
+}
+```
+
+- [ ] **Step 2: Create `playwright.config.js`**
+
+```js
+const { defineConfig } = require('@playwright/test');
+
+/**
+ * The import screen does real work — 236 products of taxonomy and meta writes —
+ * so the timeouts here are deliberately generous. A test that fails because it
+ * gave up at 30 seconds tells you nothing about the importer.
+ */
+module.exports = defineConfig({
+	testDir: './tests/e2e',
+	globalSetup: require.resolve('./tests/e2e/global-setup.js'),
+	timeout: 180000,
+	expect: { timeout: 15000 },
+	fullyParallel: false,
+	workers: 1,
+	retries: 0,
+	reporter: [['list']],
+	use: {
+		baseURL: process.env.CADCO_BASE_URL || 'https://cadco.local',
+		ignoreHTTPSErrors: true,
+		storageState: 'tests/e2e/.auth.json',
+		screenshot: 'only-on-failure',
+		trace: 'retain-on-failure',
+	},
+});
+```
+
+Tests run serially (`workers: 1`, `fullyParallel: false`) on purpose: they share one WordPress database, and a parallel run would have one test's import racing another's assertions.
+
+- [ ] **Step 3: Create `tests/e2e/global-setup.js`**
+
+```js
+const { chromium, request } = require('@playwright/test');
+const { execFileSync } = require('node:child_process');
+const path = require('node:path');
+
+const THEME = path.resolve(__dirname, '../..');
+
+/**
+ * Log in once and save the session, so no test spends time on wp-login.
+ *
+ * The admin user is resolved through WP-CLI rather than hardcoded, and its
+ * password is reset to a known value for the run. That keeps the suite working
+ * on any developer's machine without a shared secret in the repo.
+ */
+module.exports = async (config) => {
+	const baseURL = config.projects[0].use.baseURL;
+
+	const login = execFileSync('wp', ['user', 'list', '--role=administrator', '--field=user_login', '--format=csv'], {
+		cwd: THEME,
+		encoding: 'utf8',
+	}).trim().split('\n')[0];
+
+	if (!login) {
+		throw new Error('No administrator account found. Create one before running the E2E suite.');
+	}
+
+	execFileSync('wp', ['user', 'update', login, '--user_pass=cadco-e2e-password'], { cwd: THEME });
+
+	const browser = await chromium.launch();
+	const page = await browser.newPage({ ignoreHTTPSErrors: true });
+
+	await page.goto(`${baseURL}/wp-login.php`);
+	await page.fill('#user_login', login);
+	await page.fill('#user_pass', 'cadco-e2e-password');
+	await page.click('#wp-submit');
+	await page.waitForURL(/wp-admin/);
+
+	await page.context().storageState({ path: path.join(__dirname, '.auth.json') });
+	await browser.close();
+};
+```
+
+- [ ] **Step 4: Create `tests/e2e/helpers.js`**
+
+```js
+const { execFileSync } = require('node:child_process');
+const path = require('node:path');
+
+const THEME = path.resolve(__dirname, '../..');
+
+const WORKBOOKS = path.resolve(
+	'/Users/gustavogomez/Documents/Projects/CADCO/Products Excel Spreadsheet latest'
+);
+
+const CORRECTED = path.join(WORKBOOKS, 'Product Index Spreadsheet 2026_Website_CORRECTED.xlsx');
+const SOURCE    = path.join(WORKBOOKS, 'Product Index Spreadsheet 2026_Website_.xlsx');
+
+/**
+ * Run WP-CLI against the site.
+ *
+ * Note `wp db query` is deliberately never used anywhere in this suite — the
+ * `wp` on PATH is a Local wrapper whose PHP path resolves the site socket, but
+ * `db query` shells out to the `mysql` client, which does not. Use `wp eval`.
+ */
+function wp(args) {
+	return execFileSync('wp', args, { cwd: THEME, encoding: 'utf8' }).trim();
+}
+
+function productCount() {
+	return Number(wp(['post', 'list', '--post_type=product', '--post_status=publish', '--format=count']));
+}
+
+function trashedCount() {
+	return Number(wp(['post', 'list', '--post_type=product', '--post_status=trash', '--format=count']));
+}
+
+function termCount(taxonomy) {
+	return Number(wp(['term', 'list', taxonomy, '--format=count']));
+}
+
+/**
+ * Empty the catalogue so a test starts from a known state.
+ *
+ * Products are force-deleted rather than trashed: a trashed product would be
+ * excluded from the importer's "current products" query and silently recreated,
+ * which would make the next assertion lie.
+ */
+function resetCatalogue() {
+	const ids = wp(['post', 'list', '--post_type=product', '--post_status=any', '--format=ids']);
+
+	if (ids) {
+		wp(['post', 'delete', ...ids.split(/\s+/), '--force']);
+	}
+
+	for (const taxonomy of ['product_cat', 'product_tag', 'product_brand']) {
+		const terms = wp(['term', 'list', taxonomy, '--field=term_id', '--format=csv'])
+			.split('\n')
+			.filter((line) => line && line !== 'term_id');
+
+		for (const id of terms) {
+			try {
+				wp(['term', 'delete', taxonomy, id]);
+			} catch (e) {
+				// The default 'uncategorized' term cannot be deleted; that is fine.
+			}
+		}
+	}
+
+	wp(['option', 'delete', 'cadco_import_taxonomy_reset']);
+}
+
+const IMPORT_PATH = '/wp-admin/edit.php?post_type=product&page=cadco-import';
+
+module.exports = { wp, productCount, trashedCount, termCount, resetCatalogue, CORRECTED, SOURCE, IMPORT_PATH };
+```
+
+- [ ] **Step 5: Create `tests/e2e/import.spec.js`**
+
+```js
+const { test, expect } = require('@playwright/test');
+const {
+	productCount, trashedCount, termCount, resetCatalogue,
+	CORRECTED, SOURCE, IMPORT_PATH,
+} = require('./helpers');
+
+test.describe('Product import', () => {
+	test.beforeAll(() => resetCatalogue());
+
+	test('the import screen is reachable from the Products menu', async ({ page }) => {
+		await page.goto(IMPORT_PATH);
+
+		await expect(page.getByRole('heading', { name: 'Import products' })).toBeVisible();
+		await expect(page.locator('input[type="file"]')).toBeVisible();
+	});
+
+	test('a workbook with problems is reported and writes nothing', async ({ page }) => {
+		const before = productCount();
+
+		await page.goto(IMPORT_PATH);
+		await page.setInputFiles('input[type="file"]', SOURCE);
+		await page.getByRole('button', { name: /check workbook/i }).click();
+
+		// The report must say plainly that nothing happened.
+		await expect(page.locator('.notice-error')).toContainText(/nothing has been imported/i);
+
+		// All three tiers are named, so the client can act on the report.
+		await expect(page.getByRole('heading', { name: /Identity/ })).toBeVisible();
+		await expect(page.getByRole('heading', { name: /Consistency/ })).toBeVisible();
+		await expect(page.getByRole('heading', { name: /Completeness/ })).toBeVisible();
+
+		// Every issue names where it is and what to do about it.
+		const firstRow = page.locator('table.widefat tbody tr').first();
+		await expect(firstRow.locator('td').nth(0)).not.toBeEmpty(); // sheet
+		await expect(firstRow.locator('td').nth(5)).not.toBeEmpty(); // how to fix
+
+		// There must be no Apply button anywhere on a failing report.
+		await expect(page.locator('#cadco-import-apply')).toHaveCount(0);
+
+		expect(productCount()).toBe(before);
+		expect(trashedCount()).toBe(0);
+	});
+
+	test('a clean workbook previews a plan without writing anything', async ({ page }) => {
+		const before = productCount();
+
+		await page.goto(IMPORT_PATH);
+		await page.setInputFiles('input[type="file"]', CORRECTED);
+		await page.getByRole('button', { name: /check workbook/i }).click();
+
+		await expect(page.locator('.notice-success')).toBeVisible();
+		await expect(page.locator('.cadco-import-counts')).toContainText('236');
+		await expect(page.locator('#cadco-import-apply')).toBeVisible();
+
+		// This is the dry run: a plan is on screen and the catalogue is untouched.
+		expect(productCount()).toBe(before);
+	});
+
+	test('applying the plan imports the catalogue without timing out', async ({ page }) => {
+		test.setTimeout(300000);
+
+		await page.goto(IMPORT_PATH);
+		await page.setInputFiles('input[type="file"]', CORRECTED);
+		await page.getByRole('button', { name: /check workbook/i }).click();
+		await expect(page.locator('#cadco-import-apply')).toBeVisible();
+
+		await page.click('#cadco-import-apply');
+
+		// Progress must actually move — a single blocking request would jump
+		// straight from 0 to done, or time out.
+		const status = page.locator('.cadco-import-status');
+		await expect(status).toContainText(/\d+ \/ \d+/, { timeout: 30000 });
+
+		await expect(status).toContainText(/Done/i, { timeout: 240000 });
+
+		expect(productCount()).toBe(236);
+		expect(termCount('product_tag')).toBe(26);
+		expect(termCount('product_brand')).toBe(6);
+	});
+
+	test('an imported product page renders with its specs', async ({ page }) => {
+		await page.goto('/products/convection-ovens/bakerlux-classic/blc-113/');
+
+		await expect(page.getByRole('heading', { level: 1 })).toContainText(/Convection Oven/i);
+		await expect(page.locator('body')).toContainText('BLC-113');
+
+		// Catalogue only: nothing may be purchasable.
+		await expect(page.locator('.single_add_to_cart_button')).toHaveCount(0);
+		await expect(page.locator('form.cart')).toHaveCount(0);
+	});
+
+	test('re-importing the same workbook writes nothing', async ({ page }) => {
+		const before = productCount();
+
+		await page.goto(IMPORT_PATH);
+		await page.setInputFiles('input[type="file"]', CORRECTED);
+		await page.getByRole('button', { name: /check workbook/i }).click();
+
+		await expect(page.locator('.cadco-import-counts')).toBeVisible();
+
+		// 236 unchanged, nothing to create, nothing to update.
+		const counts = await page.locator('.cadco-import-counts').innerText();
+		expect(counts).toMatch(/236[\s\S]*unchanged/i);
+
+		expect(productCount()).toBe(before);
+	});
+
+	test('a non-xlsx upload is refused', async ({ page }) => {
+		await page.goto(IMPORT_PATH);
+		await page.setInputFiles('input[type="file"]', {
+			name: 'not-a-workbook.txt',
+			mimeType: 'text/plain',
+			buffer: Buffer.from('Model #,UPC#\nBLC-113,654796-52113-5\n'),
+		});
+		await page.getByRole('button', { name: /check workbook/i }).click();
+
+		await expect(page.locator('.notice-error')).toContainText(/not an \.xlsx workbook/i);
+	});
+
+	test('the screen refuses a user without the capability', async ({ browser }) => {
+		const context = await browser.newContext({ ignoreHTTPSErrors: true, storageState: undefined });
+		const page = await context.newPage();
+
+		await page.goto(IMPORT_PATH);
+		await expect(page).toHaveURL(/wp-login\.php/);
+
+		await context.close();
+	});
+});
+```
+
+- [ ] **Step 6: Install and run**
+
+```bash
+cd "wp-content/themes/cadco-theme"
+npm install
+npx playwright install chromium
+npm run test:e2e
+```
+
+Expected: all 8 tests pass. The apply test is the slow one — it does the real 236-product import.
+
+If the site is not running, the suite fails at global setup with a connection error rather than a confusing assertion failure.
+
+- [ ] **Step 7: Export-ignore the dev files**
+
+Append to `.gitattributes`:
+
+```
+/package.json     export-ignore
+/package-lock.json export-ignore
+/playwright.config.js export-ignore
+/node_modules     export-ignore
+```
+
+Add to `.gitignore`:
+
+```
+node_modules/
+tests/e2e/.auth.json
+test-results/
+playwright-report/
+```
+
+- [ ] **Step 8: Document it in `README.md`**
+
+Add under the Product import section:
+
+````markdown
+### Running the tests
+
+```bash
+composer test        # PHP units: reader, normaliser, validator, planner
+npm run test:e2e     # Browser: upload, report, dry run, apply, product page
+```
+
+The E2E suite drives the real admin screen against the local site. It resets the
+catalogue before running, so do not point it at anything but a development site.
+Override the target with `CADCO_BASE_URL=https://example.test npm run test:e2e`.
+````
+
+- [ ] **Step 9: Commit**
+
+```bash
+git add package.json package-lock.json playwright.config.js tests/e2e .gitattributes .gitignore README.md
+git commit -m "test(import): add the end-to-end suite for the import screen"
+```
+
+---
