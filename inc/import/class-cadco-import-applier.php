@@ -220,12 +220,21 @@ final class CADCO_Import_Applier
             $product = new WC_Product_Simple();
         }
 
-        $product->set_name(trim((string) ($row['Product Name'] ?? '')));
+        // The workbook is third-party data, so it is sanitised here rather than
+        // relying on WordPress's kses filters: those only run when the current
+        // user lacks unfiltered_html, which makes whether a product name is safe
+        // depend on who happened to run the import. A product name is never
+        // legitimately HTML, and the_title() does not escape on output.
+        $product->set_name(wp_strip_all_tags(trim((string) ($row['Product Name'] ?? ''))));
         $product->set_sku($sku);
         $product->set_slug(sanitize_title($sku));
         $product->set_status('publish');
         $product->set_catalog_visibility('visible');
-        $product->set_short_description(trim((string) ($row['Primary Description'] ?? '')));
+
+        // Primary Description is plain prose in the sheet — WooCommerce runs
+        // the short description through wpautop on output, not through
+        // esc_html, so the same untrusted-input reasoning applies here.
+        $product->set_short_description(wp_strip_all_tags(trim((string) ($row['Primary Description'] ?? ''))));
 
         // WooCommerce strips anything that is not a digit, hyphen or X from
         // this field. CADCO's format (654796-52113-5) passes through intact.
