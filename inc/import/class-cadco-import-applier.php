@@ -91,18 +91,20 @@ final class CADCO_Import_Applier
     }
 
     /**
-     * One slice of the plan.
+     * Run one slice of a previously built queue.
      *
-     * The work is flattened into a single ordered list so that a batch can
-     * span operation types and the progress bar advances evenly. Renames that
-     * were not approved are dropped here rather than earlier, so the plan the
-     * operator saw stays intact.
+     * The queue is passed in rather than derived from a plan, and that is
+     * load-bearing. Re-planning per request would be wrong: once the first
+     * batch has written its products, a fresh plan sees them as unchanged and
+     * files them under skips, so the queue shrinks — and a fixed offset into a
+     * shrinking list silently steps over rows that were never applied. The
+     * caller builds the queue once and persists it.
      *
+     * @param list<array<string, mixed>> $queue
      * @return array{done:int,total:int,complete:bool,log:list<string>}
      */
-    public static function apply_batch(CADCO_Import_Plan $plan, int $offset, int $size): array
+    public static function apply_jobs(array $queue, int $offset, int $size): array
     {
-        $queue = self::queue($plan);
         $total = count($queue);
         $log   = [];
 
@@ -126,9 +128,21 @@ final class CADCO_Import_Applier
     }
 
     /**
+     * Flatten an approved plan into one ordered list of jobs.
+     *
+     * Flat so a batch can span operation types and the progress bar advances
+     * evenly. Renames that were not approved are dropped here rather than
+     * earlier, so the plan the operator reviewed stays intact.
+     *
+     * Every value in the returned structure is a plain scalar or a nested
+     * array of them — no objects, closures or resources — because Task 11
+     * persists this queue in a WordPress transient between AJAX requests,
+     * and only plain data survives that serialize()/unserialize() round trip
+     * intact.
+     *
      * @return list<array<string, mixed>>
      */
-    private static function queue(CADCO_Import_Plan $plan): array
+    public static function build_queue(CADCO_Import_Plan $plan): array
     {
         $queue = [];
 
