@@ -1,0 +1,51 @@
+.cadco-import h2 {
+	margin-top: 2em;
+}
+
+.cadco-import h2 .count {
+	display: inline-block;
+	margin-left: .5em;
+	padding: .1em .6em;
+	border-radius: 10px;
+	background: #d63638;
+	color: #fff;
+	font-size: 12px;
+	vertical-align: middle;
+}
+
+.cadco-import table {
+	margin-top: .5em;
+}
+
+.cadco-import td code {
+	display: inline-block;
+	max-width: 32em;
+	word-break: break-word;
+}
+
+.cadco-import-counts {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 1.5em;
+	margin: 1.5em 0;
+	padding: 1em 1.25em;
+	border: 1px solid #dcdcde;
+	border-left: 4px solid #2271b1;
+	background: #fff;
+}
+
+.cadco-import-counts li {
+	margin: 0;
+}
+
+.cadco-import-counts strong {
+	display: block;
+	font-size: 22px;
+	line-height: 1.2;
+}
+
+#cadco-import-progress progress {
+	width: 100%;
+	max-width: 32em;
+	height: 1.4em;
+}
