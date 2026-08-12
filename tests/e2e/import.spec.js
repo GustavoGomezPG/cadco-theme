@@ -323,7 +323,16 @@ test.describe('Product import', () => {
 		resetCatalogue();
 
 		try {
-			// Step 1: import a 2-row fixture. Both become published products.
+			// Step 1: import a fixture carrying two purpose-built rows on the
+			// target sheet. completeSheets() fills the other three canonical
+			// sheets with their own single default row each — a sheet the
+			// Reader doesn't see at all is a Tier A error, so every workbook
+			// this suite builds must carry all four — which means the
+			// catalogue this produces is 5 products, not 2: the two rows this
+			// test cares about, plus three untouched "background" products
+			// that stay present and unchanged (skipped) through both imports
+			// below. Both counts here are exact, not the fixture's own row
+			// count, precisely because of that background.
 			const full = buildFixture('trash-full');
 
 			await page.goto(IMPORT_PATH);
@@ -334,11 +343,13 @@ test.describe('Product import', () => {
 			await page.click('#cadco-import-apply');
 			await expect(page.locator('.cadco-import-status')).toContainText(/Done/i, { timeout: 30000 });
 
-			expect(productCount()).toBe(2);
+			expect(productCount()).toBe(5);
 			expect(trashedCount()).toBe(0);
 
-			// Step 2: re-import with the second row gone. The plan must offer
-			// exactly one trash for the product the workbook no longer lists.
+			// Step 2: re-import with the second target row gone (the three
+			// background rows are byte-identical, so they hash the same and
+			// are skipped, not updated). The plan must offer exactly one
+			// trash for the product the workbook no longer lists.
 			const reduced = buildFixture('trash-reduced');
 
 			await page.goto(IMPORT_PATH);
@@ -347,11 +358,12 @@ test.describe('Product import', () => {
 			await expect(page.locator('.cadco-import-counts')).toBeVisible();
 			await expect(page.locator('.cadco-import-counts')).toContainText(/1[\s\S]*to trash/i);
 
-			// Step 3: apply. One product remains published; the other is trashed.
+			// Step 3: apply. Four products remain published (one target row
+			// plus the three untouched background rows); the fifth is trashed.
 			await page.click('#cadco-import-apply');
 			await expect(page.locator('.cadco-import-status')).toContainText(/Done/i, { timeout: 30000 });
 
-			expect(productCount()).toBe(1);
+			expect(productCount()).toBe(4);
 			expect(trashedCount()).toBe(1);
 
 			// Step 4: the removed product is genuinely trashed, never deleted —

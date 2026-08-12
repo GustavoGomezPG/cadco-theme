@@ -54,12 +54,23 @@ function termCount(taxonomy) {
  * Products are force-deleted rather than trashed: a trashed product would be
  * excluded from the importer's "current products" query and silently recreated,
  * which would make the next assertion lie.
+ *
+ * Two passes, not one: WordPress's `post_status=any` explicitly excludes
+ * 'trash' and 'auto-draft' (core behaviour, not a WP-CLI quirk) — a single
+ * `--post_status=any` query leaves every trashed product behind. That was
+ * latent and harmless as long as nothing in the suite ever trashed a
+ * product; the trash-path E2E test does, so without this a trashed product
+ * from one run survives into the next and collides with a fresh product of
+ * the same SKU, which is exactly the kind of cross-run pollution this
+ * function exists to prevent.
  */
 function resetCatalogue() {
-	const ids = wp(['post', 'list', '--post_type=product', '--post_status=any', '--format=ids']);
+	for (const status of ['any', 'trash']) {
+		const ids = wp(['post', 'list', '--post_type=product', `--post_status=${status}`, '--format=ids']);
 
-	if (ids) {
-		wp(['post', 'delete', ...ids.split(/\s+/), '--force']);
+		if (ids) {
+			wp(['post', 'delete', ...ids.split(/\s+/), '--force']);
+		}
 	}
 
 	for (const taxonomy of ['product_cat', 'product_tag', 'product_brand']) {
@@ -180,8 +191,17 @@ function trashedProductIdBySku(sku) {
 	return id ? Number(id) : null;
 }
 
+/**
+ * `wp post get` rather than `wp post list --post__in=...` — deliberately.
+ * `post list` runs a WP_Query, and WP_Query's `post_status=any` explicitly
+ * excludes 'trash' and 'auto-draft' (core behaviour), so a status filter
+ * permissive enough to include every real status doesn't exist for that
+ * command. `post get` fetches the single post directly via get_post(),
+ * which has no status filtering at all — exactly what a lookup meant to
+ * report the true current status, whatever it is, needs.
+ */
 function postStatus(postId) {
-	return wp(['post', 'list', `--include=${Number(postId)}`, '--post_status=any', '--field=post_status', '--format=csv']).trim();
+	return wp(['post', 'get', String(Number(postId)), '--field=post_status']).trim();
 }
 
 /**
