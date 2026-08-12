@@ -196,21 +196,25 @@ function modifyWorkbookCell(source, sheet, model, column, newValue) {
 
 /**
  * Seed the "before" side of a rename directly in the database, bypassing the
- * importer entirely — the fixture built with buildFixture('rename') carries a
- * row whose UPC matches this product's, so the planner offers a rename rather
- * than a plain create.
+ * importer entirely — a fixture carrying a row whose UPC matches this
+ * product's makes the planner offer a rename rather than a plain create.
+ *
+ * Parameterised (fix for Task 9) so more than one rename scenario can exist
+ * in the same suite without colliding SKUs/UPCs; every existing call site
+ * keeps working unchanged because the defaults are exactly the values the
+ * original hard-coded version used.
  *
  * @returns {number} the seeded product's post ID
  */
-function seedRenameSource() {
+function seedRenameSource(sku = 'E2E-RENAME-OLD-1', upc = '654796-99020-1', name = 'Rename Test — before') {
 	const php = `
 		$p = new WC_Product_Simple();
-		$p->set_name('Rename Test — before');
-		$p->set_sku('E2E-RENAME-OLD-1');
-		$p->set_slug('e2e-rename-old-1');
+		$p->set_name('${name}');
+		$p->set_sku('${sku}');
+		$p->set_slug('${sku.toLowerCase()}');
 		$p->set_status('publish');
 		$p->set_catalog_visibility('visible');
-		$p->set_global_unique_id('654796-99020-1');
+		$p->set_global_unique_id('${upc}');
 		echo $p->save();
 	`;
 
@@ -257,6 +261,73 @@ function postStatus(postId) {
 }
 
 /**
+ * How many run directories currently exist under
+ * wp-content/uploads/cadco-imports/ — the same enumeration
+ * cleanupUploadRuns() already does (index.php/.htaccess excluded), read back
+ * as a count rather than deleted. Used by the retention test to prove
+ * CADCO_Import_Archive::prune() actually removed a directory from disk, not
+ * just from the History list.
+ */
+function runDirectoryCount() {
+	const php = [
+		"$dir = trailingslashit(wp_upload_dir()['basedir']) . 'cadco-imports';",
+		'if (!is_dir($dir)) { echo 0; exit; }',
+		'$n = 0;',
+		'foreach (scandir($dir) as $entry) {',
+		'  if ($entry === "." || $entry === ".." || $entry === "index.php" || $entry === ".htaccess") { continue; }',
+		'  if (is_dir($dir . "/" . $entry) && !is_link($dir . "/" . $entry)) { $n++; }',
+		'}',
+		'echo $n;',
+	].join("\n");
+
+	return Number(wp(['eval', php]));
+}
+
+/**
+ * Fabricate $count run directories, each carrying just enough manifest.json
+ * to be a "usable" run (CADCO_Import_Archive::is_usable_manifest()) and a
+ * real run id matching CADCO_Import_Archive::RUN_ID_PATTERN, but backdated
+ * two-plus hours — past prune()'s one-hour "too young to prune" floor, which
+ * a run created by an actual upload seconds ago would still be inside.
+ *
+ * One `wp eval` for the whole batch, deliberately, not $count separate `wp()`
+ * calls — see resetCatalogue()'s docblock for why a WP-CLI-bootstrap-per-item
+ * loop is the mistake that once made this suite's cleanup take minutes.
+ *
+ * Used only by the retention test, which needs 20 pre-existing, *prunable*
+ * runs on disk without spending real time on 20 real uploads/applies.
+ */
+function seedAgedRuns(count) {
+	const php = `
+		$base = trailingslashit(wp_upload_dir()['basedir']) . 'cadco-imports';
+		wp_mkdir_p($base);
+
+		for ($i = 0; $i < ${Number(count)}; $i++) {
+			$age = 7200 + ($i * 60); // 2h+ ago, strictly increasing so ordering is unambiguous.
+			$run_id = gmdate('Y-m-d-His', time() - $age) . '-1-' . wp_generate_password(12, false);
+			$dir = $base . '/' . $run_id;
+			wp_mkdir_p($dir);
+			file_put_contents($dir . '/manifest.json', wp_json_encode([
+				'run_id'        => $run_id,
+				'created'       => gmdate('Y-m-d\\\\TH:i:s\\\\Z', time() - $age),
+				'user_id'       => 1,
+				'filename'      => 'seed-' . $i . '.xlsx',
+				'label'         => '',
+				'passed'        => true,
+				'rows'          => 1,
+				'issues'        => 0,
+				'counts'        => ['create' => 0, 'update' => 0, 'rename' => 0, 'trash' => 0, 'untrash' => 0, 'skip' => 1],
+				'applied'       => true,
+				'restored_from' => null,
+			]));
+		}
+		echo 'seeded';
+	`;
+
+	wp(['eval', php]);
+}
+
+/**
  * Temporarily remove a capability from the administrator role, run `fn`, and
  * restore it afterwards even if `fn` throws — the restoration must never be
  * skipped, or every later test would silently start running as an
@@ -285,6 +356,8 @@ module.exports = {
 	buildFixture,
 	modifyWorkbookCell,
 	seedRenameSource,
+	runDirectoryCount,
+	seedAgedRuns,
 	productIdBySku,
 	trashedProductIdBySku,
 	postStatus,

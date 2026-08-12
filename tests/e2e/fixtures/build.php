@@ -109,6 +109,165 @@ switch ($scenario) {
         ]));
         break;
 
+    case 'history-run':
+        // A single plain, valid row — used wherever a test only needs a
+        // fast, clean check to produce one History-tab archive entry, with
+        // nothing scenario-specific about its contents.
+        FixtureBuilder::write($out, FixtureBuilder::completeSheets([
+            $target => [FixtureBuilder::row([
+                'Model #'      => 'E2E-HISTORY-1',
+                'UPC#'         => '654796-99060-1',
+                'Product Name' => 'History Test',
+            ])],
+        ]));
+        break;
+
+    case 'category-tree':
+        // Two rows on the same sheet, two distinct 'Type' values — the
+        // sheet name becomes the new parent category, each distinct Type
+        // becomes one of its new children (CADCO_Import_Plan::categories_for()).
+        // 'Ranges'/'Griddles' rather than near-spellings of each other:
+        // the validator's Tier B consistency check would otherwise flag two
+        // Type values that differ by one letter as the same misspelt value
+        // and fail the workbook before Review is ever reached.
+        FixtureBuilder::write($out, FixtureBuilder::completeSheets([
+            $target => [
+                FixtureBuilder::row([
+                    'Model #'      => 'E2E-CATTREE-1',
+                    'UPC#'         => '654796-99090-1',
+                    'Product Name' => 'Category Tree Test — Ranges',
+                    'Type'         => 'Ranges',
+                ]),
+                FixtureBuilder::row([
+                    'Model #'      => 'E2E-CATTREE-2',
+                    'UPC#'         => '654796-99090-2',
+                    'Product Name' => 'Category Tree Test — Griddles',
+                    'Type'         => 'Griddles',
+                ]),
+            ],
+        ]));
+        break;
+
+    case 'in-use-a':
+        // First half of the in-use-warning scenario: applied for real, so
+        // 'Warmers' becomes a real product_cat term with a real product
+        // count once this is applied.
+        FixtureBuilder::write($out, FixtureBuilder::completeSheets([
+            $target => [FixtureBuilder::row([
+                'Model #'      => 'E2E-INUSE-1',
+                'UPC#'         => '654796-99070-1',
+                'Product Name' => 'In Use Test',
+                'Type'         => 'Warmers',
+            ])],
+        ]));
+        break;
+
+    case 'in-use-b':
+        // Second half: same product, re-categorised under 'Fryers' — never
+        // applied, only checked, so 'Warmers' stays on the catalogue's one
+        // real product while this workbook no longer implies it at all. The
+        // term diff must report 'Warmers' as still in use, not removed.
+        FixtureBuilder::write($out, FixtureBuilder::completeSheets([
+            $target => [FixtureBuilder::row([
+                'Model #'      => 'E2E-INUSE-1',
+                'UPC#'         => '654796-99070-1',
+                'Product Name' => 'In Use Test',
+                'Type'         => 'Fryers',
+            ])],
+        ]));
+        break;
+
+    case 'restore-a':
+        // The run a restore test restores FROM: one product, applied for
+        // real so it exists on the catalogue and this run's own History
+        // entry is a genuine applied run.
+        FixtureBuilder::write($out, FixtureBuilder::completeSheets([
+            $target => [FixtureBuilder::row([
+                'Model #'      => 'E2E-RESTORE-1',
+                'UPC#'         => '654796-99050-1',
+                'Product Name' => 'Restore Test',
+            ])],
+        ]));
+        break;
+
+    case 'restore-b':
+        // Applied after 'restore-a': a different product entirely, so
+        // E2E-RESTORE-1 (missing from this workbook) is trashed by this
+        // import — the state a restore of 'restore-a' must undo, in place.
+        FixtureBuilder::write($out, FixtureBuilder::completeSheets([
+            $target => [FixtureBuilder::row([
+                'Model #'      => 'E2E-RESTORE-BG-1',
+                'UPC#'         => '654796-99050-2',
+                'Product Name' => 'Restore Test — background',
+            ])],
+        ]));
+        break;
+
+    case 'sections-v1':
+        // First half of the "every review section" fixture pair: applied
+        // for real, so sections-v2 (below) has real prior state to diff an
+        // update and a removal against.
+        FixtureBuilder::write($out, FixtureBuilder::completeSheets([
+            $target => [
+                FixtureBuilder::row([
+                    'Model #'      => 'E2E-SECT-KEEP-1',
+                    'UPC#'         => '654796-99080-1',
+                    'Product Name' => 'Sections Test — kept',
+                    'Type'         => 'Ranges',
+                    'Weight'       => '10',
+                ]),
+                FixtureBuilder::row([
+                    'Model #'      => 'E2E-SECT-GONE-1',
+                    'UPC#'         => '654796-99080-2',
+                    'Product Name' => 'Sections Test — removed',
+                    'Type'         => 'Ranges',
+                ]),
+            ],
+        ]));
+        break;
+
+    case 'sections-v2':
+        // Checked (never applied) against the catalogue sections-v1 left
+        // behind. Every one of the eight Review sections has something
+        // real to show:
+        //  - Workbook: rows read (always non-zero).
+        //  - Categories: 'Griddles' is a brand new child.
+        //  - Products: E2E-SECT-NEW2-1 is a new create.
+        //  - Updates: E2E-SECT-KEEP-1's Weight changed 10 -> 11 (plus its
+        //    Product Name and Website URL, both blank in sections-v1).
+        //  - Renames: matches the UPC seedRenameSource() seeds directly in
+        //    the database under a different model number (see helpers.js).
+        //  - Removals: E2E-SECT-GONE-1 is missing from this workbook.
+        //  - Cleaned up: the double space in this row's Product Name is
+        //    collapsed by the normaliser's whitespace pass.
+        //  - Redirects: a 'Website URL' shaped like a real legacy product
+        //    page (CADCO_Import_Planner::legacy_path()).
+        FixtureBuilder::write($out, FixtureBuilder::completeSheets([
+            $target => [
+                FixtureBuilder::row([
+                    'Model #'      => 'E2E-SECT-KEEP-1',
+                    'UPC#'         => '654796-99080-1',
+                    'Product Name' => 'Sections  Test — kept',
+                    'Type'         => 'Ranges',
+                    'Weight'       => '11',
+                    'Website URL'  => 'http://www.cadco-ltd.com/product/e2e-sect-keep-1',
+                ]),
+                FixtureBuilder::row([
+                    'Model #'      => 'E2E-SECT-NEW2-1',
+                    'UPC#'         => '654796-99080-4',
+                    'Product Name' => 'Sections Test — new',
+                    'Type'         => 'Griddles',
+                ]),
+                FixtureBuilder::row([
+                    'Model #'      => 'E2E-SECT-RENAME-NEW-1',
+                    'UPC#'         => '654796-99080-3',
+                    'Product Name' => 'Sections Test — renamed',
+                    'Type'         => 'Ranges',
+                ]),
+            ],
+        ]));
+        break;
+
     default:
         fwrite(STDERR, "Unknown fixture scenario: {$scenario}\n");
         exit(1);

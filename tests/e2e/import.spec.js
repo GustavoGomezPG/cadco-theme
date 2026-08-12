@@ -1,8 +1,9 @@
+const path = require('node:path');
 const { test, expect } = require('@playwright/test');
 const {
 	wp, productCount, counts, resetCatalogue, cleanupUploadRuns,
 	buildFixture, modifyWorkbookCell, seedRenameSource, productIdBySku, trashedProductIdBySku, postStatus,
-	permalinkFor, withoutCapability,
+	permalinkFor, withoutCapability, runDirectoryCount, seedAgedRuns,
 	CORRECTED, SOURCE, IMPORT_PATH,
 } = require('./helpers');
 
@@ -610,5 +611,496 @@ test.describe('Product import', () => {
 		await page.getByRole('button', { name: /check workbook/i }).click();
 
 		await expect(page.locator('.notice-error')).toContainText(/not an \.xlsx workbook/i);
+	});
+
+	// Task 9: end-to-end coverage of the wizard shell (Task 5), the Review
+	// screen's Categories section (Tasks 5-7), the History tab and restore
+	// (Task 8). Everything above this point predates those tasks.
+
+	// Gap: nobody had clicked through the change navigator itself — every
+	// prior Review-screen test reaches its one section of interest directly,
+	// with no assertion that the sidebar's links actually work, or that a
+	// section with something to show is a real, clickable link rather than
+	// the inert <span> a zero-count section renders as (CADCO_Import_View::navigator()).
+	// sections-v1/sections-v2 (tests/e2e/fixtures/build.php) exist purely to
+	// give every one of the eight sections a genuine non-zero count in one
+	// pass, without the cost of a real 236-row apply.
+	test('every review section is reachable from the sidebar and renders its table', async ({ page }) => {
+		resetCatalogue();
+
+		try {
+			const v1 = buildFixture('sections-v1');
+
+			await page.goto(IMPORT_PATH);
+			await page.setInputFiles('input[type="file"]', v1);
+			await page.getByRole('button', { name: /check workbook/i }).click();
+			await expect(page.locator('#cadco-import-apply')).toBeVisible();
+			await page.click('#cadco-import-apply');
+			await expect(page.locator('.cadco-import-status')).toContainText(/Done/i, { timeout: 30000 });
+
+			// The rename half of sections-v2's plan: an existing product,
+			// seeded directly, whose UPC the workbook's row 'E2E-SECT-RENAME-NEW-1'
+			// matches under a different model number.
+			seedRenameSource('E2E-SECT-RENAME-OLD-1', '654796-99080-3', 'Sections Test — before rename');
+
+			const v2 = buildFixture('sections-v2');
+
+			await page.goto(IMPORT_PATH);
+			await page.setInputFiles('input[type="file"]', v2);
+			await page.getByRole('button', { name: /check workbook/i }).click();
+			await expect(page.locator('#cadco-import-apply')).toBeVisible();
+
+			const sections = ['workbook', 'categories', 'products', 'updates', 'renames', 'removals', 'cleaned-up', 'redirects'];
+
+			for (const id of sections) {
+				// #cadco-nav-<id> only exists on the live <a> variant
+				// (CADCO_Import_View::navigator()) — a muted section renders
+				// an id-less <span> instead, so finding this at all is
+				// itself proof the section is reachable, not merely present.
+				const link = page.locator(`#cadco-nav-${id}`);
+				await expect(link).toHaveCount(1);
+
+				await link.click();
+
+				const target = page.locator(`#cadco-section-${id}`);
+				await expect(target).toBeVisible();
+				// The click moved real DOM focus onto the section
+				// (assets/js/import-admin.js's navigator click handler) —
+				// the accessibility contract design spec §6.1 calls for.
+				await expect(target).toBeFocused();
+				await expect(link).toHaveAttribute('aria-current', 'true');
+			}
+
+			// Each section's content is a real fact from this exact plan,
+			// not just "a table exists somewhere on the page".
+			await expect(page.locator('#cadco-section-categories')).toContainText('Griddles');
+			await expect(page.locator('#cadco-section-products')).toContainText('E2E-SECT-NEW2-1');
+			await expect(page.locator('#cadco-section-updates')).toContainText('E2E-SECT-KEEP-1');
+			await expect(page.locator('#cadco-section-updates')).toContainText('Weight');
+			await expect(page.locator('#cadco-section-renames')).toContainText('E2E-SECT-RENAME-OLD-1');
+			await expect(page.locator('#cadco-section-renames')).toContainText('E2E-SECT-RENAME-NEW-1');
+			await expect(page.locator('#cadco-section-removals')).toContainText('E2E-SECT-GONE-1');
+			await expect(page.locator('#cadco-section-cleaned-up')).toContainText('Sections Test');
+			// legacy_redirect_forecast() reads the *workbook's* 'Website URL'
+			// column, not the database — sections-v1's product has none yet,
+			// so redirect_map() (existing, DB-derived redirects) is still
+			// empty and the table itself doesn't render; the forecast
+			// paragraph is what this workbook's one legacy URL actually
+			// produces.
+			await expect(page.locator('#cadco-heading-redirects')).toContainText('1');
+			await expect(page.locator('#cadco-section-redirects'))
+				.toContainText('1 legacy URL will redirect to its new product page once this plan is applied.');
+		} finally {
+			resetCatalogue();
+		}
+	});
+
+	// Gap: CADCO_Import_Term_Diff::compare_categories()'s tree-building is
+	// unit-tested (TermDiffTest), but nothing had ever rendered it through
+	// CADCO_Import_View::category_tree() and checked the actual DOM nesting —
+	// a flat list of "parent" and "child" <li>s side by side would satisfy a
+	// looser assertion just as well as a real tree, but is not what the
+	// design calls for.
+	test('the category tree shows a parent with nested children', async ({ page }) => {
+		resetCatalogue();
+
+		try {
+			const fixture = buildFixture('category-tree');
+
+			await page.goto(IMPORT_PATH);
+			await page.setInputFiles('input[type="file"]', fixture);
+			await page.getByRole('button', { name: /check workbook/i }).click();
+			await expect(page.locator('#cadco-import-apply')).toBeVisible();
+
+			// The sheet name, title-cased, is the one new parent — both
+			// distinct 'Type' values are its children, nested underneath it.
+			const parent = page.locator('#cadco-section-categories .cadco-import-term-tree > li')
+				.filter({ hasText: 'Convection Ovens' });
+			await expect(parent).toHaveCount(1);
+
+			const children = parent.locator('ul > li');
+			await expect(children).toHaveCount(2);
+			await expect(children.filter({ hasText: 'Ranges' })).toContainText('1 item');
+			await expect(children.filter({ hasText: 'Griddles' })).toContainText('1 item');
+		} finally {
+			resetCatalogue();
+		}
+	});
+
+	// Gap: PlannerTest and TermDiffTest both prove the in-use *data* is
+	// computed correctly; nothing had ever proven CADCO_Import_View::in_use_term_list()
+	// actually renders it, or renders it loudly (design spec §7's "the one
+	// thing here that needs a person, not a nod"). Two real imports, not one:
+	// the warning only exists for a term the SITE already has and still
+	// holds a product — a single check-only upload has no such term yet.
+	test('the in-use warning appears when a term with products is no longer implied', async ({ page }) => {
+		resetCatalogue();
+
+		try {
+			const before = buildFixture('in-use-a');
+
+			await page.goto(IMPORT_PATH);
+			await page.setInputFiles('input[type="file"]', before);
+			await page.getByRole('button', { name: /check workbook/i }).click();
+			await expect(page.locator('#cadco-import-apply')).toBeVisible();
+			await page.click('#cadco-import-apply');
+			await expect(page.locator('.cadco-import-status')).toContainText(/Done/i, { timeout: 30000 });
+
+			// Re-categorised under 'Fryers' and only ever checked — 'Warmers'
+			// still holds the one real product on the site, but this
+			// workbook no longer implies it at all.
+			const after = buildFixture('in-use-b');
+
+			await page.goto(IMPORT_PATH);
+			await page.setInputFiles('input[type="file"]', after);
+			await page.getByRole('button', { name: /check workbook/i }).click();
+			await expect(page.locator('#cadco-import-apply')).toBeVisible();
+
+			const inUse = page.locator('#cadco-section-categories .cadco-import-in-use');
+			await expect(inUse).toBeVisible();
+			await expect(inUse).toContainText(/will NOT be removed/i);
+			await expect(inUse).toContainText('Warmers');
+			await expect(inUse).toContainText('1 product');
+
+			// Preview only — the second upload never touched the catalogue.
+			// 4, not 1: completeSheets() fills the other three canonical
+			// sheets with their own default row each (see the trash test
+			// above for the same background-row accounting).
+			expect(productCount()).toBe(4);
+		} finally {
+			resetCatalogue();
+		}
+	});
+
+	// Gap: every prior test either asserted #cadco-import-apply is entirely
+	// absent (0 elements, the invalid case) or visible (the clean case) —
+	// nothing had ever inspected CADCO_Import_View::cta()'s disabled
+	// placeholder itself: its `disabled` attribute, its blocked-state class,
+	// or its "Fix N problems" wording, none of which the older assertions
+	// could catch regressing.
+	test('the CTA is disabled on an invalid workbook and enabled on a clean one', async ({ page }) => {
+		await page.goto(IMPORT_PATH);
+		await page.setInputFiles('input[type="file"]', SOURCE);
+		await page.getByRole('button', { name: /check workbook/i }).click();
+
+		const blockedCta = page.locator('.cadco-import-cta button');
+		await expect(blockedCta).toBeVisible();
+		await expect(blockedCta).toBeDisabled();
+		await expect(blockedCta).toHaveClass(/cadco-import-cta-blocked/);
+		await expect(blockedCta).toContainText(/Fix \d+ problems? to continue/i);
+		await expect(blockedCta).not.toHaveAttribute('id', 'cadco-import-apply');
+
+		await page.goto(IMPORT_PATH);
+		await page.setInputFiles('input[type="file"]', CORRECTED);
+		await page.getByRole('button', { name: /check workbook/i }).click();
+
+		const applyCta = page.locator('.cadco-import-cta #cadco-import-apply');
+		await expect(applyCta).toBeVisible();
+		await expect(applyCta).toBeEnabled();
+		await expect(applyCta).toContainText(/Apply plan/i);
+	});
+
+	// Gap: CADCO_Import_View::history()/history_row() had never been
+	// rendered by anything but PHPUnit (which never renders HTML). A run
+	// only needs to be *checked*, not applied, to be archived (task brief:
+	// "every upload — including one that fails validation — is archived"),
+	// so this proves the list end to end off the cheapest possible run.
+	test('the History tab lists a run after an import', async ({ page }) => {
+		resetCatalogue();
+
+		try {
+			const fixture = buildFixture('history-run');
+			const filename = path.basename(fixture);
+
+			await page.goto(IMPORT_PATH);
+			await page.setInputFiles('input[type="file"]', fixture);
+			await page.getByRole('button', { name: /check workbook/i }).click();
+			await expect(page.locator('#cadco-import-apply')).toBeVisible();
+
+			await page.goto(`${IMPORT_PATH}&tab=history`);
+
+			const row = page.locator('table.cadco-import-history tbody tr').filter({ hasText: filename });
+			await expect(row).toHaveCount(1);
+			await expect(row.locator('td').nth(2)).toContainText(filename);
+		} finally {
+			resetCatalogue();
+		}
+	});
+
+	// Gap: CADCO_Import_View::run_result_summary()'s "Not applied — " prefix
+	// (fix round 1, finding 1) is unit-tested against the string it returns,
+	// never against what actually lands in the DOM, and never side by side
+	// with the applied case it exists to be told apart from. A run that was
+	// only ever checked must never read as a past-tense fact.
+	test('the History Result column distinguishes an unapplied run from a completed one', async ({ page }) => {
+		resetCatalogue();
+
+		try {
+			const checkedOnly = buildFixture('history-run');
+			const checkedName = path.basename(checkedOnly);
+
+			await page.goto(IMPORT_PATH);
+			await page.setInputFiles('input[type="file"]', checkedOnly);
+			await page.getByRole('button', { name: /check workbook/i }).click();
+			await expect(page.locator('#cadco-import-apply')).toBeVisible();
+			// Deliberately never clicked — this run stays "reviewed, not applied".
+
+			const applied = buildFixture('restore-a');
+			const appliedName = path.basename(applied);
+
+			await page.goto(IMPORT_PATH);
+			await page.setInputFiles('input[type="file"]', applied);
+			await page.getByRole('button', { name: /check workbook/i }).click();
+			await expect(page.locator('#cadco-import-apply')).toBeVisible();
+			await page.click('#cadco-import-apply');
+			await expect(page.locator('.cadco-import-status')).toContainText(/Done/i, { timeout: 30000 });
+
+			await page.goto(`${IMPORT_PATH}&tab=history`);
+
+			// 4 created, not 1: completeSheets() fills the other three
+			// canonical sheets with their own default row each, so even
+			// this minimal fixture's plan creates 4 products.
+			const unappliedRow = page.locator('table.cadco-import-history tbody tr').filter({ hasText: checkedName });
+			await expect(unappliedRow).toHaveClass(/cadco-import-history-unapplied/);
+			await expect(unappliedRow).toContainText(/Not applied — 4 created/);
+
+			const appliedRow = page.locator('table.cadco-import-history tbody tr').filter({ hasText: appliedName });
+			await expect(appliedRow).not.toHaveClass(/cadco-import-history-unapplied/);
+			await expect(appliedRow).toContainText('4 created');
+			await expect(appliedRow).not.toContainText(/Not applied/);
+		} finally {
+			resetCatalogue();
+		}
+	});
+
+	// Gap: assets/js/import-admin.js's label-saving block (task brief step 2)
+	// had never run against a real request/response cycle, and nothing had
+	// proven the edit outlives the page it was typed on — the one property
+	// that actually matters for a label meant to be read back later.
+	test('editing a label persists across a reload', async ({ page }) => {
+		resetCatalogue();
+
+		try {
+			const fixture = buildFixture('history-run');
+			const filename = path.basename(fixture);
+
+			await page.goto(IMPORT_PATH);
+			await page.setInputFiles('input[type="file"]', fixture);
+			await page.getByRole('button', { name: /check workbook/i }).click();
+			await expect(page.locator('#cadco-import-apply')).toBeVisible();
+
+			await page.goto(`${IMPORT_PATH}&tab=history`);
+
+			const row = page.locator('table.cadco-import-history tbody tr').filter({ hasText: filename });
+			const label = row.locator('.cadco-import-history-label');
+			const status = row.locator('.cadco-import-history-label-status');
+
+			const labelText = `E2E label ${Date.now()}`;
+			await label.fill(labelText);
+			await label.blur();
+
+			await expect(status).toContainText(/saved/i);
+
+			await page.reload();
+
+			const reloadedRow = page.locator('table.cadco-import-history tbody tr').filter({ hasText: filename });
+			await expect(reloadedRow.locator('.cadco-import-history-label')).toHaveValue(labelText);
+		} finally {
+			resetCatalogue();
+		}
+	});
+
+	// Gap: CADCO_Import_Admin::handle_restore()/handle_restored_review() and
+	// the restore banner (CADCO_Import_View::restore_banner()) had never run
+	// end to end — ArchiveTest covers pruning and manifest handling, but
+	// nothing had clicked a real "Restore" link and looked at what came back.
+	// restore-a/restore-b (build.php) exist so the product a restore is
+	// meant to bring back is genuinely trashed by a second, independent
+	// import, not merely absent from the very first one.
+	test('restoring a run lands on Review and shows the restore banner', async ({ page }) => {
+		resetCatalogue();
+
+		try {
+			const a = buildFixture('restore-a');
+			const aFilename = path.basename(a);
+
+			await page.goto(IMPORT_PATH);
+			await page.setInputFiles('input[type="file"]', a);
+			await page.getByRole('button', { name: /check workbook/i }).click();
+			await expect(page.locator('#cadco-import-apply')).toBeVisible();
+			await page.click('#cadco-import-apply');
+			await expect(page.locator('.cadco-import-status')).toContainText(/Done/i, { timeout: 30000 });
+
+			const b = buildFixture('restore-b');
+
+			await page.goto(IMPORT_PATH);
+			await page.setInputFiles('input[type="file"]', b);
+			await page.getByRole('button', { name: /check workbook/i }).click();
+			await expect(page.locator('#cadco-import-apply')).toBeVisible();
+			await page.click('#cadco-import-apply');
+			await expect(page.locator('.cadco-import-status')).toContainText(/Done/i, { timeout: 30000 });
+
+			// E2E-RESTORE-1 is now trashed — the state a restore of run 'a'
+			// exists to undo.
+			expect(trashedProductIdBySku('E2E-RESTORE-1')).not.toBeNull();
+
+			await page.goto(`${IMPORT_PATH}&tab=history`);
+
+			const row = page.locator('table.cadco-import-history tbody tr').filter({ hasText: aFilename });
+			await expect(row).toHaveCount(1);
+			await row.getByRole('link', { name: /restore/i }).click();
+
+			// Post/redirect/get (fix round 1, finding 2): a successful
+			// restore lands here, never back on a bare upload form.
+			await expect(page).toHaveURL(/restored_run=/);
+
+			// The banner's selector carries `.inline`, so wp-admin's own
+			// admin.js leaves it exactly where CADCO_Import_View::review()
+			// rendered it rather than relocating it — asserted in place.
+			const banner = page.locator('.cadco-import-restore-banner');
+			await expect(banner).toBeVisible();
+			await expect(banner).toContainText(/Restoring a previous import/i);
+			await expect(banner).toContainText(aFilename);
+
+			// A banner alone proves nothing if the plan behind it is empty —
+			// this restore's Review must actually offer bringing the
+			// trashed product back.
+			await expect(page.locator('.cadco-import-counts')).toContainText(/1[\s\S]*to restore/i);
+		} finally {
+			resetCatalogue();
+		}
+	});
+
+	// Gap: nothing, unit or E2E, had ever run a restore all the way through
+	// CADCO_Import_Applier's untrash job and checked the resulting post ID.
+	// The failure mode this guards against is real and specific: a restore
+	// that silently creates a second product instead of reviving the first
+	// would still show "1 created" and look successful on screen.
+	test('a restore untrashes a removed product in place rather than duplicating it', async ({ page }) => {
+		resetCatalogue();
+
+		try {
+			const a = buildFixture('restore-a');
+
+			await page.goto(IMPORT_PATH);
+			await page.setInputFiles('input[type="file"]', a);
+			await page.getByRole('button', { name: /check workbook/i }).click();
+			await expect(page.locator('#cadco-import-apply')).toBeVisible();
+			await page.click('#cadco-import-apply');
+			await expect(page.locator('.cadco-import-status')).toContainText(/Done/i, { timeout: 30000 });
+
+			const originalId = productIdBySku('E2E-RESTORE-1');
+			expect(originalId).not.toBeNull();
+
+			const b = buildFixture('restore-b');
+
+			await page.goto(IMPORT_PATH);
+			await page.setInputFiles('input[type="file"]', b);
+			await page.getByRole('button', { name: /check workbook/i }).click();
+			await expect(page.locator('#cadco-import-apply')).toBeVisible();
+			await page.click('#cadco-import-apply');
+			await expect(page.locator('.cadco-import-status')).toContainText(/Done/i, { timeout: 30000 });
+
+			expect(postStatus(originalId)).toBe('trash');
+
+			const aFilename = path.basename(a);
+
+			await page.goto(`${IMPORT_PATH}&tab=history`);
+			const row = page.locator('table.cadco-import-history tbody tr').filter({ hasText: aFilename });
+			await row.getByRole('link', { name: /restore/i }).click();
+			await expect(page).toHaveURL(/restored_run=/);
+			await expect(page.locator('.cadco-import-restore-banner')).toBeVisible();
+
+			await page.click('#cadco-import-apply');
+			await expect(page.locator('.cadco-import-status')).toContainText(/Done/i, { timeout: 30000 });
+
+			// Same post — untrashed, not re-created under a new ID.
+			expect(productIdBySku('E2E-RESTORE-1')).toBe(originalId);
+			expect(postStatus(originalId)).toBe('publish');
+		} finally {
+			resetCatalogue();
+		}
+	});
+
+	// Gap (fix round 1, finding 2): restore used to be a side-effecting GET —
+	// reloading the page WP nonces don't invalidate would silently create
+	// another run directory, copy the workbook again, and prune() again.
+	// handle_restored_review() is meant to make the landing URL (?restored_run=)
+	// purely read-only; nothing had ever actually reloaded it and checked
+	// that no second run appeared on disk.
+	test('reloading the restored review does not create another run', async ({ page }) => {
+		resetCatalogue();
+
+		try {
+			const a = buildFixture('restore-a');
+
+			await page.goto(IMPORT_PATH);
+			await page.setInputFiles('input[type="file"]', a);
+			await page.getByRole('button', { name: /check workbook/i }).click();
+			await expect(page.locator('#cadco-import-apply')).toBeVisible();
+			await page.click('#cadco-import-apply');
+			await expect(page.locator('.cadco-import-status')).toContainText(/Done/i, { timeout: 30000 });
+
+			const b = buildFixture('restore-b');
+
+			await page.goto(IMPORT_PATH);
+			await page.setInputFiles('input[type="file"]', b);
+			await page.getByRole('button', { name: /check workbook/i }).click();
+			await expect(page.locator('#cadco-import-apply')).toBeVisible();
+			await page.click('#cadco-import-apply');
+			await expect(page.locator('.cadco-import-status')).toContainText(/Done/i, { timeout: 30000 });
+
+			const aFilename = path.basename(a);
+
+			await page.goto(`${IMPORT_PATH}&tab=history`);
+			const row = page.locator('table.cadco-import-history tbody tr').filter({ hasText: aFilename });
+			await row.getByRole('link', { name: /restore/i }).click();
+			await expect(page).toHaveURL(/restored_run=/);
+			await expect(page.locator('.cadco-import-restore-banner')).toBeVisible();
+
+			const before = runDirectoryCount();
+
+			await page.reload();
+
+			await expect(page.locator('.cadco-import-restore-banner')).toBeVisible();
+			expect(runDirectoryCount()).toBe(before);
+		} finally {
+			cleanupUploadRuns();
+			resetCatalogue();
+		}
+	});
+
+	// Gap: ArchiveTest proves CADCO_Import_Archive::prune() itself, in
+	// isolation, with directories it builds by hand — nothing had ever
+	// proven prune() actually runs, wired into a real request, at the exact
+	// boundary that matters (the 21st run). prune()'s one-hour "too young to
+	// prune" floor (see its own docblock) means 21 REAL uploads would not
+	// prove this at all — every one would still be within the hour and
+	// nothing would ever be deleted — so seedAgedRuns() fabricates 20
+	// backdated-but-otherwise-real run directories instead, and only the
+	// 21st (the one this test actually uploads) is a genuine browser
+	// request.
+	test('retention prunes at 21 runs', async ({ page }) => {
+		cleanupUploadRuns();
+
+		try {
+			seedAgedRuns(20);
+			expect(runDirectoryCount()).toBe(20);
+
+			const fixture = buildFixture('history-run');
+
+			await page.goto(IMPORT_PATH);
+			await page.setInputFiles('input[type="file"]', fixture);
+			await page.getByRole('button', { name: /check workbook/i }).click();
+			await expect(page.locator('#cadco-import-apply')).toBeVisible();
+
+			// The 21st run just archived itself, which is what calls
+			// CADCO_Import_Archive::prune(20) — the single oldest of the 21
+			// (one of the 20 seeded, all well past the one-hour floor) must
+			// now be gone from disk, leaving exactly 20.
+			expect(runDirectoryCount()).toBe(20);
+		} finally {
+			cleanupUploadRuns();
+		}
 	});
 });
