@@ -174,6 +174,9 @@ tier counts instead of change counts; the CTA is dead and labelled with why.
 
 - **new** — implied by the workbook, absent from the site. For `product_cat`,
   nested parent → child, each carrying the number of products that will land in it.
+  Existence is judged the way `ensure_term()` judges it: for categories by name
+  **within a parent**, since a child name legitimately repeats under two parents;
+  for tags and brands, which are flat, by name alone.
 - **removed** — present on the site, not implied by the workbook, holding **zero**
   products. These are what the applier's orphan pass will delete.
 - **in_use** — present on the site, not implied by the workbook, but **still holding

@@ -231,7 +231,12 @@ Expected: FAIL — `class-cadco-import-term-diff.php` does not exist.
 
 - [ ] **Step 3: Implement `CADCO_Import_Term_Diff`**
 
-Build the implied set from `CADCO_Import_Plan::all_terms($rows)` for tags and brands, and from `CADCO_Import_Plan::categories_for($row)` per row for categories (which also gives you the per-child product counts). Compare against `$existing` by **name within taxonomy**, matching how `ensure_term()` resolves terms.
+Build the implied set from `CADCO_Import_Plan::all_terms($rows)` for tags and brands, and from `CADCO_Import_Plan::categories_for($row)` per row for categories (which also gives you the per-child product counts). Compare against `$existing` the way `ensure_term()` resolves terms — which for
+categories is by name **within a parent**, not by name alone. A child name
+legitimately repeats under two different parents in the real workbook
+(`Accessories for Demo / Sampling Carts` appears under both Countertop Equipment
+and Foodservice Carts), so matching by name alone would wrongly report the second
+one as already existing. Tags and brands are flat, so name alone is correct there.
 
 Three rules the tests pin:
 - A term the workbook implies and the site lacks → `new`.
