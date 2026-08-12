@@ -233,8 +233,12 @@ switch ($scenario) {
         //  - Workbook: rows read (always non-zero).
         //  - Categories: 'Griddles' is a brand new child.
         //  - Products: E2E-SECT-NEW2-1 is a new create.
-        //  - Updates: E2E-SECT-KEEP-1's Weight changed 10 -> 11 (plus its
-        //    Product Name and Website URL, both blank in sections-v1).
+        //  - Updates: E2E-SECT-KEEP-1's Weight changed 10 -> 11, and its
+        //    Website URL changed blank -> filled. Its Product Name is NOT
+        //    a genuine diff despite the double space below: the
+        //    normaliser's whitespace pass collapses 'Sections  Test —
+        //    kept' back to the exact string sections-v1 already wrote,
+        //    'Sections Test — kept'.
         //  - Renames: matches the UPC seedRenameSource() seeds directly in
         //    the database under a different model number (see helpers.js).
         //  - Removals: E2E-SECT-GONE-1 is missing from this workbook.

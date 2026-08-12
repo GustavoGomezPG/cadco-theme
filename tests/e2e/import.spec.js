@@ -3,7 +3,7 @@ const { test, expect } = require('@playwright/test');
 const {
 	wp, productCount, counts, resetCatalogue, cleanupUploadRuns,
 	buildFixture, modifyWorkbookCell, seedRenameSource, productIdBySku, trashedProductIdBySku, postStatus,
-	permalinkFor, withoutCapability, runDirectoryCount, seedAgedRuns,
+	permalinkFor, withoutCapability, runDirectoryCount, seedAgedRuns, plantWorkbookInRun, runDirectoryExists,
 	CORRECTED, SOURCE, IMPORT_PATH,
 } = require('./helpers');
 
@@ -687,7 +687,10 @@ test.describe('Product import', () => {
 			// empty and the table itself doesn't render; the forecast
 			// paragraph is what this workbook's one legacy URL actually
 			// produces.
-			await expect(page.locator('#cadco-heading-redirects')).toContainText('1');
+			// toHaveText(), not toContainText(): the count span holds
+			// nothing but the number, and toContainText('1') would still
+			// pass against '11', '21' or '100'.
+			await expect(page.locator('#cadco-heading-redirects .count')).toHaveText('1');
 			await expect(page.locator('#cadco-section-redirects'))
 				.toContainText('1 legacy URL will redirect to its new product page once this plan is applied.');
 		} finally {
@@ -954,18 +957,29 @@ test.describe('Product import', () => {
 			// restore lands here, never back on a bare upload form.
 			await expect(page).toHaveURL(/restored_run=/);
 
-			// The banner's selector carries `.inline`, so wp-admin's own
-			// admin.js leaves it exactly where CADCO_Import_View::review()
-			// rendered it rather than relocating it — asserted in place.
+			// The banner's selector carries `.inline`, which is what tells
+			// wp-admin's own admin.js to leave it exactly where
+			// CADCO_Import_View::review() rendered it rather than relocating
+			// it to just after the page header (see restore_banner()'s own
+			// docblock, fix round 1 finding 6) — asserted here, not just
+			// claimed: the class itself, and that the banner still sits
+			// immediately before the counts summary review() renders right
+			// after it, rather than having drifted anywhere else in the DOM.
 			const banner = page.locator('.cadco-import-restore-banner');
 			await expect(banner).toBeVisible();
+			await expect(banner).toHaveClass(/\binline\b/);
 			await expect(banner).toContainText(/Restoring a previous import/i);
 			await expect(banner).toContainText(aFilename);
+			await expect(banner.locator('xpath=following-sibling::*[1]')).toHaveClass(/cadco-import-counts/);
 
 			// A banner alone proves nothing if the plan behind it is empty —
 			// this restore's Review must actually offer bringing the
-			// trashed product back.
-			await expect(page.locator('.cadco-import-counts')).toContainText(/1[\s\S]*to restore/i);
+			// trashed product back. Scoped to the one list item rather than
+			// the whole six-item counts summary: this plan also has "1 to
+			// trash" (E2E-RESTORE-BG-1, missing from the restored workbook),
+			// so an unscoped match against the whole list would pass even if
+			// the untrash count itself had regressed to 0.
+			await expect(page.locator('.cadco-import-counts li').filter({ hasText: 'to restore' })).toContainText('1');
 		} finally {
 			resetCatalogue();
 		}
@@ -1070,21 +1084,25 @@ test.describe('Product import', () => {
 		}
 	});
 
-	// Gap: ArchiveTest proves CADCO_Import_Archive::prune() itself, in
-	// isolation, with directories it builds by hand — nothing had ever
-	// proven prune() actually runs, wired into a real request, at the exact
-	// boundary that matters (the 21st run). prune()'s one-hour "too young to
-	// prune" floor (see its own docblock) means 21 REAL uploads would not
-	// prove this at all — every one would still be within the hour and
-	// nothing would ever be deleted — so seedAgedRuns() fabricates 20
-	// backdated-but-otherwise-real run directories instead, and only the
-	// 21st (the one this test actually uploads) is a genuine browser
-	// request.
+	// Gap: `grep -rn "prune(" tests/` (outside comments) turns up nothing —
+	// ArchiveTest.php is five tests, all of them on is_valid_run_id(), never
+	// on prune() itself. This test is the only prune() coverage in the
+	// repository, at any level, so it has to prove more than "some run got
+	// deleted": prune()'s one-hour "too young to prune" floor (see its own
+	// docblock) means 21 REAL uploads would not prove anything at all —
+	// every one would still be within the hour and nothing would ever be
+	// deleted — so seedAgedRuns() fabricates 20 backdated-but-otherwise-real
+	// run directories instead, and only the 21st (the one this test
+	// actually uploads) is a genuine browser request.
 	test('retention prunes at 21 runs', async ({ page }) => {
 		cleanupUploadRuns();
 
 		try {
-			seedAgedRuns(20);
+			// seedAgedRuns() returns ids newest-first, so the last two are
+			// the oldest and second-oldest of the batch.
+			const ids = seedAgedRuns(20);
+			const oldest = ids[ids.length - 1];
+			const nextOldest = ids[ids.length - 2];
 			expect(runDirectoryCount()).toBe(20);
 
 			const fixture = buildFixture('history-run');
@@ -1094,11 +1112,64 @@ test.describe('Product import', () => {
 			await page.getByRole('button', { name: /check workbook/i }).click();
 			await expect(page.locator('#cadco-import-apply')).toBeVisible();
 
-			// The 21st run just archived itself, which is what calls
-			// CADCO_Import_Archive::prune(20) — the single oldest of the 21
-			// (one of the 20 seeded, all well past the one-hour floor) must
-			// now be gone from disk, leaving exactly 20.
+			// Identity, not just cardinality. A bare count of 20 cannot
+			// distinguish "the oldest run was pruned" from "some other run
+			// was pruned" — an ordering regression in prune()'s rsort()/
+			// array_slice() (class-cadco-import-archive.php:304-306) could
+			// prune the newest of the 21 instead of the oldest and this
+			// test would not notice if it only checked the total.
+			expect(runDirectoryExists(oldest)).toBe(false);
+			expect(runDirectoryExists(nextOldest)).toBe(true);
 			expect(runDirectoryCount()).toBe(20);
+		} finally {
+			cleanupUploadRuns();
+		}
+	});
+
+	// Gap: prune()'s $except_run_id parameter (class-cadco-import-archive.php:274,
+	// 308-313) exists for exactly one caller — archive_and_track(), passing
+	// $restored_from (class-cadco-import-admin.php:655) — and had no test at
+	// any level. Without it, restoring the oldest run at the retention cap
+	// would prune that same run in the very request that just copied it: the
+	// archived copy about to be reviewed would still exist, but the run it
+	// was restored FROM would silently vanish. The existing restore tests
+	// never catch this because they run with only ~3 run directories on
+	// disk, nowhere near the cap where prune() would ever consider deleting
+	// anything.
+	test("restoring the oldest run at the retention cap survives its own prune()", async ({ page }) => {
+		cleanupUploadRuns();
+
+		try {
+			// seedAgedRuns() orders newest-first; the last id is the single
+			// oldest, and therefore the one this test's restore must spare.
+			const ids = seedAgedRuns(20);
+			const oldest = ids[ids.length - 1];
+
+			// seedAgedRuns() only ever writes a manifest.json — enough for
+			// this run to appear in History, but handle_restore() also
+			// reads the archived workbook.xlsx itself before it will
+			// restore FROM a run, so this test's one real run needs one.
+			const fixture = buildFixture('restore-a');
+			plantWorkbookInRun(oldest, fixture);
+
+			await page.goto(`${IMPORT_PATH}&tab=history`);
+
+			// Located by the run id inside the Restore link's own href
+			// rather than by filename text — this run's manifest carries a
+			// synthetic 'seed-*.xlsx' filename, not this fixture's real one.
+			const restoreLink = page.locator(`a[href*="run_id=${oldest}"]`);
+			await expect(restoreLink).toHaveCount(1);
+			await restoreLink.click();
+
+			await expect(page).toHaveURL(/restored_run=/);
+			await expect(page.locator('.cadco-import-restore-banner')).toBeVisible();
+
+			// This restore's own new run is the 21st on disk (20 seeded +
+			// 1), which is exactly the request where CADCO_Import_Archive::prune(20, $restored_from)
+			// runs — $restored_from here is 'oldest', the single oldest run
+			// on disk and, without the exemption, precisely what an
+			// un-exempted prune(20) would delete.
+			expect(runDirectoryExists(oldest)).toBe(true);
 		} finally {
 			cleanupUploadRuns();
 		}

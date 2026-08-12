@@ -294,13 +294,18 @@ function runDirectoryCount() {
  * calls — see resetCatalogue()'s docblock for why a WP-CLI-bootstrap-per-item
  * loop is the mistake that once made this suite's cleanup take minutes.
  *
- * Used only by the retention test, which needs 20 pre-existing, *prunable*
- * runs on disk without spending real time on 20 real uploads/applies.
+ * Ages strictly increase with $i, so the returned array is ordered newest
+ * (index 0) to oldest (last index) — callers that need "the single oldest of
+ * the batch" (the retention test, the prune() exemption test) read the last
+ * element rather than guessing at prune()'s own sort order themselves.
+ *
+ * @returns {string[]} the generated run ids, newest first
  */
 function seedAgedRuns(count) {
 	const php = `
 		$base = trailingslashit(wp_upload_dir()['basedir']) . 'cadco-imports';
 		wp_mkdir_p($base);
+		$ids = [];
 
 		for ($i = 0; $i < ${Number(count)}; $i++) {
 			$age = 7200 + ($i * 60); // 2h+ ago, strictly increasing so ordering is unambiguous.
@@ -320,11 +325,46 @@ function seedAgedRuns(count) {
 				'applied'       => true,
 				'restored_from' => null,
 			]));
+			$ids[] = $run_id;
 		}
-		echo 'seeded';
+		echo wp_json_encode($ids);
 	`;
 
-	wp(['eval', php]);
+	return JSON.parse(wp(['eval', php]));
+}
+
+/**
+ * wp-content/uploads/cadco-imports's own absolute path, read from WordPress
+ * rather than assumed — the one place every run-directory helper in this
+ * file (cleanupUploadRuns(), runDirectoryCount(), seedAgedRuns() and these
+ * two) independently reconstructs the same way CADCO_Import_Archive::base_dir()
+ * does.
+ */
+function uploadsBaseDir() {
+	return wp(['eval', "echo trailingslashit(wp_upload_dir()['basedir']) . 'cadco-imports';"]).trim();
+}
+
+/**
+ * Copy a real workbook into an already-seeded run directory as
+ * workbook.xlsx — what an actual upload leaves behind. seedAgedRuns() on its
+ * own only ever writes a manifest.json, which is enough for a run to appear
+ * in the History list, but CADCO_Import_Admin::handle_restore() also reads
+ * the archived workbook itself before it will restore FROM a run, so a test
+ * that needs to click "Restore" on a fabricated run needs this too.
+ */
+function plantWorkbookInRun(runId, fixturePath) {
+	fs.copyFileSync(fixturePath, path.join(uploadsBaseDir(), runId, 'workbook.xlsx'));
+}
+
+/**
+ * Whether a run's directory still exists on disk — the direct, filesystem-
+ * level check prune()'s $except_run_id exemption needs. Deliberately not
+ * "does History still list it" (which reads manifest.json through PHP and
+ * would not notice the directory itself surviving with, say, a manifest
+ * some other bug had corrupted).
+ */
+function runDirectoryExists(runId) {
+	return fs.existsSync(path.join(uploadsBaseDir(), runId));
 }
 
 /**
@@ -358,6 +398,8 @@ module.exports = {
 	seedRenameSource,
 	runDirectoryCount,
 	seedAgedRuns,
+	plantWorkbookInRun,
+	runDirectoryExists,
 	productIdBySku,
 	trashedProductIdBySku,
 	postStatus,
