@@ -69,7 +69,17 @@ media attachments and inbound links.
 
 **Therefore: rename detection is required, but never automatic — see §6.**
 
-### 2.3 UPC is not trustworthy enough to be the primary key
+### 2.3 The UPC column is hidden on two sheets
+
+Excel hides column A on COUNTERTOP EQUIPMENT and columns A–B on CONVECTION
+OVENS, so the UPC is invisible to whoever maintains those sheets. Hiding is a
+display setting only — both openpyxl and PhpSpreadsheet read the values — so
+the importer is unaffected.
+
+It does explain §2.4 below: a duplicate cannot be noticed in a column that is
+not on screen.
+
+### 2.4 UPC is not trustworthy enough to be the primary key
 
 Four UPCs are duplicated in the current workbook, and they are not all the same
 kind of problem:
@@ -85,13 +95,13 @@ One row (`MTD-1418-2D`) has no UPC at all.
 
 **Therefore: `Model #` is the primary key and UPC is a corroborating signal.**
 
-### 2.4 The existing category tree is unused scaffolding
+### 2.5 The existing category tree is unused scaffolding
 
 26 `product_cat` terms exist, hand-built, all with **0 products**. The site has
 **0 products** in total. Nothing is at risk from rebuilding the tree, so it is
 derived from the workbook rather than maintained by hand.
 
-### 2.5 Category signal lives in the sheet name and `Type`
+### 2.6 Category signal lives in the sheet name and `Type`
 
 `Primary Category` has only 2 distinct values across 4 sheets ('Food Service',
 'Convection Ovens') and contradicts the sheet it appears in. It carries no
@@ -101,7 +111,7 @@ The real signal is the **sheet name** (top level) and **`Type`** (29 values,
 sub-level). One `Type` cell is multi-valued:
 `'Buffet Server & Warming Shelf , ACCESSORIES for Demo / Sampling Carts'`.
 
-### 2.6 Media is not reachable
+### 2.7 Media is not reachable
 
 Of 233 `Images URL` values, 198 are SharePoint links requiring CADCO tenant
 authentication and 35 are bare filenames (`CAP-F.jpeg`) with no matching file
@@ -111,7 +121,7 @@ applies to Spec Sheet, Manual, Diagram and Warranty URLs.
 **Therefore: media is out of scope for this phase. URLs are stored so phase 2
 can consume them.**
 
-### 2.7 Attribute cardinality
+### 2.8 Attribute cardinality
 
 29 candidate spec columns would produce 506 attribute terms. 396 of those come
 from six numeric columns nobody filters by (Package Weight alone: 114 terms),
@@ -178,6 +188,7 @@ dependency can be swapped without touching business logic.
 | Column | Destination |
 |---|---|
 | `Model #` | SKU, and `post_name` (slug) |
+| `UPC#` | `global_unique_id` — WooCommerce's native GTIN/UPC/EAN/ISBN field |
 | `Product Name` | `post_title` |
 | `Primary Description` | `post_excerpt` (short description) |
 | `Supplier Specifications - Bullet Points` | `post_content`, `•` lines → `<ul><li>` |
@@ -205,7 +216,7 @@ Prefixed `_cadco_`, surfaced through the CADCO Specifications metabox (§8.2):
 
 ```
 wattage  amps  package_height  package_width  package_length  package_weight
-upc  prop65_affected  prop65_warning  footnote  disclaimer
+prop65_affected  prop65_warning  footnote  disclaimer
 warranty_info  warranty_url  second_category  legacy_url
 image_url  spec_sheet_url  manual_url  diagram_url  video_url
 notes  parent_model  source_sheet  source_row  import_hash
@@ -280,7 +291,10 @@ removed.
 
 ## 6. Identity and change detection
 
-Every product stores its SKU and `_cadco_upc`. Each run:
+Every product stores its SKU (from `Model #`) and its UPC (in WooCommerce's
+native `global_unique_id` field — chosen over a custom meta key because it
+enforces uniqueness itself, has a native admin UI, and feeds `gtin` into the
+product's structured data). Each run:
 
 1. Index DB products by SKU and by UPC.
 2. For each row, match on **SKU** first; if none, try **UPC**.

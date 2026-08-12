@@ -289,6 +289,15 @@ final class FieldMapTest extends TestCase
         }
     }
 
+    public function test_upc_uses_the_native_woocommerce_gtin_field(): void
+    {
+        // WooCommerce 9.1+ has a built-in GTIN/UPC/EAN/ISBN field that already
+        // enforces uniqueness and feeds structured data. Storing UPC in a
+        // custom meta key instead would give up all three.
+        self::assertSame('global_unique_id', cadco_import_native_columns()['UPC#'] ?? null);
+        self::assertArrayNotHasKey('UPC#', cadco_import_meta_columns());
+    }
+
     public function test_a_column_has_exactly_one_destination(): void
     {
         $overlap = array_intersect(
@@ -472,7 +481,6 @@ function cadco_import_multi_value_attributes(): array
 function cadco_import_meta_columns(): array
 {
     return [
-        'UPC#'                           => 'upc',
         'Wattage'                        => 'wattage',
         'Amps'                           => 'amps',
         'Package Height'                 => 'package_height',
@@ -506,6 +514,10 @@ function cadco_import_native_columns(): array
 {
     return [
         'Model #'                                 => 'sku',
+        // WooCommerce's own GTIN/UPC/EAN/ISBN field, added in 9.1. Using it
+        // rather than a custom meta key buys uniqueness enforcement, the
+        // native Inventory-tab UI, and gtin in the structured data.
+        'UPC#'                                    => 'global_unique_id',
         'Product Name'                            => 'title',
         'Primary Description'                     => 'excerpt',
         'Supplier Specifications - Bullet Points' => 'content_primary',
@@ -549,7 +561,7 @@ function cadco_import_ignored_columns(): array
 - [ ] **Step 4: Run the test to verify it passes**
 
 Run: `composer test -- --filter FieldMapTest`
-Expected: PASS — `OK (7 tests, ...)`
+Expected: PASS — `OK (8 tests, ...)`
 
 - [ ] **Step 5: Commit**
 
@@ -3184,14 +3196,17 @@ final class CADCO_Import_Repository
     {
         global $wpdb;
 
+        // SKU and UPC come from WooCommerce's lookup table, where both are
+        // indexed columns; only the import hash needs a postmeta join.
+        $lookup = $wpdb->prefix . 'wc_product_meta_lookup';
+
         $rows = $wpdb->get_results(
             "SELECT p.ID AS post_id,
-                    COALESCE(sku.meta_value, '')  AS sku,
-                    COALESCE(upc.meta_value, '')  AS upc,
-                    COALESCE(hash.meta_value, '') AS hash
+                    COALESCE(l.sku, '')              AS sku,
+                    COALESCE(l.global_unique_id, '') AS upc,
+                    COALESCE(hash.meta_value, '')    AS hash
                FROM {$wpdb->posts} p
-          LEFT JOIN {$wpdb->postmeta} sku  ON sku.post_id  = p.ID AND sku.meta_key  = '_sku'
-          LEFT JOIN {$wpdb->postmeta} upc  ON upc.post_id  = p.ID AND upc.meta_key  = '_cadco_upc'
+          LEFT JOIN {$lookup} l            ON l.product_id = p.ID
           LEFT JOIN {$wpdb->postmeta} hash ON hash.post_id = p.ID AND hash.meta_key = '_cadco_import_hash'
               WHERE p.post_type = 'product'
                 AND p.post_status NOT IN ('trash', 'auto-draft')",
@@ -3561,6 +3576,10 @@ final class CADCO_Import_Applier
         $product->set_status('publish');
         $product->set_catalog_visibility('visible');
         $product->set_short_description(trim((string) ($row['Primary Description'] ?? '')));
+
+        // WooCommerce strips anything that is not a digit, hyphen or X from
+        // this field. CADCO's format (654796-52113-5) passes through intact.
+        $product->set_global_unique_id(trim((string) ($row['UPC#'] ?? '')));
         $product->set_description(self::description($row));
 
         foreach (['Height' => 'height', 'Width' => 'width', 'Depth' => 'length', 'Weight' => 'weight'] as $column => $setter) {
@@ -4547,7 +4566,10 @@ final class CADCO_Product_Meta_Box
         return [
             __('Electrical', 'cadco-theme')  => ['wattage', 'amps'],
             __('Packaging', 'cadco-theme')   => ['package_height', 'package_width', 'package_length', 'package_weight'],
-            __('Compliance', 'cadco-theme')  => ['upc', 'prop65_affected', 'prop65_warning', 'warranty_info', 'warranty_url'],
+            // 'upc' is deliberately absent: it lives in WooCommerce's own
+            // GTIN field on the Inventory tab, so repeating it here would
+            // show the same value twice in two different places.
+            __('Compliance', 'cadco-theme')  => ['prop65_affected', 'prop65_warning', 'warranty_info', 'warranty_url'],
             __('Documents', 'cadco-theme')   => ['spec_sheet_url', 'manual_url', 'diagram_url', 'video_url', 'image_url'],
             __('Catalogue', 'cadco-theme')   => ['footnote', 'disclaimer', 'second_category', 'cubic_feet', 'approvals', 'parent_model', 'legacy_url'],
             __('Source', 'cadco-theme')      => ['source_sheet', 'source_row', 'notes', 'import_hash'],
