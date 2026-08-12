@@ -608,3 +608,58 @@ first and flushes **once** at the end of a run, rather than 30+ times.
 Images, spec sheets and manuals are not imported — most links in the workbook
 point to SharePoint locations requiring a CADCO login. The URLs are stored as
 `_cadco_*` meta so a later phase can consume them.
+
+### Running the tests
+
+```bash
+composer test        # PHP units: reader, normaliser, validator, planner
+npm run test:e2e      # Browser: upload, report, dry run, apply, product page
+```
+
+`composer test` covers the four pure units with no WordPress loaded. It cannot
+see the parts of the system that only exist inside a real HTTP request — file
+uploads, nonces travelling through a real cookie session, the capability gate,
+whether the admin screen's JS actually gets enqueued, or whether the browser
+escapes what it renders. `npm run test:e2e` drives the real admin screen at
+`https://cadco.local/wp-admin/edit.php?post_type=product&page=cadco-import`
+with Playwright to cover exactly that gap, including:
+
+- a real multipart upload through `handle_upload()`, not a call to `read()`
+  with a path already on disk;
+- the capability gate's *refusal* path — a logged-in administrator who has
+  just had `manage_woocommerce` removed is denied by both the page and the
+  AJAX handler, not only the "allowed" path every other test exercises;
+- that `admin_enqueue_scripts` actually matches this screen's hook suffix and
+  localizes `window.cadcoImport` — if the `str_contains($hook, 'cadco-import')`
+  check ever stops matching, the page still renders and the Apply button still
+  appears, but clicking it silently does nothing;
+- the batching JS end to end against a real 236-product apply, plus the
+  failure-list rendering and network-error branches (provoked deterministically
+  by intercepting the one AJAX call the Apply button makes, since forcing a
+  real WooCommerce write failure or a dropped connection inside the big apply
+  would be slow and hard to aim reliably);
+- rename approval specifically — the checkbox's `value` is the UPC, and the
+  server matches renames to approve by that UPC string, not by array index;
+- that a product name containing a `<script>` tag is escaped on the public
+  product page rather than executed.
+
+The suite resets the catalogue before and after running (`resetCatalogue()` in
+`tests/e2e/helpers.js`), and deletes every run archive it leaves under
+`wp-content/uploads/cadco-imports/` when it finishes. Do not point it at
+anything but a development site — it deletes all products and terms.
+
+Install once, then run:
+
+```bash
+npm install && npx playwright install chromium
+npm run test:e2e
+```
+
+The suite runs serially (`workers: 1`) — every test shares one WordPress
+database, and the apply test in particular takes a few minutes because it
+imports 236 real products through the same batching the browser uses. Override
+the target site with `CADCO_BASE_URL=https://example.test npm run test:e2e`.
+
+`package.json`, `package-lock.json`, `playwright.config.js`, `node_modules/`
+and `tests/` are all `export-ignore`d — none of this ships in the release zip
+built by `git archive`.

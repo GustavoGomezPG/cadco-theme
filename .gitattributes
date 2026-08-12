@@ -6,3 +6,7 @@
 /.gitattributes   export-ignore
 /.phpunit.cache   export-ignore
 /screenshot.png   -export-ignore
+/package.json         export-ignore
+/package-lock.json    export-ignore
+/playwright.config.js export-ignore
+/node_modules         export-ignore

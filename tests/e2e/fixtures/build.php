@@ -1,0 +1,63 @@
+<?php
+
+/**
+ * Generates small, purpose-built .xlsx workbooks for scenarios the real
+ * 236-product workbook cannot exercise cheaply: a title containing a script
+ * tag, and a rename whose UPC matches a product seeded directly in the
+ * database. Reuses tests/fixtures/FixtureBuilder.php — the same generator
+ * the PHP unit suite already trusts — so these workbooks are structurally
+ * identical to the ones ReaderTest/PlannerTest build, just with one
+ * deliberately unusual row.
+ *
+ * Run via `wp eval-file tests/e2e/fixtures/build.php <scenario> <output-path>`.
+ * $args is populated by WP-CLI from the positional arguments.
+ *
+ * No `declare(strict_types=1)` here: WP-CLI's `eval-file` runs the file's
+ * contents through eval() rather than include(), and strict_types is one of
+ * the declares PHP refuses inside eval()'d code.
+ */
+
+$theme = dirname(__DIR__, 3);
+
+require_once $theme . '/vendor/autoload.php';
+require_once $theme . '/inc/import/field-map.php';
+require_once $theme . '/tests/fixtures/FixtureBuilder.php';
+
+use CADCO\Tests\Fixtures\FixtureBuilder;
+
+[$scenario, $out] = $args;
+
+$sheets = cadco_import_sheets();
+$target = $sheets[0]; // 'CONVECTION OVENS'
+
+switch ($scenario) {
+    case 'xss':
+        FixtureBuilder::write($out, FixtureBuilder::completeSheets([
+            $target => [FixtureBuilder::row([
+                'Model #'      => 'E2E-XSS-1',
+                'UPC#'         => '654796-99030-1',
+                'Product Name' => 'XSS <script>window.__xss=1</script> Probe',
+            ])],
+        ]));
+        break;
+
+    case 'rename':
+        // UPC must match the product build.php's caller seeds directly in
+        // the database beforehand (see helpers.js: seedRenameSource()); the
+        // model number deliberately differs so the planner offers a rename
+        // rather than a plain update.
+        FixtureBuilder::write($out, FixtureBuilder::completeSheets([
+            $target => [FixtureBuilder::row([
+                'Model #'      => 'E2E-RENAME-NEW-1',
+                'UPC#'         => '654796-99020-1',
+                'Product Name' => 'Rename Test — after',
+            ])],
+        ]));
+        break;
+
+    default:
+        fwrite(STDERR, "Unknown fixture scenario: {$scenario}\n");
+        exit(1);
+}
+
+echo "wrote {$out}\n";
