@@ -584,14 +584,24 @@ final class CADCO_Import_Applier
 
     /**
      * Everything that must happen once, after all batches.
+     *
+     * Orphan terms are reported as well as removed (design spec §5.5) — a
+     * term the workbook stopped implying disappears from the catalogue
+     * silently otherwise, with no record anywhere that it ever existed or
+     * that this run was the one that cleaned it up.
+     *
+     * @return list<string> the removed terms, as "Name (taxonomy)"
      */
-    public static function finalise(): void
+    public static function finalise(): array
     {
         self::link_related_products();
+
+        $removed = [];
 
         foreach (['product_cat', 'product_tag', 'product_brand'] as $taxonomy) {
             foreach (CADCO_Import_Repository::orphan_terms($taxonomy) as $orphan) {
                 wp_delete_term($orphan['term_id'], $taxonomy);
+                $removed[] = sprintf('%s (%s)', $orphan['name'], $taxonomy);
             }
         }
 
@@ -600,6 +610,8 @@ final class CADCO_Import_Applier
         // safety-net re-arm for an incomplete batch. See the class docblock.
         delete_option('cadco_flush_category_rules');
         flush_rewrite_rules(false);
+
+        return $removed;
     }
 
     /**

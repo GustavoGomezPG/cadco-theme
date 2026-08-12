@@ -23,6 +23,7 @@ final class CADCO_Import_Admin
         add_action('admin_enqueue_scripts', [self::class, 'assets']);
         add_action('wp_ajax_cadco_import_batch', [self::class, 'ajax_batch']);
         add_action('admin_init', [self::class, 'maybe_export_redirects']);
+        add_action('admin_init', [self::class, 'maybe_export_report']);
     }
 
     public static function menu(): void
@@ -405,6 +406,18 @@ final class CADCO_Import_Admin
 
     private static function render_report(CADCO_Import_Report $report): void
     {
+        // The report is the system's primary deliverable (design spec §8.1) —
+        // it must leave the browser as a file CADCO can hand to whoever
+        // maintains the workbook, not just sit on screen.
+        printf(
+            '<p><a class="button" href="%s">%s</a></p>',
+            esc_url(wp_nonce_url(
+                admin_url('edit.php?post_type=product&page=cadco-import&action=export-report'),
+                self::NONCE
+            )),
+            esc_html__('Download report (CSV)', 'cadco-theme')
+        );
+
         $labels = [
             'A' => __('Identity — duplicate, missing or malformed product identifiers', 'cadco-theme'),
             'B' => __('Consistency — the same value spelled several ways', 'cadco-theme'),
@@ -644,7 +657,19 @@ final class CADCO_Import_Admin
         $batch = CADCO_Import_Applier::apply_jobs($queue, $offset, $size);
 
         if ($batch['complete']) {
-            CADCO_Import_Applier::finalise();
+            $removed_terms = CADCO_Import_Applier::finalise();
+
+            // Orphan removal is reported, not just carried out silently
+            // (design spec §5.5) — appended to the final batch's own log so
+            // it travels the same path as every other line the operator
+            // already sees for this run.
+            foreach ($removed_terms as $removed_term) {
+                $batch['log'][] = sprintf(
+                    /* translators: %s: term name and taxonomy, e.g. "Widgets (product_cat)" */
+                    __('Removed unused term: %s', 'cadco-theme'),
+                    $removed_term
+                );
+            }
 
             if (is_file($run['queue_file'])) {
                 unlink($run['queue_file']);
@@ -705,6 +730,45 @@ final class CADCO_Import_Admin
         }
 
         fclose($handle);
+        exit;
+    }
+
+    /**
+     * Download the validation report as CSV.
+     *
+     * The report is the primary deliverable of a failing run (design spec
+     * §8.1 step 2) — guard_imports_dir() denies web access to the archived
+     * copy on disk, so without this handler the only way to see a problem
+     * row is to read the on-screen table, which nobody can hand to CADCO or
+     * grep. The workbook is re-validated from the archived upload rather
+     * than re-reading the archived report.csv directly, so this always
+     * reflects the same pipeline the operator's screen came from.
+     */
+    public static function maybe_export_report(): void
+    {
+        if (($_GET['page'] ?? '') !== self::SLUG || ($_GET['action'] ?? '') !== 'export-report') {
+            return;
+        }
+
+        check_admin_referer(self::NONCE);
+
+        if (!current_user_can(self::CAPABILITY)) {
+            wp_die(esc_html__('You are not allowed to do that.', 'cadco-theme'));
+        }
+
+        $run = get_transient('cadco_import_run_' . get_current_user_id());
+
+        if (!is_array($run) || !isset($run['path']) || !is_string($run['path']) || !is_readable($run['path'])) {
+            wp_die(esc_html__('The uploaded workbook has expired. Please upload it again.', 'cadco-theme'));
+        }
+
+        $report = self::run_pipeline($run['path'])['report'];
+
+        nocache_headers();
+        header('Content-Type: text/csv; charset=utf-8');
+        header('Content-Disposition: attachment; filename=cadco-import-report.csv');
+
+        echo $report->to_csv();
         exit;
     }
 }
