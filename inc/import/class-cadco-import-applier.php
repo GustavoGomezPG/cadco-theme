@@ -315,12 +315,15 @@ final class CADCO_Import_Applier
 
         foreach (CADCO_Import_Plan::categories_for($row) as $pair) {
             $parent_id = self::ensure_term($pair['parent'], 'product_cat', 0);
-            $child_id  = self::ensure_term($pair['child'], 'product_cat', $parent_id);
 
-            // Only the deepest term is assigned; WooCommerce walks the ancestor
-            // chain itself when it builds the URL.
-            if ($child_id > 0) {
-                $ids[] = $child_id;
+            if ($parent_id > 0) {
+                $child_id = self::ensure_term($pair['child'], 'product_cat', $parent_id);
+
+                // Only the deepest term is assigned; WooCommerce walks the
+                // ancestor chain itself when it builds the URL.
+                if ($child_id > 0) {
+                    $ids[] = $child_id;
+                }
             }
         }
 
@@ -374,14 +377,10 @@ final class CADCO_Import_Applier
             $term_ids = [];
 
             foreach ($values as $value) {
-                $term = term_exists($value, $taxonomy);
+                $term_id = self::ensure_term($value, $taxonomy, 0);
 
-                if ($term === null || $term === 0) {
-                    $term = wp_insert_term($value, $taxonomy);
-                }
-
-                if (!is_wp_error($term)) {
-                    $term_ids[] = (int) $term['term_id'];
+                if ($term_id > 0) {
+                    $term_ids[] = $term_id;
                 }
             }
 
