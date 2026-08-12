@@ -94,6 +94,37 @@ function cadco_import_na_fields(): array
 }
 
 /**
+ * Values that mean the same thing but share no spelling.
+ *
+ * Everything else in this system infers variants from the text: the
+ * normaliser groups by a case- and punctuation-insensitive key, and the
+ * validator by edit distance. Neither can relate 'IT' to 'Italy' — they are
+ * different strings of different lengths, and no threshold that caught them
+ * would avoid flagging genuinely different values.
+ *
+ * So these are declared rather than guessed. The workbook holds 43 'IT'
+ * against 37 'Italy'; without this table both survive and the catalogue ends
+ * up with two country terms for one country, with nobody told.
+ *
+ * Keyed by column, then by the alias in lower case. Only ISO country codes so
+ * far — add entries when a new abbreviation actually appears in the data.
+ *
+ * @return array<string, array<string, string>>
+ */
+function cadco_import_value_aliases(): array
+{
+    return [
+        'Country Of Origin' => [
+            'italy'          => 'IT',
+            'united states'  => 'US',
+            'usa'            => 'US',
+            'united kingdom' => 'UK',
+            'germany'        => 'DE',
+        ],
+    ];
+}
+
+/**
  * Columns checked for the same value spelled several ways.
  *
  * 'Specialties' is multi-valued (one tag per line) and is handled line by line.
