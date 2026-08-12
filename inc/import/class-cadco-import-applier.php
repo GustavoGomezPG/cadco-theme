@@ -24,6 +24,13 @@ final class CADCO_Import_Applier
     /**
      * Create every term the workbook implies, parents before children.
      *
+     * Counts are distinct term IDs actually created or found, not the number
+     * of ensure_term() calls — a pair contributes a parent and a child, and
+     * the same child name can legitimately exist under two different parents
+     * as two distinct terms. Task 11 shows these numbers to the operator, so
+     * they must be true rather than an artefact of how many times this loop
+     * happened to call ensure_term().
+     *
      * @param list<array<string, mixed>> $rows
      * @return array{categories:int,tags:int,brands:int}
      */
@@ -31,32 +38,56 @@ final class CADCO_Import_Applier
     {
         self::reset_taxonomy_once();
 
-        $terms  = CADCO_Import_Plan::all_terms($rows);
-        $counts = ['categories' => 0, 'tags' => 0, 'brands' => 0];
+        $terms      = CADCO_Import_Plan::all_terms($rows);
+        $categories = [];
+        $tags       = [];
+        $brands     = [];
 
         foreach ($terms['categories'] as $pair) {
             $parent_id = self::ensure_term($pair['parent'], 'product_cat', 0);
 
             if ($parent_id > 0) {
-                $counts['categories']++;
-                self::ensure_term($pair['child'], 'product_cat', $parent_id);
-                $counts['categories']++;
+                $categories[$parent_id] = true;
+
+                $child_id = self::ensure_term($pair['child'], 'product_cat', $parent_id);
+
+                if ($child_id > 0) {
+                    $categories[$child_id] = true;
+                }
             }
         }
 
         foreach ($terms['tags'] as $tag) {
-            if (self::ensure_term($tag, 'product_tag', 0) > 0) {
-                $counts['tags']++;
+            $tag_id = self::ensure_term($tag, 'product_tag', 0);
+
+            if ($tag_id > 0) {
+                $tags[$tag_id] = true;
             }
         }
 
         foreach ($terms['brands'] as $brand) {
-            if (taxonomy_exists('product_brand') && self::ensure_term($brand, 'product_brand', 0) > 0) {
-                $counts['brands']++;
+            if (!taxonomy_exists('product_brand')) {
+                continue;
+            }
+
+            $brand_id = self::ensure_term($brand, 'product_brand', 0);
+
+            if ($brand_id > 0) {
+                $brands[$brand_id] = true;
             }
         }
 
-        return $counts;
+        // A term-creation-heavy request must not let the theme's own
+        // shutdown hook (inc/cadco-woocommerce.php) sneak in a flush here —
+        // that would make finalise()'s flush the second one for the run
+        // rather than the only one. See the class docblock.
+        delete_option('cadco_flush_category_rules');
+
+        return [
+            'categories' => count($categories),
+            'tags'       => count($tags),
+            'brands'     => count($brands),
+        ];
     }
 
     /**
@@ -80,6 +111,11 @@ final class CADCO_Import_Applier
         }
 
         $done = min($offset + $size, $total);
+
+        // Mirrors prepare_terms(): a batch that created or edited categories
+        // fires the theme's own shutdown-flush; clearing the flag here keeps
+        // that flush deferred to finalise(), the only place it should happen.
+        delete_option('cadco_flush_category_rules');
 
         return [
             'done'     => $done,
@@ -122,24 +158,40 @@ final class CADCO_Import_Applier
         return $queue;
     }
 
+    /**
+     * Run one job, never letting it take the batch down with it.
+     *
+     * set_sku() and set_global_unique_id() can throw WC_Data_Exception — a
+     * duplicate SKU, or a GTIN that fails WooCommerce 11's format check
+     * (/^[0-9\-]*[0-9Xx]?$/, an 'X' anywhere but the last character throws
+     * regardless of uniqueness). One bad row must not abort the AJAX handler
+     * mid-batch: whatever was already written stays written, and the
+     * operator sees which row failed and why instead of an opaque 500.
+     */
     private static function run_job(array $job): string
     {
-        if ($job['op'] === 'trash') {
-            wp_trash_post((int) $job['post_id']);
+        try {
+            if ($job['op'] === 'trash') {
+                wp_trash_post((int) $job['post_id']);
 
-            return sprintf('Trashed %s (#%d)', $job['sku'], (int) $job['post_id']);
+                return sprintf('Trashed %s (#%d)', $job['sku'], (int) $job['post_id']);
+            }
+
+            if ($job['op'] === 'rename') {
+                $id = self::write_product($job['row'], (int) $job['post_id']);
+                self::record_redirect((string) $job['old_sku'], $id);
+
+                return sprintf('Renamed %s to %s (#%d)', $job['old_sku'], $job['row']['Model #'], $id);
+            }
+
+            $id = self::write_product($job['row'], $job['post_id'] === null ? null : (int) $job['post_id']);
+
+            return sprintf('%s %s (#%d)', $job['op'] === 'create' ? 'Created' : 'Updated', $job['row']['Model #'], $id);
+        } catch (\Throwable $e) {
+            $model = (string) ($job['row']['Model #'] ?? $job['sku'] ?? '?');
+
+            return sprintf('FAILED %s: %s', $model, $e->getMessage());
         }
-
-        if ($job['op'] === 'rename') {
-            $id = self::write_product($job['row'], (int) $job['post_id']);
-            self::record_redirect((string) $job['old_sku'], $id);
-
-            return sprintf('Renamed %s to %s (#%d)', $job['old_sku'], $job['row']['Model #'], $id);
-        }
-
-        $id = self::write_product($job['row'], $job['post_id'] === null ? null : (int) $job['post_id']);
-
-        return sprintf('%s %s (#%d)', $job['op'] === 'create' ? 'Created' : 'Updated', $job['row']['Model #'], $id);
     }
 
     /**
@@ -366,11 +418,28 @@ final class CADCO_Import_Applier
             return;
         }
 
-        wp_set_object_terms($post_id, [self::ensure_term($brand, 'product_brand', 0)], 'product_brand');
+        $term_id = self::ensure_term($brand, 'product_brand', 0);
+
+        // A 0 here means ensure_term() failed to find or create the term.
+        // Passing it through to wp_set_object_terms() would silently clear
+        // whatever brand the product already had rather than leaving it be.
+        if ($term_id > 0) {
+            wp_set_object_terms($post_id, [$term_id], 'product_brand');
+        }
     }
 
     /**
      * Find or create a term, returning its ID (0 on failure).
+     *
+     * The lookup is parent-scoped rather than a plain get_term_by('name', ...)
+     * — the workbook legitimately reuses a child category name under two
+     * different parents (e.g. 'Accessories for Demo / Sampling Carts' under
+     * both Countertop Equipment and Foodservice Carts in the corrected
+     * sheet), and get_term_by('name', ...) picks arbitrarily among same-name
+     * terms across every parent. For whichever homonym it does not pick, the
+     * old code fell through to wp_insert_term(), hit a term_exists error,
+     * misread that error's data shape, and returned 0 — silently dropping
+     * the product's category.
      */
     private static function ensure_term(string $name, string $taxonomy, int $parent): int
     {
@@ -380,20 +449,31 @@ final class CADCO_Import_Applier
             return 0;
         }
 
-        $existing = get_term_by('name', $name, $taxonomy);
+        $existing = get_terms([
+            'taxonomy'   => $taxonomy,
+            'name'       => $name,
+            'parent'     => $parent,
+            'hide_empty' => false,
+            'number'     => 1,
+        ]);
 
-        if ($existing instanceof WP_Term && (int) $existing->parent === $parent) {
-            return $existing->term_id;
+        if (!is_wp_error($existing) && $existing !== []) {
+            return (int) $existing[0]->term_id;
         }
 
         $created = wp_insert_term($name, $taxonomy, ['parent' => $parent]);
 
         if (is_wp_error($created)) {
-            // term_exists is the expected error when the slug is already taken
-            // by a term with a different parent.
+            // term_exists is the expected error when the slug is already
+            // taken by a term with a different parent. Its $data is the
+            // existing term_id as a plain int, never an array — confirmed
+            // against wp-includes/taxonomy.php, where both term_exists
+            // returns pass $existing_term->term_id as the WP_Error's $data
+            // argument. Any other error code (empty_term_name,
+            // invalid_taxonomy, ...) carries no usable term id.
             $data = $created->get_error_data();
 
-            return is_array($data) && isset($data['term_id']) ? (int) $data['term_id'] : 0;
+            return $created->get_error_code() === 'term_exists' && is_int($data) ? $data : 0;
         }
 
         return (int) $created['term_id'];
@@ -404,8 +484,13 @@ final class CADCO_Import_Applier
      */
     private static function record_redirect(string $old_sku, int $post_id): void
     {
-        $map               = (array) get_option('cadco_import_redirects', []);
-        $map[$old_sku]     = get_permalink($post_id);
+        $map = (array) get_option('cadco_import_redirects', []);
+
+        // A canonical-integer SKU ('12345') used as an array key is silently
+        // coerced to int by PHP. Casting here keeps the key's type explicit
+        // and stops the option's shape from drifting depending on whether a
+        // given SKU happens to look numeric.
+        $map[(string) $old_sku] = get_permalink($post_id);
 
         update_option('cadco_import_redirects', $map, false);
     }
@@ -482,13 +567,33 @@ final class CADCO_Import_Applier
     {
         global $wpdb;
 
+        // update_post_meta() below invalidates the cache for a parent that
+        // keeps or gains children, but a parent whose reference was *removed*
+        // from the workbook never gets an update_post_meta() call at all —
+        // going straight at $wpdb->delete() would leave its cached value
+        // stale in the (persistent, on WP Engine's Redis) post_meta object
+        // cache group, serving a link that no longer exists in the database.
+        // Recording every previously-linked parent up front and clearing its
+        // cache after the delete is what makes a removed reference actually
+        // disappear.
+        $previously_linked = $wpdb->get_col(
+            "SELECT DISTINCT post_id FROM {$wpdb->postmeta} WHERE meta_key = '_cadco_related_children'"
+        );
+
         $wpdb->delete($wpdb->postmeta, ['meta_key' => '_cadco_related_children']);
 
+        foreach ($previously_linked as $post_id) {
+            wp_cache_delete((int) $post_id, 'post_meta');
+        }
+
         $children = $wpdb->get_results(
-            "SELECT post_id, meta_value AS parent_sku
-               FROM {$wpdb->postmeta}
-              WHERE meta_key = '_cadco_parent_model'
-                AND meta_value <> ''",
+            "SELECT pm.post_id, pm.meta_value AS parent_sku
+               FROM {$wpdb->postmeta} pm
+         INNER JOIN {$wpdb->posts} p ON p.ID = pm.post_id
+              WHERE pm.meta_key = '_cadco_parent_model'
+                AND pm.meta_value <> ''
+                AND p.post_type = 'product'
+                AND p.post_status NOT IN ('trash', 'auto-draft')",
             ARRAY_A
         ) ?: [];
 
@@ -513,13 +618,26 @@ final class CADCO_Import_Applier
  *
  * WooCommerce generates related products from shared categories and tags, so
  * there is no field to write to — this filter is the supported way in.
+ *
+ * wc_get_related_products() shuffles this filter's return value and slices it
+ * down to $args['limit'] afterwards, unconditionally. Appending children onto
+ * whatever the core query already found — a pool of roughly limit + 10 —
+ * gave each child only about limit / (limit + 10) odds of surviving that
+ * slice. Replacing the pool with just the children when an explicit link
+ * exists is what actually guarantees they appear, because a shuffle-then-
+ * slice of a pool no larger than the limit keeps every element.
  */
-add_filter('woocommerce_related_products', static function ($related, $product_id) {
+add_filter('woocommerce_related_products', static function ($related, $product_id, $args) {
     $children = get_post_meta((int) $product_id, '_cadco_related_children', true);
 
-    if (is_array($children) && $children !== []) {
-        $related = array_values(array_unique(array_merge((array) $related, array_map('intval', $children))));
+    if (!is_array($children) || $children === []) {
+        return $related;
     }
 
-    return $related;
-}, 10, 2);
+    $excluded = array_map('intval', (array) ($args['excluded_ids'] ?? []));
+    $excluded[] = (int) $product_id;
+
+    $children = array_values(array_diff(array_unique(array_map('intval', $children)), $excluded));
+
+    return $children !== [] ? $children : $related;
+}, 10, 3);
