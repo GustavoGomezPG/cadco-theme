@@ -43,7 +43,7 @@ foreach ([
 unset($cadco_import_file);
 
 if (is_admin()) {
-    foreach (['class-cadco-import-admin.php', 'class-cadco-product-meta-box.php'] as $cadco_admin_file) {
+    foreach (['class-cadco-import-view.php', 'class-cadco-import-admin.php', 'class-cadco-product-meta-box.php'] as $cadco_admin_file) {
         if (is_readable(__DIR__ . '/' . $cadco_admin_file)) {
             require_once __DIR__ . '/' . $cadco_admin_file;
         }
