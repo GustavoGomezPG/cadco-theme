@@ -257,6 +257,12 @@ final class CADCO_Import_Admin
         // untrusted workbook-adjacent input, escaped wherever it is printed
         // (CADCO_Import_View::stage_bar()), never used as a path.
         $result['filename'] = (string) $file['name'];
+        // The Workbook review section (design spec §6.2) reports the file's
+        // real size. Read from the just-written copy on disk rather than
+        // $file['size'] — both should agree, but the archived file is what
+        // was actually parsed, so it is the more honest source.
+        $size                = filesize($path);
+        $result['size']      = $size !== false ? $size : 0;
 
         // Archive the run: the workbook exactly as uploaded, the report, and
         // the plan it produced. When a later import surprises somebody, this
@@ -359,7 +365,85 @@ final class CADCO_Import_Admin
         }
 
         CADCO_Import_View::notice('success', __('The workbook is clean. Review the plan below before applying it.', 'cadco-theme'));
-        CADCO_Import_View::plan($result['plan'], $result['changes'], $result['rows']);
+
+        // Everything the review screen needs beyond the plan itself (design
+        // spec §6) is gathered here, in the controller, rather than in the
+        // view — get_terms() and the workbook byte count are database/file
+        // reads, not rendering decisions.
+        $workbook = [
+            'filename' => (string) ($result['filename'] ?? ''),
+            'size'     => (int) ($result['size'] ?? 0),
+            'rows'     => count($result['rows']),
+            'issues'   => $report->count(),
+            'sheets'   => self::sheet_breakdown($result['rows']),
+        ];
+
+        $term_diff    = CADCO_Import_Term_Diff::compare($result['rows'], self::existing_terms());
+        $redirect_map = self::redirect_map();
+
+        CADCO_Import_View::review($result['plan'], $result['changes'], $result['rows'], $term_diff, $workbook, $redirect_map);
+    }
+
+    /**
+     * Rows read per canonical sheet (design spec §6.2's Workbook section),
+     * derived from the rows the Reader already tagged with `__sheet` rather
+     * than re-reading the workbook. Every canonical sheet is listed even if
+     * it happened to contribute zero body rows — Review is only reached once
+     * validation passed, and a missing sheet is itself a Tier A error, so
+     * every one of cadco_import_sheets() is guaranteed present here.
+     *
+     * @param list<array<string, mixed>> $rows
+     * @return list<array{name:string, rows:int}>
+     */
+    private static function sheet_breakdown(array $rows): array
+    {
+        $counts = [];
+
+        foreach ($rows as $row) {
+            $sheet = (string) ($row['__sheet'] ?? '');
+            $counts[$sheet] = ($counts[$sheet] ?? 0) + 1;
+        }
+
+        $sheets = [];
+
+        foreach (cadco_import_sheets() as $name) {
+            $sheets[] = ['name' => $name, 'rows' => $counts[$name] ?? 0];
+        }
+
+        return $sheets;
+    }
+
+    /**
+     * The site's current product_cat/product_tag/product_brand terms, shaped
+     * for CADCO_Import_Term_Diff::compare() (design spec §7). Real terms via
+     * get_terms(), not derived from any plan — this is the "what the site
+     * already has" half of the diff, and has to come from the database.
+     *
+     * @return list<array{taxonomy:string, term_id:int, name:string, parent:int, count:int}>
+     */
+    private static function existing_terms(): array
+    {
+        $existing = [];
+
+        foreach (['product_cat', 'product_tag', 'product_brand'] as $taxonomy) {
+            $terms = get_terms(['taxonomy' => $taxonomy, 'hide_empty' => false]);
+
+            if (is_wp_error($terms)) {
+                continue;
+            }
+
+            foreach ($terms as $term) {
+                $existing[] = [
+                    'taxonomy' => $taxonomy,
+                    'term_id'  => (int) $term->term_id,
+                    'name'     => (string) $term->name,
+                    'parent'   => (int) $term->parent,
+                    'count'    => (int) $term->count,
+                ];
+            }
+        }
+
+        return $existing;
     }
 
     /**

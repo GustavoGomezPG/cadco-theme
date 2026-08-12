@@ -223,3 +223,197 @@
 	font-size: 22px;
 	line-height: 1.2;
 }
+
+/* ==========================================================================
+   Change navigator (design spec §6.1)
+
+   A sticky sidebar next to a single scrollable pane holding every section.
+   Every class of change stays listed, with its count, the whole time the
+   operator scrolls the plan — "nothing hides below a scroll" — which is why
+   this is sticky rather than a hide/show tab strip: the sections themselves
+   all stay on the page too (see .cadco-import-panels below), and a nav link
+   is a plain same-page anchor that assets/js/import-admin.js progressively
+   enhances into a smooth scroll-and-focus jump.
+   ========================================================================== */
+
+.cadco-import-panels-wrap {
+	display: flex;
+	align-items: flex-start;
+	gap: 2em;
+	margin-top: 1.5em;
+}
+
+.cadco-import-navigator {
+	flex: 0 0 220px;
+	position: sticky;
+	top: 40px; /* clears the wp-admin toolbar (32px) plus a little air */
+	align-self: flex-start;
+	background: #fff;
+	border: 1px solid #dcdcde;
+}
+
+.cadco-import-navigator ul {
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.cadco-import-nav-item {
+	border-bottom: 1px solid #f0f0f1;
+}
+
+.cadco-import-nav-item:last-child {
+	border-bottom: none;
+}
+
+.cadco-import-nav-link {
+	display: flex;
+	flex-direction: column;
+	gap: .15em;
+	padding: .65em .9em;
+	color: #1d2327;
+	text-decoration: none;
+}
+
+.cadco-import-nav-link:hover,
+.cadco-import-nav-link:focus {
+	background: #f6f7f7;
+}
+
+.cadco-import-nav-link[aria-current="true"] {
+	background: #f0f6fc;
+	box-shadow: inset 3px 0 0 var(--wp-admin-theme-color, #2271b1);
+}
+
+.cadco-import-nav-label {
+	font-weight: 600;
+	font-size: 13px;
+}
+
+.cadco-import-nav-meta {
+	font-size: 12px;
+	color: #646970;
+}
+
+/* A zero-count section (design/task brief: "the absence of renames is
+   itself information worth seeing") is still listed, but muted and
+   non-interactive — a plain <span>, not a link, so nothing to click and
+   nothing a screen reader should treat as actionable. */
+.cadco-import-nav-item.is-muted .cadco-import-nav-link {
+	display: flex;
+	flex-direction: column;
+	gap: .15em;
+	padding: .65em .9em;
+	color: #a7aaad;
+	cursor: default;
+}
+
+.cadco-import-nav-item.is-muted .cadco-import-nav-label {
+	font-weight: 600;
+}
+
+.cadco-import-panels {
+	flex: 1 1 auto;
+	min-width: 0;
+}
+
+.cadco-import-section {
+	padding: 1.5em 1.75em;
+	margin-bottom: 1.5em;
+	background: #fff;
+	border: 1px solid #dcdcde;
+}
+
+.cadco-import-section:target {
+	scroll-margin-top: 40px;
+}
+
+.cadco-import-section h2 {
+	margin-top: 0;
+}
+
+.cadco-import-section h2 .count.is-zero {
+	background: #dcdcde;
+	color: #50575e;
+}
+
+.cadco-import-workbook-summary th {
+	width: 10em;
+}
+
+/* ==========================================================================
+   Categories section: the new term tree and the in-use warning
+   (design spec §7)
+   ========================================================================== */
+
+.cadco-import-term-group-label {
+	margin: 1em 0 .3em;
+	font-size: 11px;
+	font-weight: 600;
+	letter-spacing: .04em;
+	text-transform: uppercase;
+	color: #646970;
+}
+
+.cadco-import-term-tree,
+.cadco-import-term-list {
+	margin: 0 0 1em;
+	padding: 0;
+	list-style: none;
+}
+
+.cadco-import-term-tree > li {
+	margin-bottom: .5em;
+}
+
+.cadco-import-term-tree ul {
+	margin: .3em 0 0 1.4em;
+	padding: 0;
+	list-style: none;
+}
+
+.cadco-import-term-tree ul li {
+	display: flex;
+	justify-content: space-between;
+	gap: 1em;
+	max-width: 28em;
+	padding: .15em 0;
+}
+
+.cadco-import-term-new {
+	color: #00a32a;
+}
+
+.cadco-import-term-removed .cadco-import-term-new,
+.cadco-import-term-removed {
+	color: #646970;
+}
+
+.cadco-import-term-count {
+	color: #646970;
+	font-size: 12px;
+	white-space: nowrap;
+}
+
+/* The loud block: the one thing on this screen that needs a person, not a
+   nod (task brief). Visually the strongest thing here on purpose, in a
+   screen that otherwise stays quiet — see the stage bar's own comment on
+   colour discipline. */
+.cadco-import-in-use {
+	margin: .75em 0 1.5em;
+	padding: 1em 1.25em;
+	background: #fcf0f1;
+	border: 1px solid #d63638;
+	border-left-width: 4px;
+}
+
+.cadco-import-in-use-heading {
+	margin: 0 0 .35em;
+	font-weight: 700;
+	color: #8a2424;
+}
+
+.cadco-import-in-use ul {
+	margin: .5em 0 0;
+	padding-left: 1.25em;
+}

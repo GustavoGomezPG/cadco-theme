@@ -49,6 +49,42 @@
 		return;
 	}
 
+	/**
+	 * The change navigator (design spec §6.1): every section already sits on
+	 * the page (CADCO_Import_View::review()), so a click here never fetches
+	 * anything — it just moves the viewport and focus to the target section
+	 * and updates which link is announced as current. The links are plain
+	 * `<a href="#cadco-section-...">` anchors, so this is progressive
+	 * enhancement: with JS disabled, or before this listener attaches, the
+	 * browser's own anchor-jump still works.
+	 *
+	 * `target.focus()` is what lets a screen-reader user tell what changed
+	 * when they click (task brief's accessibility carry-over) — every
+	 * section has `tabindex="-1"` (CADCO_Import_View::section_open()) so it
+	 * can receive focus without becoming a permanent tab stop.
+	 */
+	var navLinks = document.querySelectorAll('.cadco-import-navigator .cadco-import-nav-link[aria-controls]');
+
+	Array.prototype.forEach.call(navLinks, function (link) {
+		link.addEventListener('click', function (event) {
+			var target = document.getElementById(link.getAttribute('aria-controls'));
+
+			if (!target) {
+				return;
+			}
+
+			event.preventDefault();
+
+			Array.prototype.forEach.call(navLinks, function (other) {
+				other.removeAttribute('aria-current');
+			});
+			link.setAttribute('aria-current', 'true');
+
+			target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+			target.focus({ preventScroll: true });
+		});
+	});
+
 	var button = document.getElementById('cadco-import-apply');
 
 	if (!button || typeof window.cadcoImport === 'undefined') {
