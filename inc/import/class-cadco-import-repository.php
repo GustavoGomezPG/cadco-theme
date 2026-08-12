@@ -82,6 +82,66 @@ final class CADCO_Import_Repository
     }
 
     /**
+     * Every trashed product, with the same three facts current_products()
+     * exposes about a live one.
+     *
+     * This is what lets the planner recognise a restore: a workbook row that
+     * matches a trashed product's SKU or UPC should reuse that post rather
+     * than being treated as a brand-new create. Snapshot and hash are
+     * carried along even though the planner does not currently read them for
+     * a trashed candidate, so this stays a genuine parallel to
+     * current_products() rather than a stripped-down lookalike that breaks
+     * the moment something needs them.
+     *
+     * @return list<array{post_id:int,sku:string,upc:string,hash:string,snapshot:array<string,string>,snapshot_unreadable:bool}>
+     */
+    public static function trashed_products(): array
+    {
+        global $wpdb;
+
+        $lookup       = $wpdb->prefix . 'wc_product_meta_lookup';
+        $snapshot_key = '_cadco_' . cadco_import_snapshot_meta_key();
+
+        $rows = $wpdb->get_results(
+            $wpdb->prepare(
+                "SELECT p.ID AS post_id,
+                        COALESCE(l.sku, '')              AS sku,
+                        COALESCE(l.global_unique_id, '') AS upc,
+                        COALESCE(hash.meta_value, '')    AS hash,
+                        snap.meta_value                  AS snapshot
+                   FROM {$wpdb->posts} p
+              LEFT JOIN {$lookup} l            ON l.product_id = p.ID
+              LEFT JOIN {$wpdb->postmeta} hash ON hash.post_id = p.ID AND hash.meta_key = '_cadco_import_hash'
+              LEFT JOIN {$wpdb->postmeta} snap ON snap.post_id = p.ID AND snap.meta_key = %s
+                  WHERE p.post_type = 'product'
+                    AND p.post_status = 'trash'",
+                $snapshot_key
+            ),
+            ARRAY_A
+        );
+
+        return array_map(
+            static function (array $row): array {
+                // Same reasoning as current_products(): a missing postmeta
+                // row must stay distinguishable from one that exists but
+                // holds unparsable JSON.
+                $raw     = $row['snapshot'] ?? null;
+                $decoded = $raw === null ? null : json_decode((string) $raw, true);
+
+                return [
+                    'post_id'             => (int) $row['post_id'],
+                    'sku'                 => (string) $row['sku'],
+                    'upc'                 => (string) $row['upc'],
+                    'hash'                => (string) $row['hash'],
+                    'snapshot'            => is_array($decoded) ? $decoded : [],
+                    'snapshot_unreadable' => $raw !== null && !is_array($decoded),
+                ];
+            },
+            $rows ?: []
+        );
+    }
+
+    /**
      * Every product carrying a legacy `_cadco_legacy_url`, with its current
      * permalink alongside.
      *

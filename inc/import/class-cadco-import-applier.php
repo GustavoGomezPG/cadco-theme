@@ -182,6 +182,10 @@ final class CADCO_Import_Applier
             $queue[] = ['op' => 'trash', 'post_id' => (int) $item['post_id'], 'sku' => (string) $item['sku']];
         }
 
+        foreach ($plan->untrashes() as $item) {
+            $queue[] = ['op' => 'untrash', 'row' => $item['row'], 'post_id' => (int) $item['post_id']];
+        }
+
         return $queue;
     }
 
@@ -202,6 +206,20 @@ final class CADCO_Import_Applier
                 wp_trash_post((int) $job['post_id']);
 
                 return sprintf('Trashed %s (#%d)', $job['sku'], (int) $job['post_id']);
+            }
+
+            if ($job['op'] === 'untrash') {
+                wp_untrash_post((int) $job['post_id']);
+
+                // wp_untrash_post() restores the *previous* status, which for a
+                // product trashed while published is 'draft' on modern WordPress.
+                // A restore must republish, so the status is set explicitly rather
+                // than trusted.
+                wp_update_post(['ID' => (int) $job['post_id'], 'post_status' => 'publish']);
+
+                $id = self::write_product($job['row'], (int) $job['post_id']);
+
+                return sprintf('Restored %s (#%d)', $job['row']['Model #'], $id);
             }
 
             if ($job['op'] === 'rename') {
