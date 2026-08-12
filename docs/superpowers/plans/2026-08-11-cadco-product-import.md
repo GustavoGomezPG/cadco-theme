@@ -424,6 +424,37 @@ function cadco_import_na_fields(): array
 }
 
 /**
+ * Values that mean the same thing but share no spelling.
+ *
+ * Everything else in this system infers variants from the text: the
+ * normaliser groups by a case- and punctuation-insensitive key, and the
+ * validator by edit distance. Neither can relate 'IT' to 'Italy' — they are
+ * different strings of different lengths, and no threshold that caught them
+ * would avoid flagging genuinely different values.
+ *
+ * So these are declared rather than guessed. The workbook holds 43 'IT'
+ * against 37 'Italy'; without this table both survive and the catalogue ends
+ * up with two country terms for one country, with nobody told.
+ *
+ * Keyed by column, then by the alias in lower case. Only ISO country codes so
+ * far — add entries when a new abbreviation actually appears in the data.
+ *
+ * @return array<string, array<string, string>>
+ */
+function cadco_import_value_aliases(): array
+{
+    return [
+        'Country Of Origin' => [
+            'italy'          => 'IT',
+            'united states'  => 'US',
+            'usa'            => 'US',
+            'united kingdom' => 'UK',
+            'germany'        => 'DE',
+        ],
+    ];
+}
+
+/**
  * Columns checked for the same value spelled several ways.
  *
  * 'Specialties' is multi-valued (one tag per line) and is handled line by line.
@@ -1106,6 +1137,7 @@ Cleans values and records every change it makes, so the report can tell CADCO ex
   - `CADCO_Import_Normaliser::title_case(string $value): string` — preserves mixed-case words.
   - `CADCO_Import_Normaliser::bullets(string $value): list<string>` — splits a bullet block into lines.
   - `CADCO_Import_Normaliser::canonical_key(string $value): string` — the case- and punctuation-insensitive key used to group variant spellings.
+  - Consumes `cadco_import_value_aliases()` (Task 2) for pairs that share no spelling, such as `Italy` → `IT`. Aliases are applied before the frequency pass.
 
 - [ ] **Step 1: Write the failing test**
 
@@ -1204,8 +1236,11 @@ final class NormaliserTest extends TestCase
         self::assertCount(1, $changed, 'the odd spelling should be recorded as a change');
     }
 
-    public function test_attribute_variants_collapse_and_are_recorded(): void
+    public function test_declared_aliases_collapse_and_are_recorded(): void
     {
+        // 'IT' and 'Italy' share no spelling, so neither the canonical key nor
+        // edit distance can relate them. The alias table is the only thing
+        // that can, which is why it is declared rather than inferred.
         $rows = [
             self::row('A', '•Hotels', ['Country Of Origin' => 'IT']),
             self::row('B', '•Hotels', ['Country Of Origin' => 'IT']),
@@ -1328,7 +1363,26 @@ final class CADCO_Import_Normaliser
             }
         }
 
-        // Pass 2 — collapse variant spellings onto the most frequent form.
+        // Pass 2 — declared aliases. Applied before the frequency pass so an
+        // aliased value joins its target's group rather than forming its own.
+        foreach (cadco_import_value_aliases() as $column => $aliases) {
+            foreach ($rows as $i => $row) {
+                $value = (string) ($row[$column] ?? '');
+
+                if ($value === '') {
+                    continue;
+                }
+
+                $clean = $aliases[mb_strtolower(trim($value))] ?? $value;
+
+                if ($clean !== $value) {
+                    $changes[]         = self::change($row, $column, $value, $clean);
+                    $rows[$i][$column] = $clean;
+                }
+            }
+        }
+
+        // Pass 3 — collapse variant spellings onto the most frequent form.
         foreach (cadco_import_consistency_columns() as $column) {
             $canonical = $column === 'Specialties'
                 ? self::canonical_map_multi($rows, $column)
