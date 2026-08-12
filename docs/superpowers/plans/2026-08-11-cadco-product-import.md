@@ -17,7 +17,7 @@
 - **Validation is all-or-nothing.** Any issue in any of the three tiers blocks the entire import. Nothing is written.
 - **Identity:** `Model #` is the primary key. `UPC#` corroborates and is used only to detect renames. Renames are never applied without per-item approval.
 - **Canonical UPC shape:** `NNNNNN-NNNNN-N`. Anything else is a Tier A error.
-- **Categories are fully derived** from sheet name (top level) + `Type` (sub-level). All 26 pre-existing `product_cat` terms are deleted. No override file.
+- **Categories are fully derived** from sheet name (top level) + `Type` (sub-level). All 26 pre-existing `product_cat` terms are deleted — once, on the first import, guarded by the `cadco_import_taxonomy_reset` option. No override file.
 - **Removed products are moved to Trash**, never permanently deleted.
 - **Media is out of scope.** URLs are stored as meta for a later phase; nothing is downloaded.
 - **Commerce stays off.** Never re-enable purchasing, and never touch `inc/cadco-woocommerce.php` behaviour.
@@ -3408,7 +3408,7 @@ Performs the writes, in batches. Order matters: all taxonomy work first, then pr
 **Interfaces:**
 - Consumes: `CADCO_Import_Plan` (Task 7), `CADCO_Import_Repository` (Task 9), the field map (Task 2).
 - Produces:
-  - `CADCO_Import_Applier::prepare_terms(array $rows): array` — creates categories/tags/brands, returns `['categories'=>int,'tags'=>int,'brands'=>int]`.
+  - `CADCO_Import_Applier::prepare_terms(array $rows): array` — deletes the pre-existing tree once (guarded by the `cadco_import_taxonomy_reset` option), then creates categories/tags/brands. Returns `['categories'=>int,'tags'=>int,'brands'=>int]`.
   - `CADCO_Import_Applier::apply_batch(CADCO_Import_Plan $plan, int $offset, int $size): array` returning `['done'=>int,'total'=>int,'complete'=>bool,'log'=>list<string>]`.
   - `CADCO_Import_Applier::finalise(): void` — orphan cleanup, related-product links, single rewrite flush.
   - `CADCO_Import_Applier::write_product(array $row, ?int $post_id): int`
@@ -3447,6 +3447,8 @@ final class CADCO_Import_Applier
      */
     public static function prepare_terms(array $rows): array
     {
+        self::reset_taxonomy_once();
+
         $terms  = CADCO_Import_Plan::all_terms($rows);
         $counts = ['categories' => 0, 'tags' => 0, 'brands' => 0];
 
@@ -3607,33 +3609,32 @@ final class CADCO_Import_Applier
      */
     private static function description(array $row): string
     {
-        $out = '';
+        return self::bullet_list((string) ($row['Supplier Specifications - Bullet Points'] ?? ''))
+            . self::bullet_list(
+                (string) ($row['Secondary Description (Optional)'] ?? ''),
+                __('Additional information', 'cadco-theme')
+            );
+    }
 
-        $primary = CADCO_Import_Normaliser::bullets((string) ($row['Supplier Specifications - Bullet Points'] ?? ''));
+    /**
+     * A bullet block as a heading plus a real list, or '' when there is nothing.
+     */
+    private static function bullet_list(string $raw, string $heading = ''): string
+    {
+        $lines = CADCO_Import_Normaliser::bullets($raw);
 
-        if ($primary !== []) {
-            $out .= "<ul>\n";
-
-            foreach ($primary as $line) {
-                $out .= '<li>' . esc_html($line) . "</li>\n";
-            }
-
-            $out .= "</ul>\n";
+        if ($lines === []) {
+            return '';
         }
 
-        $secondary = CADCO_Import_Normaliser::bullets((string) ($row['Secondary Description (Optional)'] ?? ''));
+        $out = $heading === '' ? '' : '<h3>' . esc_html($heading) . "</h3>\n";
+        $out .= "<ul>\n";
 
-        if ($secondary !== []) {
-            $out .= '<h3>' . esc_html__('Additional information', 'cadco-theme') . "</h3>\n<ul>\n";
-
-            foreach ($secondary as $line) {
-                $out .= '<li>' . esc_html($line) . "</li>\n";
-            }
-
-            $out .= "</ul>\n";
+        foreach ($lines as $line) {
+            $out .= '<li>' . esc_html($line) . "</li>\n";
         }
 
-        return $out;
+        return $out . "</ul>\n";
     }
 
     /**
@@ -3828,17 +3829,47 @@ final class CADCO_Import_Applier
     }
 
     /**
+     * Delete the hand-built category tree, exactly once, ever.
+     *
+     * The catalogue is derived wholly from the workbook, so the 26 terms that
+     * predate the importer are removed rather than reused.
+     *
+     * Guarded by a one-shot option, and that guard is load-bearing. The 26 are
+     * *pre-existing* — after the first import there are none left to delete,
+     * only derived ones. Re-wiping on every run would churn term IDs, and
+     * products skipped as unchanged (§6.1) are never re-assigned, so their
+     * term relations would be left pointing at terms that no longer exist.
+     *
+     * Terms the workbook stops implying are still cleaned up on every run —
+     * that is finalise()'s orphan pass, which is a different job.
+     */
+    private static function reset_taxonomy_once(): void
+    {
+        if (get_option('cadco_import_taxonomy_reset') === 'done') {
+            return;
+        }
+
+        foreach (['product_cat', 'product_tag'] as $taxonomy) {
+            $terms = get_terms(['taxonomy' => $taxonomy, 'hide_empty' => false]);
+
+            if (is_wp_error($terms)) {
+                continue;
+            }
+
+            foreach ($terms as $term) {
+                // WooCommerce recreates 'uncategorized' as the default term,
+                // so deleting it achieves nothing but churn.
+                if ($term->slug !== 'uncategorized') {
+                    wp_delete_term($term->term_id, $taxonomy);
+                }
+            }
+        }
+
+        update_option('cadco_import_taxonomy_reset', 'done', false);
+    }
+
+    /**
      * Everything that must happen once, after all batches.
-     *
-     * This is also how "delete the 26 pre-existing categories" is honoured.
-     * Do NOT add a step that wipes product_cat before importing: deleting and
-     * recreating terms on every run would churn term IDs and break the
-     * product/term relations written by earlier batches in the same run.
-     *
-     * Instead, ensure_term() reuses any existing term whose name matches a
-     * derived one — so 'Bakerlux Classic' keeps its curated slug — and every
-     * pre-existing term the workbook does not imply ends the run with zero
-     * products and is removed here. Same end state, and idempotent.
      */
     public static function finalise(): void
     {
@@ -4036,6 +4067,26 @@ final class CADCO_Import_Admin
             [],
             (string) filemtime(get_stylesheet_directory() . '/assets/css/import-admin.css')
         );
+
+        wp_enqueue_script(
+            'cadco-import-admin',
+            get_stylesheet_directory_uri() . '/assets/js/import-admin.js',
+            [],
+            (string) filemtime(get_stylesheet_directory() . '/assets/js/import-admin.js'),
+            true
+        );
+
+        wp_localize_script('cadco-import-admin', 'cadcoImport', [
+            'ajaxUrl'    => admin_url('admin-ajax.php'),
+            'nonce'      => wp_create_nonce(self::NONCE),
+            'batchSize'  => 25,
+            'i18n'       => [
+                'failed'   => __('The import failed.', 'cadco-theme'),
+                'network'  => __('The import request failed.', 'cadco-theme'),
+                /* translators: %d: number of changes applied */
+                'done'     => __('Done — %d changes applied.', 'cadco-theme'),
+            ],
+        ]);
     }
 
     /**
@@ -4295,7 +4346,6 @@ final class CADCO_Import_Admin
             <p class="cadco-import-status"></p>
         </div>
         <?php
-        self::print_apply_script();
     }
 
     private static function notice(string $type, string $message): void
@@ -4305,57 +4355,6 @@ final class CADCO_Import_Admin
             esc_attr($type),
             esc_html($message)
         );
-    }
-
-    private static function print_apply_script(): void
-    {
-        $nonce = wp_create_nonce(self::NONCE);
-        ?>
-        <script>
-        (function () {
-            var button = document.getElementById('cadco-import-apply');
-            if (!button) { return; }
-
-            var box      = document.getElementById('cadco-import-progress');
-            var bar      = box.querySelector('progress');
-            var status   = box.querySelector('.cadco-import-status');
-            var approved = function () {
-                return Array.prototype.slice
-                    .call(document.querySelectorAll('.cadco-rename:checked'))
-                    .map(function (el) { return el.value; });
-            };
-
-            function step(offset) {
-                var body = new FormData();
-                body.append('action', 'cadco_import_batch');
-                body.append('_wpnonce', '<?php echo esc_js($nonce); ?>');
-                body.append('offset', offset);
-                approved().forEach(function (i) { body.append('approved[]', i); });
-
-                fetch(ajaxurl, { method: 'POST', body: body, credentials: 'same-origin' })
-                    .then(function (r) { return r.json(); })
-                    .then(function (res) {
-                        if (!res.success) {
-                            status.textContent = (res.data && res.data.message) || 'The import failed.';
-                            return;
-                        }
-                        var d = res.data;
-                        bar.value = d.total ? Math.round((d.done / d.total) * 100) : 100;
-                        status.textContent = d.done + ' / ' + d.total;
-                        if (!d.complete) { step(d.done); }
-                        else { status.textContent = 'Done — ' + d.total + ' changes applied.'; }
-                    })
-                    .catch(function () { status.textContent = 'The import request failed.'; });
-            }
-
-            button.addEventListener('click', function () {
-                button.disabled = true;
-                box.hidden = false;
-                step(0);
-            });
-        }());
-        </script>
-        <?php
     }
 
     /**
@@ -4397,7 +4396,8 @@ final class CADCO_Import_Admin
             CADCO_Import_Applier::prepare_terms($result['rows']);
         }
 
-        $batch = CADCO_Import_Applier::apply_batch($plan, $offset, 25);
+        $size  = max(1, (int) ($_POST['size'] ?? 25));
+        $batch = CADCO_Import_Applier::apply_batch($plan, $offset, $size);
 
         if ($batch['complete']) {
             CADCO_Import_Applier::finalise();
@@ -4408,7 +4408,91 @@ final class CADCO_Import_Admin
 }
 ```
 
-- [ ] **Step 2: Create `assets/css/import-admin.css`**
+- [ ] **Step 2: Create `assets/js/import-admin.js`**
+
+```js
+/**
+ * Drives the batched apply on Products -> Import.
+ *
+ * Batching exists because the screen is the only interface: 236 products of
+ * taxonomy and meta writes in one request would exceed PHP's execution limit,
+ * so the plan is applied in slices and the server reports progress.
+ */
+(function () {
+	'use strict';
+
+	var button = document.getElementById('cadco-import-apply');
+
+	if (!button || typeof window.cadcoImport === 'undefined') {
+		return;
+	}
+
+	var config = window.cadcoImport;
+	var box    = document.getElementById('cadco-import-progress');
+	var bar    = box.querySelector('progress');
+	var status = box.querySelector('.cadco-import-status');
+
+	/**
+	 * Indexes of the renames the operator ticked. Read fresh on every batch so
+	 * the set cannot drift from what is on screen.
+	 */
+	function approved() {
+		return Array.prototype.map.call(
+			document.querySelectorAll('.cadco-rename:checked'),
+			function (input) { return input.value; }
+		);
+	}
+
+	function step(offset) {
+		var body = new FormData();
+
+		body.append('action', 'cadco_import_batch');
+		body.append('_wpnonce', config.nonce);
+		body.append('offset', offset);
+		body.append('size', config.batchSize);
+		approved().forEach(function (index) { body.append('approved[]', index); });
+
+		window.fetch(config.ajaxUrl, {
+			method: 'POST',
+			body: body,
+			credentials: 'same-origin'
+		})
+			.then(function (response) { return response.json(); })
+			.then(function (result) {
+				if (!result.success) {
+					status.textContent = (result.data && result.data.message) || config.i18n.failed;
+					button.disabled = false;
+					return;
+				}
+
+				var data = result.data;
+
+				bar.value = data.total ? Math.round((data.done / data.total) * 100) : 100;
+				status.textContent = data.done + ' / ' + data.total;
+
+				if (data.complete) {
+					status.textContent = config.i18n.done.replace('%d', data.total);
+					return;
+				}
+
+				step(data.done);
+			})
+			.catch(function () {
+				status.textContent = config.i18n.network;
+				button.disabled = false;
+			});
+	}
+
+	button.addEventListener('click', function () {
+		button.disabled = true;
+		box.hidden = false;
+		bar.value = 0;
+		step(0);
+	});
+}());
+```
+
+- [ ] **Step 3: Create `assets/css/import-admin.css`**
 
 ```css
 .cadco-import h2 {
@@ -4464,7 +4548,7 @@ final class CADCO_Import_Admin
 }
 ```
 
-- [ ] **Step 3: Manual verification — a failing workbook**
+- [ ] **Step 4: Manual verification — a failing workbook**
 
 Visit **Products → Import** in wp-admin and upload the **uncorrected** source
 workbook.
@@ -4473,7 +4557,7 @@ Expected: a red notice reading "N problems found. Nothing has been imported.",
 followed by tables grouped A / B / C. Confirm `wp post list --post_type=product
 --format=count` still returns `0` — a failing validation must write nothing.
 
-- [ ] **Step 4: Manual verification — a passing workbook**
+- [ ] **Step 5: Manual verification — a passing workbook**
 
 Upload the **corrected** workbook.
 
@@ -4492,17 +4576,17 @@ wp term list product_tag --format=count             # 26
 wp term list product_brand --format=count           # 6
 ```
 
-- [ ] **Step 5: Verify a re-run writes nothing**
+- [ ] **Step 6: Verify a re-run writes nothing**
 
 Upload the same corrected workbook again.
 
 Expected: the counts panel shows **0 to create, 0 to update, 236 unchanged**.
 This is the property that makes the system safe to run repeatedly.
 
-- [ ] **Step 6: Commit**
+- [ ] **Step 7: Commit**
 
 ```bash
-git add inc/import/class-cadco-import-admin.php assets/css/import-admin.css
+git add inc/import/class-cadco-import-admin.php assets/css/import-admin.css assets/js/import-admin.js
 git commit -m "feat(import): add the products import admin screen"
 ```
 
