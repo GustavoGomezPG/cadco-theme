@@ -34,6 +34,7 @@ foreach ([
     'class-cadco-import-planner.php',
     'class-cadco-import-repository.php',
     'class-cadco-import-applier.php',
+    'class-cadco-import-archive.php',
 ] as $cadco_import_file) {
     if (is_readable(__DIR__ . '/' . $cadco_import_file)) {
         require_once __DIR__ . '/' . $cadco_import_file;

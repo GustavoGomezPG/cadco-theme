@@ -198,18 +198,8 @@ final class CADCO_Import_Admin
             return null;
         }
 
-        $base_dir = trailingslashit(wp_upload_dir()['basedir']) . 'cadco-imports';
-
-        self::guard_imports_dir($base_dir);
-        self::garbage_collect_runs($base_dir);
-
-        // The timestamp alone is guessable; the user ID plus a random
-        // component makes the directory unguessable (it sits behind
-        // guard_imports_dir()'s deny-all anyway, but this is cheap and
-        // removes the timestamp collision between two operators uploading
-        // in the same second as a side effect).
-        $dir = $base_dir . '/' . gmdate('Y-m-d-His') . '-' . get_current_user_id() . '-' . wp_generate_password(12, false);
-        wp_mkdir_p($dir);
+        $archive = CADCO_Import_Archive::create($file['name'], get_current_user_id());
+        $dir     = $archive['dir'];
 
         $path = $dir . '/workbook.xlsx';
 
@@ -239,6 +229,30 @@ final class CADCO_Import_Admin
                 'changes' => $result['changes'],
             ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
         }
+
+        // The manifest is what the history list reads — never the workbook
+        // — so it is written unconditionally, pass or fail. `applied` is
+        // false until mark_applied() flips it in ajax_batch(), so a run
+        // abandoned midway is never offered as a usable restore point.
+        CADCO_Import_Archive::write_manifest($dir, [
+            'run_id'   => $archive['run_id'],
+            'created'  => gmdate('Y-m-d\TH:i:s\Z'),
+            'user_id'  => get_current_user_id(),
+            'filename' => $file['name'],
+            'label'    => '',
+            'passed'   => $result['report']->passed(),
+            'rows'     => count($result['rows']),
+            'issues'   => $result['report']->count(),
+            'counts'   => $result['plan'] instanceof CADCO_Import_Plan
+                ? $result['plan']->counts()
+                : ['create' => 0, 'update' => 0, 'rename' => 0, 'trash' => 0, 'untrash' => 0, 'skip' => 0],
+            'applied'  => false,
+        ]);
+
+        // Count-based retention replaces the previous 7-day age-based
+        // collector — a restore point should not vanish purely because a
+        // fortnight passed. Keep the newest 20 runs, delete the rest.
+        CADCO_Import_Archive::prune(20);
 
         // Only the workbook path and archive directory are stored here. The
         // job queue itself — built once apply starts — lives on disk inside
@@ -275,109 +289,6 @@ final class CADCO_Import_Admin
                 return __('The server could not accept the upload. Please try again or contact your host.', 'cadco-theme');
             default:
                 return __('The upload failed for an unknown reason. Please try again.', 'cadco-theme');
-        }
-    }
-
-    /**
-     * Make sure the archive directory cannot be browsed or executed.
-     *
-     * Every run's workbook, report, plan and (temporarily) job queue live
-     * under wp-content/uploads/cadco-imports/ — real catalogue data (SKUs,
-     * UPCs, supplier descriptions, dimensions). Nothing under uploads/ on
-     * this install carries an .htaccess of its own, so without this the
-     * whole run archive is one guessable directory name away from being
-     * readable — or, with autoindex on, listable — by anyone.
-     *
-     * Idempotent and cheap: called on every upload, so a guard file removed
-     * by hand is simply rewritten on the next run rather than staying gone.
-     */
-    private static function guard_imports_dir(string $base_dir): void
-    {
-        wp_mkdir_p($base_dir);
-
-        $index = $base_dir . '/index.php';
-
-        if (!file_exists($index)) {
-            file_put_contents($index, "<?php\n// Silence is golden.\n");
-        }
-
-        $htaccess = $base_dir . '/.htaccess';
-
-        if (!file_exists($htaccess)) {
-            file_put_contents($htaccess, "Require all denied\n");
-        }
-    }
-
-    /**
-     * Delete run directories older than a week.
-     *
-     * Every upload — including ones that fail validation — leaves a
-     * permanent copy of the workbook plus its report and plan, and an
-     * abandoned apply run leaves the (potentially large) queue file behind
-     * too, since unlink() for that file only runs when a run completes.
-     * Nothing else ever cleaned these up.
-     *
-     * Deliberately conservative: only entries whose name is exactly the
-     * shape this class creates (a timestamp, a user ID, and the random
-     * suffix from guard's sibling upload code) are even considered, and only
-     * plain files one level inside such a directory are ever unlinked — an
-     * unexpected subdirectory, a symlink, or a name that merely looks close
-     * is left alone rather than recursed into or followed. This never
-     * touches anything outside $base_dir.
-     */
-    private static function garbage_collect_runs(string $base_dir): void
-    {
-        if (!is_dir($base_dir)) {
-            return;
-        }
-
-        $entries = scandir($base_dir);
-
-        if ($entries === false) {
-            return;
-        }
-
-        $cutoff = time() - 7 * DAY_IN_SECONDS;
-
-        foreach ($entries as $entry) {
-            if (!preg_match('/^\d{4}-\d{2}-\d{2}-\d{6}-\d+-[A-Za-z0-9]{12}$/', $entry)) {
-                continue;
-            }
-
-            $path = $base_dir . '/' . $entry;
-
-            if (is_link($path) || !is_dir($path)) {
-                continue;
-            }
-
-            $mtime = filemtime($path);
-
-            if ($mtime === false || $mtime > $cutoff) {
-                continue;
-            }
-
-            $files = scandir($path);
-
-            if ($files === false) {
-                continue;
-            }
-
-            foreach ($files as $file) {
-                if ($file === '.' || $file === '..') {
-                    continue;
-                }
-
-                $file_path = $path . '/' . $file;
-
-                if (is_file($file_path) && !is_link($file_path)) {
-                    unlink($file_path);
-                }
-            }
-
-            // Fails harmlessly if an unexpected entry kept the directory
-            // from being empty — that entry was left alone above, on
-            // purpose, rather than deleted.
-            @rmdir($path);
         }
     }
 
@@ -928,8 +839,8 @@ final class CADCO_Import_Admin
             // is handed to the PHP handler on a large class of hosts. The
             // file's contents are raw workbook cell values via serialize();
             // a product name containing "<?php" would become executable at
-            // a guessable-if-not-for-guard_imports_dir() URL. .bin carries
-            // no handler mapping anywhere.
+            // a guessable-if-not-for-CADCO_Import_Archive's-deny-all URL.
+            // .bin carries no handler mapping anywhere.
             $queue_file = $run['dir'] . '/queue.bin';
 
             // build_queue() guarantees plain scalars and nested arrays only —
@@ -978,6 +889,11 @@ final class CADCO_Import_Admin
             if (is_file($run['queue_file'])) {
                 unlink($run['queue_file']);
             }
+
+            // Flip the manifest's `applied` flag now that the run has
+            // actually finished, not merely been reviewed — see
+            // CADCO_Import_Archive::mark_applied().
+            CADCO_Import_Archive::mark_applied($run['dir']);
 
             delete_transient($key);
         } else {
@@ -1110,7 +1026,7 @@ final class CADCO_Import_Admin
      * Download the validation report as CSV.
      *
      * The report is the primary deliverable of a failing run (design spec
-     * §8.1 step 2) — guard_imports_dir() denies web access to the archived
+     * §8.1 step 2) — CADCO_Import_Archive denies web access to the archived
      * copy on disk, so without this handler the only way to see a problem
      * row is to read the on-screen table, which nobody can hand to CADCO or
      * grep. The workbook is re-validated from the archived upload rather
