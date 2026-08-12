@@ -513,7 +513,7 @@ Run directories become a versioned history: manifests, labels, restore, count-ba
 - Test: `tests/unit/ArchiveTest.php` for the pure parts
 
 **Interfaces:**
-- `CADCO_Import_Archive::create(string $filename, int $user_id): array` — makes the directory, returns `['run_id' => string, 'dir' => string]`.
+- `CADCO_Import_Archive::create(int $user_id): array` — makes the directory, returns `['run_id' => string, 'dir' => string]`. The original filename is not passed here; it is recorded by `write_manifest()`.
 - `CADCO_Import_Archive::write_manifest(string $dir, array $manifest): void`
 - `CADCO_Import_Archive::mark_applied(string $dir): void`
 - `CADCO_Import_Archive::all(): array` — every run's manifest, newest first.
@@ -578,7 +578,7 @@ Move `guard_imports_dir()` and the directory-naming logic out of the admin class
 
 - [ ] **Step 4: Run and watch it pass**
 
-Run: `composer test` — 99 green.
+Run: `composer test` — expect the baseline plus the new ArchiveTest cases.
 
 - [ ] **Step 5: Wire the manifest into the upload path**
 
@@ -620,7 +620,7 @@ Do not redesign anything in this task. The point is to land the extraction with 
 
 - [ ] **Step 2: Verify nothing changed**
 
-Run: `composer test` (99) and `npm run test:e2e` (17). Every E2E test drives the real screen, so a green suite is the proof that the extraction was faithful.
+Run: `composer test` and `npm run test:e2e` (17). Every E2E test drives the real screen, so a green suite is the proof that the extraction was faithful.
 
 - [ ] **Step 3: Commit**
 
