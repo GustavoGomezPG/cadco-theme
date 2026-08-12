@@ -73,9 +73,13 @@
 	--cadco-space-6: 20.4px;
 	--cadco-space-8: 27.2px;
 
+	/* The design file's page wrapper is `padding: 34px 40px 96px` around a
+	   1180px column. wp-admin already supplies the left/right gutter, so only
+	   the vertical padding is taken here — without it the kicker jams against
+	   the admin bar and the whole screen reads cramped. */
 	max-width: 1180px;
 	margin-right: 20px;
-	padding-bottom: 3em;
+	padding: 34px 0 96px;
 	background: var(--cadco-bg);
 	color: var(--cadco-text);
 	font-family: var(--cadco-font-body);
