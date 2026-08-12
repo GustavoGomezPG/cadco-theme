@@ -317,6 +317,72 @@ final class PlannerTest extends TestCase
         self::assertSame('', \CADCO_Import_Planner::path_of(''));
     }
 
+    public function test_a_normal_import_ignores_trashed_products(): void
+    {
+        // The asymmetry is deliberate: a product deliberately removed must stay
+        // removed. Only an explicit restore may bring one back.
+        $plan = \CADCO_Import_Planner::plan([self::row()], []);
+
+        self::assertSame(1, $plan->counts()['create']);
+        self::assertSame(0, $plan->counts()['untrash']);
+    }
+
+    public function test_restore_untrashes_a_matching_product_by_sku(): void
+    {
+        $plan = \CADCO_Import_Planner::plan([self::row()], [], [
+            self::current(7, 'BLC-113', '654796-52113-5', 'stale'),
+        ]);
+
+        self::assertSame(0, $plan->counts()['create'], 'it must be reused, not recreated');
+        self::assertSame(1, $plan->counts()['untrash']);
+        self::assertSame(7, $plan->untrashes()[0]['post_id']);
+    }
+
+    public function test_restore_untrashes_a_matching_product_by_upc_when_the_sku_changed(): void
+    {
+        $plan = \CADCO_Import_Planner::plan([self::row()], [], [
+            self::current(7, 'XAF-113', '654796-52113-5', 'stale'),
+        ]);
+
+        self::assertSame(1, $plan->counts()['untrash']);
+        self::assertSame(7, $plan->untrashes()[0]['post_id']);
+    }
+
+    public function test_a_live_match_always_wins_over_a_trashed_one(): void
+    {
+        $plan = \CADCO_Import_Planner::plan(
+            [self::row(['Weight' => '52'])],
+            [self::current(7, 'BLC-113', '654796-52113-5', 'stale')],
+            [self::current(9, 'BLC-113', '654796-52113-5', 'stale')]
+        );
+
+        self::assertSame(1, $plan->counts()['update']);
+        self::assertSame(0, $plan->counts()['untrash']);
+        self::assertSame(7, $plan->updates()[0]['post_id']);
+    }
+
+    public function test_an_ambiguous_trashed_upc_never_untrashes(): void
+    {
+        // Same rule as live products: a UPC held by more than one product cannot
+        // identify one of them.
+        $plan = \CADCO_Import_Planner::plan([self::row()], [], [
+            self::current(7, 'OLD-A', '654796-52113-5', 'stale'),
+            self::current(8, 'OLD-B', '654796-52113-5', 'stale'),
+        ]);
+
+        self::assertSame(0, $plan->counts()['untrash']);
+        self::assertSame(1, $plan->counts()['create']);
+    }
+
+    public function test_untrashes_count_as_writes(): void
+    {
+        $plan = \CADCO_Import_Planner::plan([self::row()], [], [
+            self::current(7, 'BLC-113', '654796-52113-5', 'stale'),
+        ]);
+
+        self::assertSame(1, $plan->total_writes());
+    }
+
     private static function current(int $id, string $sku, string $upc, string $hash): array
     {
         return ['post_id' => $id, 'sku' => $sku, 'upc' => $upc, 'hash' => $hash];

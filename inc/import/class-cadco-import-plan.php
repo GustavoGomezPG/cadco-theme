@@ -28,6 +28,9 @@ final class CADCO_Import_Plan
     /** @var list<array<string, mixed>> */
     private array $trashes = [];
 
+    /** @var list<array<string, mixed>> */
+    private array $untrashes = [];
+
     /** @var list<string> */
     private array $skips = [];
 
@@ -90,6 +93,17 @@ final class CADCO_Import_Plan
         $this->skips[] = $sku;
     }
 
+    /**
+     * A restore reusing a trashed product in place, rather than recreating
+     * it under a new post ID. See CADCO_Import_Planner::plan() for why this
+     * only ever happens when the caller explicitly supplies trashed
+     * candidates.
+     */
+    public function add_untrash(array $row, int $post_id): void
+    {
+        $this->untrashes[] = ['row' => $row, 'post_id' => $post_id];
+    }
+
     public function creates(): array
     {
         return $this->creates;
@@ -110,32 +124,41 @@ final class CADCO_Import_Plan
         return $this->trashes;
     }
 
+    public function untrashes(): array
+    {
+        return $this->untrashes;
+    }
+
     public function skips(): array
     {
         return $this->skips;
     }
 
     /**
-     * @return array{create:int,update:int,rename:int,trash:int,skip:int}
+     * @return array{create:int,update:int,rename:int,trash:int,untrash:int,skip:int}
      */
     public function counts(): array
     {
         return [
-            'create' => count($this->creates),
-            'update' => count($this->updates),
-            'rename' => count($this->renames),
-            'trash'  => count($this->trashes),
-            'skip'   => count($this->skips),
+            'create'  => count($this->creates),
+            'update'  => count($this->updates),
+            'rename'  => count($this->renames),
+            'trash'   => count($this->trashes),
+            'untrash' => count($this->untrashes),
+            'skip'    => count($this->skips),
         ];
     }
 
     /**
-     * Skips are excluded: an unchanged row costs no writes at all.
+     * Skips are excluded: an unchanged row costs no writes at all. An
+     * untrash is a write — a restore that untrashes 10 products is doing 10
+     * writes, same as a create.
      */
     public function total_writes(): int
     {
         return count($this->creates) + count($this->updates)
-            + count($this->renames) + count($this->trashes);
+            + count($this->renames) + count($this->trashes)
+            + count($this->untrashes);
     }
 
     public function is_empty(): bool

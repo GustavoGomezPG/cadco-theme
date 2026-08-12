@@ -20,13 +20,36 @@ final class CADCO_Import_Planner
     /**
      * @param list<array<string, mixed>> $rows    normalised, validated rows
      * @param list<array{post_id:int,sku:string,upc:string,hash:string,snapshot?:array<string,string>}> $current
+     * @param list<array{post_id:int,sku:string,upc:string,hash:string,snapshot?:array<string,string>}> $trashed
+     *        Trashed candidates a restore may reuse. Empty for a normal
+     *        import — see the trashed-lookup block below for why that must
+     *        stay opt-in.
      */
-    public static function plan(array $rows, array $current): CADCO_Import_Plan
+    public static function plan(array $rows, array $current, array $trashed = []): CADCO_Import_Plan
     {
         $plan     = new CADCO_Import_Plan();
         $by_sku   = [];
         $by_upc   = [];
         $unseen   = [];
+
+        $trashed_by_sku = [];
+        $trashed_by_upc = [];
+
+        foreach ($trashed as $product) {
+            $sku = (string) $product['sku'];
+            $upc = (string) $product['upc'];
+
+            if ($sku !== '') {
+                $trashed_by_sku[$sku] = $product;
+            }
+
+            // Same ambiguity sentinel as $by_upc below: array_key_exists,
+            // not isset, so a third trashed product sharing a UPC cannot
+            // overwrite the ambiguity marker and resurrect a false match.
+            if ($upc !== '') {
+                $trashed_by_upc[$upc] = array_key_exists($upc, $trashed_by_upc) ? null : $product;
+            }
+        }
 
         foreach ($current as $product) {
             $sku = (string) $product['sku'];
@@ -92,6 +115,28 @@ final class CADCO_Import_Planner
                 unset($unseen[(int) $match['post_id']]);
 
                 $plan->add_rename($row, (int) $match['post_id'], (string) $match['sku']);
+                continue;
+            }
+
+            // Opt-in only: CADCO_Import_Repository::current_products() never
+            // returns trashed products, so $trashed is [] for every normal
+            // import and this block never runs. A product a human trashed
+            // on purpose must stay trashed on the next ordinary import — it
+            // is only eligible for reuse when the caller is explicitly
+            // performing a restore and has supplied trashed candidates.
+            // Reusing the trashed post here (rather than falling through to
+            // add_create()) is what makes a restore a *restore*: the post
+            // ID, and with it every media attachment and manual edit,
+            // survives.
+            if ($sku !== '' && isset($trashed_by_sku[$sku])) {
+                $match = $trashed_by_sku[$sku];
+                $plan->add_untrash($row, (int) $match['post_id']);
+                continue;
+            }
+
+            if ($upc !== '' && array_key_exists($upc, $trashed_by_upc) && $trashed_by_upc[$upc] !== null) {
+                $match = $trashed_by_upc[$upc];
+                $plan->add_untrash($row, (int) $match['post_id']);
                 continue;
             }
 

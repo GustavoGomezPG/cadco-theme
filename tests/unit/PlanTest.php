@@ -33,12 +33,22 @@ final class PlanTest extends TestCase
         $plan->add_skip('UNCHANGED-1');
 
         self::assertSame(
-            ['create' => 1, 'update' => 1, 'rename' => 1, 'trash' => 1, 'skip' => 1],
+            ['create' => 1, 'update' => 1, 'rename' => 1, 'trash' => 1, 'untrash' => 0, 'skip' => 1],
             $plan->counts()
         );
         // Skips are not writes — an unchanged row costs nothing.
         self::assertSame(4, $plan->total_writes());
         self::assertFalse($plan->is_empty());
+    }
+
+    public function test_an_untrash_is_counted_and_is_a_write(): void
+    {
+        $plan = new \CADCO_Import_Plan();
+        $plan->add_untrash(self::row(), 7);
+
+        self::assertSame(1, $plan->counts()['untrash']);
+        self::assertSame(1, $plan->total_writes(), 'restoring a trashed product is a write');
+        self::assertSame(7, $plan->untrashes()[0]['post_id']);
     }
 
     public function test_category_is_derived_from_sheet_name_and_type(): void
