@@ -40,6 +40,19 @@ final class CADCO_Import_Archive
      */
     private const RUN_ID_PATTERN = '/^\d{4}-\d{2}-\d{2}-\d{6}-\d+-[A-Za-z0-9]{12}$/D';
 
+    /**
+     * How many runs are retained before the oldest is deleted.
+     *
+     * Count-based, not age-based: retention that expires a run purely because
+     * time passed would silently destroy a restore point, which is exactly
+     * wrong for version history (design spec §8.5).
+     *
+     * Public because the History screen states this number to the operator,
+     * and a screen promising a different figure from the one prune() enforces
+     * would be worse than not stating it at all.
+     */
+    public const KEEP = 20;
+
     public static function is_valid_run_id(string $id): bool
     {
         return preg_match(self::RUN_ID_PATTERN, $id) === 1;
@@ -271,7 +284,7 @@ final class CADCO_Import_Archive
      *
      * @return list<string> the run ids that were actually deleted
      */
-    public static function prune(int $keep = 20, ?string $except_run_id = null): array
+    public static function prune(int $keep = self::KEEP, ?string $except_run_id = null): array
     {
         $base_dir = self::base_dir();
 

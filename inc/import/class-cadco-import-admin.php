@@ -59,10 +59,25 @@ final class CADCO_Import_Admin
             return;
         }
 
+        // Barlow Condensed over Barlow is the "Industry" design system's type
+        // pairing (assets/css/import-admin.css). The theme already loads Barlow
+        // from Google Fonts for the front end (functions.php), so this follows
+        // the established pattern rather than introducing a second one; the
+        // condensed face is the part that is new, and it is loaded only on this
+        // screen. The stylesheet's own font stacks fall back to Barlow and then
+        // the system UI face, so the screen degrades legibly if the request to
+        // Google is blocked.
+        wp_enqueue_style(
+            'cadco-import-admin-fonts',
+            'https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700&family=Barlow:wght@400;500;600&display=swap',
+            [],
+            null
+        );
+
         wp_enqueue_style(
             'cadco-import-admin',
             get_stylesheet_directory_uri() . '/assets/css/import-admin.css',
-            [],
+            ['cadco-import-admin-fonts'],
             (string) filemtime(get_stylesheet_directory() . '/assets/css/import-admin.css')
         );
 
@@ -142,9 +157,24 @@ final class CADCO_Import_Admin
         // wizard rather than 500ing or rendering nothing.
         $tab = (($_GET['tab'] ?? '') === 'history') ? 'history' : 'import';
 
-        echo '<div class="wrap cadco-import"><h1>' . esc_html__('Import products', 'cadco-theme') . '</h1>';
+        // Title on the left, tab strip pinned right, on one row (design file's
+        // header). The <hr class="wp-header-end"> below is load-bearing, not
+        // decoration: wp-admin/js/common.js relocates every .notice to just
+        // after that marker if it exists, and otherwise to just after the first
+        // <h1> inside .wrap. Without it, nesting the <h1> in this flex row
+        // would drop every admin notice *inside* the row and wreck it — the
+        // same class of failure the restore banner's `inline` class avoids.
+        echo '<div class="wrap cadco-import">';
+        echo '<div class="cadco-import-header">';
+        echo '<div class="cadco-import-titles">';
+        echo '<p class="cadco-import-kicker">' . esc_html__('Catalogue tools', 'cadco-theme') . '</p>';
+        echo '<h1 class="cadco-import-title">' . esc_html__('Import products', 'cadco-theme') . '</h1>';
+        echo '</div>';
 
         CADCO_Import_View::tabs($tab);
+
+        echo '</div>';
+        echo '<hr class="wp-header-end">';
 
         if ($tab === 'history') {
             // Read manifests only (task brief) — the history list never

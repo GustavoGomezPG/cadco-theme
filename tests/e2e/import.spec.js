@@ -1,3 +1,12 @@
+/**
+ * End-to-end coverage of Products -> Import.
+ *
+ * Note on the upload step: `setInputFiles()` is the whole action. Choosing a
+ * workbook submits the form — assets/js/import-admin.js auto-submits on the
+ * input's `change` event — so there is no button to press afterwards. The
+ * "Check workbook" submit button still exists in the markup for the no-JS
+ * case, but the same script hides it, so it is never clickable here.
+ */
 const path = require('node:path');
 const { test, expect } = require('@playwright/test');
 const {
@@ -18,7 +27,24 @@ test.describe('Product import', () => {
 		await page.goto(IMPORT_PATH);
 
 		await expect(page.getByRole('heading', { name: 'Import products' })).toBeVisible();
-		await expect(page.locator('input[type="file"]')).toBeVisible();
+
+		// The file input is deliberately not visible: it is the standard
+		// hidden-input-plus-label pattern, so what a sighted user actually
+		// operates is the "Choose file…" label and the drop target around it.
+		// Assert those, and assert the input is present and enabled — checking
+		// the input for visibility would pass on a 1px clipped element and
+		// prove nothing about what is on screen.
+		await expect(page.getByText('Drop the product workbook here')).toBeVisible();
+		await expect(page.locator('label[for="cadco-import-file"]')).toBeVisible();
+
+		const input = page.locator('input[type="file"]');
+		await expect(input).toBeAttached();
+		await expect(input).toBeEnabled();
+
+		// The submit button is the no-JS fallback only; the script hides it and
+		// submits on file choice instead. If this ever becomes visible, the
+		// auto-submit has failed to initialise.
+		await expect(page.locator('#cadco-import-submit-fallback')).toBeHidden();
 	});
 
 	// Gap: admin_enqueue_scripts has never run for real. The whole apply flow
@@ -114,7 +140,6 @@ test.describe('Product import', () => {
 
 		await page.goto(IMPORT_PATH);
 		await page.setInputFiles('input[type="file"]', SOURCE);
-		await page.getByRole('button', { name: /check workbook/i }).click();
 
 		// The report must say plainly that nothing happened.
 		await expect(page.locator('.notice-error')).toContainText(/nothing has been imported/i);
@@ -142,7 +167,6 @@ test.describe('Product import', () => {
 
 		await page.goto(IMPORT_PATH);
 		await page.setInputFiles('input[type="file"]', CORRECTED);
-		await page.getByRole('button', { name: /check workbook/i }).click();
 
 		await expect(page.locator('.notice-success')).toBeVisible();
 		await expect(page.locator('.cadco-import-counts')).toContainText('236');
@@ -163,7 +187,6 @@ test.describe('Product import', () => {
 	test('a failed row is reported in the failures list and counted out of "done"', async ({ page }) => {
 		await page.goto(IMPORT_PATH);
 		await page.setInputFiles('input[type="file"]', CORRECTED);
-		await page.getByRole('button', { name: /check workbook/i }).click();
 		await expect(page.locator('#cadco-import-apply')).toBeVisible();
 
 		await page.route('**/admin-ajax.php', (route) => route.fulfill({
@@ -209,7 +232,6 @@ test.describe('Product import', () => {
 	test('a network failure during apply is reported and the button re-enables', async ({ page }) => {
 		await page.goto(IMPORT_PATH);
 		await page.setInputFiles('input[type="file"]', CORRECTED);
-		await page.getByRole('button', { name: /check workbook/i }).click();
 		await expect(page.locator('#cadco-import-apply')).toBeVisible();
 
 		await page.route('**/admin-ajax.php', (route) => route.abort('failed'));
@@ -240,7 +262,6 @@ test.describe('Product import', () => {
 
 		await page.goto(IMPORT_PATH);
 		await page.setInputFiles('input[type="file"]', fixture);
-		await page.getByRole('button', { name: /check workbook/i }).click();
 		await expect(page.locator('#cadco-import-apply')).toBeVisible();
 
 		await page.click('#cadco-import-apply');
@@ -306,7 +327,6 @@ test.describe('Product import', () => {
 
 		await page.goto(IMPORT_PATH);
 		await page.setInputFiles('input[type="file"]', fixture);
-		await page.getByRole('button', { name: /check workbook/i }).click();
 
 		// Confirms the workbook was clean and Review actually rendered —
 		// this test never clicks it, on purpose: the assertions below must
@@ -359,7 +379,6 @@ test.describe('Product import', () => {
 		try {
 			await page.goto(IMPORT_PATH);
 			await page.setInputFiles('input[type="file"]', fixture);
-			await page.getByRole('button', { name: /check workbook/i }).click();
 
 			const renameRow = page.locator('table.widefat').filter({ hasText: 'E2E-RENAME-OLD-1' }).locator('tbody tr').first();
 			await expect(renameRow).toBeVisible();
@@ -406,7 +425,6 @@ test.describe('Product import', () => {
 
 			await page.goto(IMPORT_PATH);
 			await page.setInputFiles('input[type="file"]', full);
-			await page.getByRole('button', { name: /check workbook/i }).click();
 			await expect(page.locator('#cadco-import-apply')).toBeVisible();
 
 			await page.click('#cadco-import-apply');
@@ -424,7 +442,6 @@ test.describe('Product import', () => {
 
 			await page.goto(IMPORT_PATH);
 			await page.setInputFiles('input[type="file"]', reduced);
-			await page.getByRole('button', { name: /check workbook/i }).click();
 			await expect(page.locator('.cadco-import-counts')).toBeVisible();
 			await expect(page.locator('.cadco-import-counts')).toContainText(/1[\s\S]*to trash/i);
 
@@ -458,7 +475,6 @@ test.describe('Product import', () => {
 
 		await page.goto(IMPORT_PATH);
 		await page.setInputFiles('input[type="file"]', CORRECTED);
-		await page.getByRole('button', { name: /check workbook/i }).click();
 		await expect(page.locator('#cadco-import-apply')).toBeVisible();
 
 		await page.click('#cadco-import-apply');
@@ -547,7 +563,6 @@ test.describe('Product import', () => {
 
 		await page.goto(IMPORT_PATH);
 		await page.setInputFiles('input[type="file"]', CORRECTED);
-		await page.getByRole('button', { name: /check workbook/i }).click();
 
 		await expect(page.locator('.cadco-import-counts')).toBeVisible();
 
@@ -586,7 +601,6 @@ test.describe('Product import', () => {
 
 		await page.goto(IMPORT_PATH);
 		await page.setInputFiles('input[type="file"]', fixture);
-		await page.getByRole('button', { name: /check workbook/i }).click();
 
 		await expect(page.locator('.cadco-import-counts')).toContainText(/1[\s\S]*to update/i);
 		await expect(page.getByRole('heading', { name: /Products to update/i })).toBeVisible();
@@ -608,7 +622,6 @@ test.describe('Product import', () => {
 			mimeType: 'text/plain',
 			buffer: Buffer.from('Model #,UPC#\nBLC-113,654796-52113-5\n'),
 		});
-		await page.getByRole('button', { name: /check workbook/i }).click();
 
 		await expect(page.locator('.notice-error')).toContainText(/not an \.xlsx workbook/i);
 	});
@@ -633,7 +646,6 @@ test.describe('Product import', () => {
 
 			await page.goto(IMPORT_PATH);
 			await page.setInputFiles('input[type="file"]', v1);
-			await page.getByRole('button', { name: /check workbook/i }).click();
 			await expect(page.locator('#cadco-import-apply')).toBeVisible();
 			await page.click('#cadco-import-apply');
 			await expect(page.locator('.cadco-import-status')).toContainText(/Done/i, { timeout: 30000 });
@@ -647,7 +659,6 @@ test.describe('Product import', () => {
 
 			await page.goto(IMPORT_PATH);
 			await page.setInputFiles('input[type="file"]', v2);
-			await page.getByRole('button', { name: /check workbook/i }).click();
 			await expect(page.locator('#cadco-import-apply')).toBeVisible();
 
 			const sections = ['workbook', 'categories', 'products', 'updates', 'renames', 'removals', 'cleaned-up', 'redirects'];
@@ -712,7 +723,6 @@ test.describe('Product import', () => {
 
 			await page.goto(IMPORT_PATH);
 			await page.setInputFiles('input[type="file"]', fixture);
-			await page.getByRole('button', { name: /check workbook/i }).click();
 			await expect(page.locator('#cadco-import-apply')).toBeVisible();
 
 			// The sheet name, title-cased, is the one new parent — both
@@ -744,7 +754,6 @@ test.describe('Product import', () => {
 
 			await page.goto(IMPORT_PATH);
 			await page.setInputFiles('input[type="file"]', before);
-			await page.getByRole('button', { name: /check workbook/i }).click();
 			await expect(page.locator('#cadco-import-apply')).toBeVisible();
 			await page.click('#cadco-import-apply');
 			await expect(page.locator('.cadco-import-status')).toContainText(/Done/i, { timeout: 30000 });
@@ -756,7 +765,6 @@ test.describe('Product import', () => {
 
 			await page.goto(IMPORT_PATH);
 			await page.setInputFiles('input[type="file"]', after);
-			await page.getByRole('button', { name: /check workbook/i }).click();
 			await expect(page.locator('#cadco-import-apply')).toBeVisible();
 
 			const inUse = page.locator('#cadco-section-categories .cadco-import-in-use');
@@ -784,7 +792,6 @@ test.describe('Product import', () => {
 	test('the CTA is disabled on an invalid workbook and enabled on a clean one', async ({ page }) => {
 		await page.goto(IMPORT_PATH);
 		await page.setInputFiles('input[type="file"]', SOURCE);
-		await page.getByRole('button', { name: /check workbook/i }).click();
 
 		const blockedCta = page.locator('.cadco-import-cta button');
 		await expect(blockedCta).toBeVisible();
@@ -795,7 +802,6 @@ test.describe('Product import', () => {
 
 		await page.goto(IMPORT_PATH);
 		await page.setInputFiles('input[type="file"]', CORRECTED);
-		await page.getByRole('button', { name: /check workbook/i }).click();
 
 		const applyCta = page.locator('.cadco-import-cta #cadco-import-apply');
 		await expect(applyCta).toBeVisible();
@@ -817,7 +823,6 @@ test.describe('Product import', () => {
 
 			await page.goto(IMPORT_PATH);
 			await page.setInputFiles('input[type="file"]', fixture);
-			await page.getByRole('button', { name: /check workbook/i }).click();
 			await expect(page.locator('#cadco-import-apply')).toBeVisible();
 
 			await page.goto(`${IMPORT_PATH}&tab=history`);
@@ -844,7 +849,6 @@ test.describe('Product import', () => {
 
 			await page.goto(IMPORT_PATH);
 			await page.setInputFiles('input[type="file"]', checkedOnly);
-			await page.getByRole('button', { name: /check workbook/i }).click();
 			await expect(page.locator('#cadco-import-apply')).toBeVisible();
 			// Deliberately never clicked — this run stays "reviewed, not applied".
 
@@ -853,7 +857,6 @@ test.describe('Product import', () => {
 
 			await page.goto(IMPORT_PATH);
 			await page.setInputFiles('input[type="file"]', applied);
-			await page.getByRole('button', { name: /check workbook/i }).click();
 			await expect(page.locator('#cadco-import-apply')).toBeVisible();
 			await page.click('#cadco-import-apply');
 			await expect(page.locator('.cadco-import-status')).toContainText(/Done/i, { timeout: 30000 });
@@ -889,7 +892,6 @@ test.describe('Product import', () => {
 
 			await page.goto(IMPORT_PATH);
 			await page.setInputFiles('input[type="file"]', fixture);
-			await page.getByRole('button', { name: /check workbook/i }).click();
 			await expect(page.locator('#cadco-import-apply')).toBeVisible();
 
 			await page.goto(`${IMPORT_PATH}&tab=history`);
@@ -929,7 +931,6 @@ test.describe('Product import', () => {
 
 			await page.goto(IMPORT_PATH);
 			await page.setInputFiles('input[type="file"]', a);
-			await page.getByRole('button', { name: /check workbook/i }).click();
 			await expect(page.locator('#cadco-import-apply')).toBeVisible();
 			await page.click('#cadco-import-apply');
 			await expect(page.locator('.cadco-import-status')).toContainText(/Done/i, { timeout: 30000 });
@@ -938,7 +939,6 @@ test.describe('Product import', () => {
 
 			await page.goto(IMPORT_PATH);
 			await page.setInputFiles('input[type="file"]', b);
-			await page.getByRole('button', { name: /check workbook/i }).click();
 			await expect(page.locator('#cadco-import-apply')).toBeVisible();
 			await page.click('#cadco-import-apply');
 			await expect(page.locator('.cadco-import-status')).toContainText(/Done/i, { timeout: 30000 });
@@ -998,7 +998,6 @@ test.describe('Product import', () => {
 
 			await page.goto(IMPORT_PATH);
 			await page.setInputFiles('input[type="file"]', a);
-			await page.getByRole('button', { name: /check workbook/i }).click();
 			await expect(page.locator('#cadco-import-apply')).toBeVisible();
 			await page.click('#cadco-import-apply');
 			await expect(page.locator('.cadco-import-status')).toContainText(/Done/i, { timeout: 30000 });
@@ -1010,7 +1009,6 @@ test.describe('Product import', () => {
 
 			await page.goto(IMPORT_PATH);
 			await page.setInputFiles('input[type="file"]', b);
-			await page.getByRole('button', { name: /check workbook/i }).click();
 			await expect(page.locator('#cadco-import-apply')).toBeVisible();
 			await page.click('#cadco-import-apply');
 			await expect(page.locator('.cadco-import-status')).toContainText(/Done/i, { timeout: 30000 });
@@ -1050,7 +1048,6 @@ test.describe('Product import', () => {
 
 			await page.goto(IMPORT_PATH);
 			await page.setInputFiles('input[type="file"]', a);
-			await page.getByRole('button', { name: /check workbook/i }).click();
 			await expect(page.locator('#cadco-import-apply')).toBeVisible();
 			await page.click('#cadco-import-apply');
 			await expect(page.locator('.cadco-import-status')).toContainText(/Done/i, { timeout: 30000 });
@@ -1059,7 +1056,6 @@ test.describe('Product import', () => {
 
 			await page.goto(IMPORT_PATH);
 			await page.setInputFiles('input[type="file"]', b);
-			await page.getByRole('button', { name: /check workbook/i }).click();
 			await expect(page.locator('#cadco-import-apply')).toBeVisible();
 			await page.click('#cadco-import-apply');
 			await expect(page.locator('.cadco-import-status')).toContainText(/Done/i, { timeout: 30000 });
@@ -1109,7 +1105,6 @@ test.describe('Product import', () => {
 
 			await page.goto(IMPORT_PATH);
 			await page.setInputFiles('input[type="file"]', fixture);
-			await page.getByRole('button', { name: /check workbook/i }).click();
 			await expect(page.locator('#cadco-import-apply')).toBeVisible();
 
 			// Identity, not just cardinality. A bare count of 20 cannot

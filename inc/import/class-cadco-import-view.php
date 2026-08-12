@@ -63,7 +63,7 @@ final class CADCO_Import_View
 
         $subtitle_upload = $filename !== ''
             ? $filename
-            : __('no workbook uploaded yet', 'cadco-theme');
+            : __('no workbook yet', 'cadco-theme');
 
         if ($state === 'upload') {
             $subtitle_review = __('waiting for a workbook', 'cadco-theme');
@@ -88,9 +88,13 @@ final class CADCO_Import_View
         }
 
         $stages = [
-            1 => ['title' => __('1. Upload', 'cadco-theme'), 'subtitle' => $subtitle_upload],
-            2 => ['title' => __('2. Review', 'cadco-theme'), 'subtitle' => $subtitle_review],
-            3 => ['title' => __('3. Apply', 'cadco-theme'), 'subtitle' => __('nothing written yet', 'cadco-theme')],
+            // "01 — Upload", per the design file's own stage titles. The
+            // zero-padded number and the em dash are part of the wording, not
+            // decoration added in CSS, so they stay translatable with the rest
+            // of the label.
+            1 => ['title' => __('01 — Upload', 'cadco-theme'), 'subtitle' => $subtitle_upload],
+            2 => ['title' => __('02 — Review', 'cadco-theme'), 'subtitle' => $subtitle_review],
+            3 => ['title' => __('03 — Apply', 'cadco-theme'), 'subtitle' => __('nothing written yet', 'cadco-theme')],
         ];
 
         $status_words = [
@@ -225,6 +229,17 @@ final class CADCO_Import_View
             }
         }
         ?>
+        <div class="cadco-import-history-panel">
+            <h2><?php esc_html_e('Past runs', 'cadco-theme'); ?></h2>
+            <p>
+                <?php
+                printf(
+                    /* translators: %d: how many import runs are retained before the oldest is deleted */
+                    esc_html__('The %d most recent workbooks are kept with their plans, so any run can be re-checked and restored against the catalogue as it stands today.', 'cadco-theme'),
+                    (int) CADCO_Import_Archive::KEEP
+                );
+                ?>
+            </p>
         <table class="widefat striped cadco-import-history">
             <thead>
             <tr>
@@ -239,6 +254,7 @@ final class CADCO_Import_View
             <?php foreach ($runs as $run) : self::history_row($run, $by_id); endforeach; ?>
             </tbody>
         </table>
+        </div>
         <?php
     }
 
@@ -407,17 +423,115 @@ final class CADCO_Import_View
         return $summary;
     }
 
+    /**
+     * Stage 1. The design frames this as a drop target rather than a bare file
+     * input, and assets/js/import-admin.js wires real drag-and-drop onto it —
+     * a panel that says "drop the workbook here" and then ignores a drop would
+     * be worse than one that never made the offer.
+     *
+     * The native <input type="file"> stays in the markup, visually hidden but
+     * focusable and label-linked: it is what actually carries the file on
+     * submit, what keyboard and screen-reader users operate, and what the E2E
+     * suite drives with setInputFiles(). The drop handler only ever assigns to
+     * its `files` property; it is never replaced.
+     *
+     * The size limit is read from the server rather than hard-coded, so the
+     * number on screen cannot drift away from the one PHP will actually
+     * enforce.
+     */
     public static function upload_form(): void
     {
+        $max = size_format(wp_max_upload_size());
         ?>
-        <p class="description">
-            <?php esc_html_e('Upload the product workbook. It is checked before anything is changed — if any problem is found, nothing at all is imported.', 'cadco-theme'); ?>
-        </p>
-        <form method="post" enctype="multipart/form-data">
-            <?php wp_nonce_field(CADCO_Import_Admin::NONCE); ?>
-            <input type="file" name="workbook" accept=".xlsx" required>
-            <?php submit_button(__('Check workbook', 'cadco-theme'), 'primary', 'cadco_import_upload'); ?>
-        </form>
+        <div class="cadco-import-upload-grid">
+            <div class="cadco-import-section cadco-import-upload">
+                <form method="post" enctype="multipart/form-data">
+                    <?php wp_nonce_field(CADCO_Import_Admin::NONCE); ?>
+                    <div class="cadco-import-dropzone" id="cadco-import-dropzone">
+                        <svg class="cadco-import-dropzone-icon" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true" focusable="false">
+                            <path d="M12 16V4"></path><path d="m7 9 5-5 5 5"></path><path d="M4 20h16"></path>
+                        </svg>
+                        <h2><?php esc_html_e('Drop the product workbook here', 'cadco-theme'); ?></h2>
+                        <p>
+                            <?php esc_html_e('One .xlsx file. Nothing is written until you have read the plan and pressed Apply — a workbook with problems is rejected whole, never half-imported.', 'cadco-theme'); ?>
+                        </p>
+
+                        <label class="button button-primary" for="cadco-import-file">
+                            <?php esc_html_e('Choose file…', 'cadco-theme'); ?>
+                        </label>
+                        <input
+                            type="file"
+                            name="workbook"
+                            id="cadco-import-file"
+                            class="cadco-import-file"
+                            accept=".xlsx"
+                            required
+                        >
+
+                        <p class="cadco-import-dropzone-hint">
+                            <span class="cadco-import-filename" id="cadco-import-filename" aria-live="polite"></span>
+                            <?php
+                            printf(
+                                /* translators: %s: the server's maximum upload size, e.g. "20 MB" */
+                                esc_html__('.xlsx · up to %s', 'cadco-theme'),
+                                esc_html($max)
+                            );
+                            ?>
+                        </p>
+
+                        <?php
+                        // Choosing a file submits the form (assets/js/import-admin.js):
+                        // picking the workbook IS the step, so a second "now
+                        // press this" button would be a needless gate.
+                        //
+                        // The submit button is still rendered, because without
+                        // JavaScript there would otherwise be no way to submit at
+                        // all. The same script that adds the auto-submit hides it,
+                        // so the button only ever appears when it is genuinely the
+                        // only route forward.
+                        ?>
+                        <div class="cadco-import-submit-fallback" id="cadco-import-submit-fallback">
+                            <?php submit_button(__('Check workbook', 'cadco-theme'), 'primary', 'cadco_import_upload', false); ?>
+                        </div>
+                    </div>
+                </form>
+            </div>
+
+            <div class="cadco-import-section">
+                <h2><?php esc_html_e('What happens next', 'cadco-theme'); ?></h2>
+                <p><?php esc_html_e('Three steps. You can walk away after any of them.', 'cadco-theme'); ?></p>
+                <ol class="cadco-import-steps">
+                    <?php
+                    $steps = [
+                        [
+                            'title' => __('Checked', 'cadco-theme'),
+                            'body'  => __('Every row is validated first. If anything is wrong the whole workbook is rejected and you get a list of what to fix — nothing is written.', 'cadco-theme'),
+                        ],
+                        [
+                            'title' => __('Reviewed', 'cadco-theme'),
+                            'body'  => __('You see exactly what would change: new categories, new products, every altered field, and what would be trashed. Still nothing is written.', 'cadco-theme'),
+                        ],
+                        [
+                            'title' => __('Applied', 'cadco-theme'),
+                            'body'  => __('Only when you press Apply. Changes are written in batches, and the workbook is kept so this run can be restored later.', 'cadco-theme'),
+                        ],
+                    ];
+
+                    foreach ($steps as $i => $step) {
+                        ?>
+                        <li>
+                            <span class="cadco-import-step-n"><?php echo esc_html(sprintf('%02d', $i + 1)); ?></span>
+                            <span class="cadco-import-step-body">
+                                <span class="cadco-import-step-title"><?php echo esc_html($step['title']); ?></span>
+                                <span class="cadco-import-step-text"><?php echo esc_html($step['body']); ?></span>
+                            </span>
+                        </li>
+                        <?php
+                    }
+                    ?>
+                </ol>
+            </div>
+        </div>
         <?php
     }
 
@@ -520,13 +634,26 @@ final class CADCO_Import_View
             self::restore_banner($restore);
         }
         ?>
+        <?php
+        // The design's figures strip: equal cells divided by hairlines, a large
+        // condensed numeral over a small uppercase label. A zero reads muted
+        // rather than being dropped — "no renames" is itself worth seeing.
+        $figures = [
+            ['n' => (int) $counts['create'],  'label' => __('to create', 'cadco-theme')],
+            ['n' => (int) $counts['update'],  'label' => __('to update', 'cadco-theme')],
+            ['n' => (int) $counts['rename'],  'label' => __('renames to approve', 'cadco-theme')],
+            ['n' => (int) $counts['trash'],   'label' => __('to trash', 'cadco-theme')],
+            ['n' => (int) $counts['untrash'], 'label' => __('to restore', 'cadco-theme')],
+            ['n' => (int) $counts['skip'],    'label' => __('unchanged', 'cadco-theme')],
+        ];
+        ?>
         <ul class="cadco-import-counts">
-            <li><strong><?php echo (int) $counts['create']; ?></strong> <?php esc_html_e('to create', 'cadco-theme'); ?></li>
-            <li><strong><?php echo (int) $counts['update']; ?></strong> <?php esc_html_e('to update', 'cadco-theme'); ?></li>
-            <li><strong><?php echo (int) $counts['rename']; ?></strong> <?php esc_html_e('renames to approve', 'cadco-theme'); ?></li>
-            <li><strong><?php echo (int) $counts['trash']; ?></strong> <?php esc_html_e('to trash', 'cadco-theme'); ?></li>
-            <li><strong><?php echo (int) $counts['untrash']; ?></strong> <?php esc_html_e('to restore', 'cadco-theme'); ?></li>
-            <li><strong><?php echo (int) $counts['skip']; ?></strong> <?php esc_html_e('unchanged', 'cadco-theme'); ?></li>
+            <?php foreach ($figures as $figure) { ?>
+                <li<?php echo $figure['n'] === 0 ? ' class="is-zero"' : ''; ?>>
+                    <strong><?php echo (int) $figure['n']; ?></strong>
+                    <span class="cadco-import-count-label"><?php echo esc_html($figure['label']); ?></span>
+                </li>
+            <?php } ?>
         </ul>
         <?php
         $term_totals       = self::term_diff_totals($term_diff);
@@ -703,6 +830,7 @@ final class CADCO_Import_View
         $first = array_key_first($sections);
         ?>
         <nav class="cadco-import-navigator" aria-label="<?php esc_attr_e('Review sections', 'cadco-theme'); ?>">
+            <p class="cadco-import-navigator-title"><?php esc_html_e('The plan', 'cadco-theme'); ?></p>
             <ul>
                 <?php foreach ($sections as $id => $section) : ?>
                     <li class="cadco-import-nav-item<?php echo !empty($section['muted']) ? ' is-muted' : ''; ?>">

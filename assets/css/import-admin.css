@@ -1,125 +1,396 @@
 /* ==========================================================================
-   Layout
+   Product importer — "Industry" design system
+
+   Ported from the Claude Design project "Product Importer.dc.html" and its
+   `_ds/industry-*` token sheet. Industry is a wireframe: steel-blue on a
+   light technical ground, Barlow Condensed headings over Barlow, and every
+   panel framed as a blueprint object — square-cornered and hairline-bordered.
+
+   Where the design file and the design system's readme disagree, the file
+   wins. The readme describes "+" registration marks at every panel corner;
+   `Product Importer.dc.html` uses `.blueprint` for the frame alone and emits
+   no corner elements at all, so this sheet draws none either.
+
+   One deliberate departure: everything is scoped under `.cadco-import`. The
+   source sheet styles bare `body`, `h1`-`h6`, `a` and `.table`; unscoped,
+   that would repaint every screen in wp-admin. Scoping also means the whole
+   redesign lands without editing markup that the E2E suite selects on.
+
+   The accent is CADCO navy (#00476e), which is the override the design file
+   itself applies over Industry's default steel.
    ========================================================================== */
 
-.cadco-import h2 {
-	margin-top: 2em;
+.cadco-import {
+	/* — ground and ink — */
+	--cadco-bg: #efefef;
+	--cadco-surface: #ffffff;
+	--cadco-text: #111111;
+	--cadco-divider: rgba(17, 17, 17, .16);
+
+	/* — neutral ramp — */
+	--cadco-neutral-100: #ededed;
+	--cadco-neutral-200: #e0e0e0;
+	--cadco-neutral-300: #c9c9c9;
+	--cadco-neutral-400: #adadad;
+	--cadco-neutral-500: #8c8c8c;
+	--cadco-neutral-600: #6b6b6b;
+	--cadco-neutral-700: #3b3b3b;
+	--cadco-neutral-800: #1a1a1a;
+	--cadco-neutral-900: #111111;
+
+	/* — accent ramp (CADCO navy) — */
+	--cadco-accent: #00476e;
+	--cadco-accent-100: #e6eff5;
+	--cadco-accent-200: #cfe0ec;
+	--cadco-accent-300: #a8c6db;
+	--cadco-accent-400: #74a1c1;
+	--cadco-accent-500: #3d7ba3;
+	--cadco-accent-600: #1f6089;
+	--cadco-accent-700: #00476e;
+	--cadco-accent-800: #003554;
+	--cadco-accent-900: #00243a;
+
+	/* — status —
+	   Green and amber are not Industry tokens; the system is mono steel. They
+	   are kept because this screen uses colour to mean state (complete /
+	   current / waiting / blocked) and a mono palette cannot say "done" and
+	   "needs a person" in the same glance. */
+	--cadco-ok: #1a7f37;
+	--cadco-warn: #b26800;
+	--cadco-danger: #d63638;
+	--cadco-danger-ink: #8a2424;
+	--cadco-danger-bg: #fcf0f1;
+
+	/* — type — */
+	--cadco-font-heading: "Barlow Condensed", "Barlow", ui-sans-serif, system-ui, sans-serif;
+	--cadco-font-body: "Barlow", ui-sans-serif, system-ui, sans-serif;
+
+	/* — spacing (Industry's 0.85x density scale) — */
+	--cadco-space-1: 3.4px;
+	--cadco-space-2: 6.8px;
+	--cadco-space-3: 10.2px;
+	--cadco-space-4: 13.6px;
+	--cadco-space-6: 20.4px;
+	--cadco-space-8: 27.2px;
+
+	max-width: 1180px;
+	margin-right: 20px;
+	padding-bottom: 3em;
+	background: var(--cadco-bg);
+	color: var(--cadco-text);
+	font-family: var(--cadco-font-body);
+	font-size: 15px;
+	line-height: 1.55;
 }
 
-.cadco-import h2 .count {
-	display: inline-block;
-	margin-left: .5em;
-	padding: .1em .6em;
-	border-radius: 10px;
-	background: #d63638;
+/* Type scale taken value-for-value from Product Importer.dc.html: 38/1 for
+   the page title, 21/1.1 for a section heading, 18/1.1 for a stage title,
+   36/1 for a figure, 13/1 for the small uppercase captions. */
+.cadco-import h1,
+.cadco-import h2,
+.cadco-import h3,
+.cadco-import h4 {
+	font-family: var(--cadco-font-heading);
+	font-weight: 600;
+	line-height: 1.1;
+	letter-spacing: -.01em;
+	color: var(--cadco-text);
+}
+
+.cadco-import > h1,
+.cadco-import .cadco-import-title {
+	font-size: 38px;
+	line-height: 1;
+	margin: 0;
+}
+
+.cadco-import p {
+	font-size: 13px;
+	color: var(--cadco-neutral-700);
+}
+
+.cadco-import a {
+	color: var(--cadco-accent-700);
+	text-underline-offset: 3px;
+}
+
+.cadco-import a:hover,
+.cadco-import a:focus {
+	color: var(--cadco-accent-800);
+}
+
+.cadco-import :focus-visible {
+	outline: 2px solid var(--cadco-accent);
+	outline-offset: 2px;
+}
+
+/* Tabular numerals everywhere a figure is meant to be compared down a column
+   — model numbers, counts, dates, paths. Industry calls this `.mono`. */
+.cadco-import .cadco-mono,
+.cadco-import code,
+.cadco-import .cadco-import-nav-meta,
+.cadco-import .cadco-import-stage-subtitle {
+	font-variant-numeric: tabular-nums;
+	letter-spacing: .02em;
+}
+
+/* ==========================================================================
+   The blueprint frame
+
+   Industry's defining object: a square, transparent, hairline-bordered panel.
+
+   The design system's readme also describes "+" registration marks at each
+   corner, drawn as four <i class="corner"> children. `Product Importer.dc.html`
+   does not use them — it applies `.blueprint` for the frame alone — so they are
+   deliberately absent here too. The file is the reference, not the readme.
+   ========================================================================== */
+
+.cadco-import .cadco-import-stagebar,
+.cadco-import .cadco-import-counts,
+.cadco-import .cadco-import-navigator,
+.cadco-import .cadco-import-section,
+.cadco-import .cadco-import-history-empty,
+.cadco-import .cadco-import-history-panel {
+	position: relative;
+	background: transparent;
+	border: 1px solid var(--cadco-divider);
+	border-radius: 0;
+}
+
+/* ==========================================================================
+   Header: title and the Import / History tabs
+
+   The tabs are the design's square segmented pair, not wp-admin's underlined
+   nav-tab strip. The markup stays `nav-tab` so nothing else has to change.
+   ========================================================================== */
+
+/* Title left, tabs pinned right, baselines aligned along the bottom. */
+.cadco-import .cadco-import-header {
+	display: flex;
+	align-items: flex-end;
+	justify-content: space-between;
+	gap: 24px;
+	margin: 0 0 20px;
+}
+
+.cadco-import .cadco-import-titles {
+	min-width: 0;
+}
+
+.cadco-import .cadco-import-kicker {
+	margin: 0 0 7px;
+	font-family: var(--cadco-font-heading);
+	font-size: 10px;
+	font-weight: 500;
+	letter-spacing: .18em;
+	text-transform: uppercase;
+	color: var(--cadco-neutral-600);
+}
+
+.cadco-import .cadco-import-header .cadco-import-tabs {
+	flex: none;
+	margin: 0;
+}
+
+/* inline-flex, not flex: a <nav> is a block, and a stretched tab strip would
+   run the full width of the screen instead of sitting as the compact
+   segmented pair the design pins beside the title. */
+.cadco-import .cadco-import-tabs {
+	display: inline-flex;
+	gap: 0;
+	margin: 0 0 20px;
+	padding: 0;
+	border: 1px solid var(--cadco-divider);
+	border-bottom: 1px solid var(--cadco-divider);
+}
+
+.cadco-import .cadco-import-tabs .nav-tab {
+	margin: 0;
+	padding: 8px 20px;
+	border: 0;
+	border-radius: 0;
+	background: transparent;
+	color: var(--cadco-text);
+	font-family: var(--cadco-font-heading);
+	font-size: 13px;
+	font-weight: 600;
+	letter-spacing: .1em;
+	text-transform: uppercase;
+	line-height: 1.2;
+}
+
+.cadco-import .cadco-import-tabs .nav-tab + .nav-tab {
+	border-left: 1px solid var(--cadco-divider);
+}
+
+.cadco-import .cadco-import-tabs .nav-tab:hover {
+	background: rgba(0, 71, 110, .1);
+}
+
+.cadco-import .cadco-import-tabs .nav-tab-active,
+.cadco-import .cadco-import-tabs .nav-tab-active:hover {
+	background: var(--cadco-accent-700);
 	color: #fff;
-	font-size: 12px;
-	vertical-align: middle;
-}
-
-.cadco-import table {
-	margin-top: .5em;
-}
-
-.cadco-import td code {
-	display: inline-block;
-	max-width: 32em;
-	word-break: break-word;
 }
 
 /* ==========================================================================
-   Tabs (Import / History)
+   Buttons
 
-   Native wp-admin `nav-tab` markup, given breathing room above the stage
-   bar it sits on top of — everything else about how a tab looks comes from
-   core's own admin CSS, deliberately left alone.
+   wp-admin's .button classes are restyled in place rather than renamed to
+   Industry's .btn in the templates, for the same reason the whole sheet is
+   scoped: no markup change, no invalidated selectors.
    ========================================================================== */
 
-.cadco-import-tabs {
-	margin: 1em 0 0;
+.cadco-import .button,
+.cadco-import .button-primary,
+.cadco-import .button-secondary {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 6px;
+	min-height: 0;
+	padding: var(--cadco-space-2) calc(var(--cadco-space-3) * 1.2);
+	border: 1px solid var(--cadco-divider);
+	border-radius: 0;
+	background: transparent;
+	color: var(--cadco-text);
+	font-family: var(--cadco-font-heading);
+	font-size: 14px;
+	font-weight: 600;
+	line-height: 1.2;
+	text-shadow: none;
+	box-shadow: none;
+}
+
+.cadco-import .button:hover,
+.cadco-import .button-secondary:hover {
+	background: rgba(17, 17, 17, .07);
+	border-color: var(--cadco-divider);
+	color: var(--cadco-text);
+}
+
+.cadco-import .button-primary,
+.cadco-import .button-primary:hover,
+.cadco-import .button-primary:focus {
+	background: var(--cadco-accent);
+	border-color: var(--cadco-accent);
+	color: #fff;
+}
+
+.cadco-import .button-primary:hover {
+	background: var(--cadco-accent-600);
+	border-color: var(--cadco-accent-600);
+}
+
+.cadco-import .button-primary:active {
+	background: var(--cadco-accent-800);
+}
+
+.cadco-import .button:disabled,
+.cadco-import .button[disabled] {
+	opacity: .45;
+	cursor: not-allowed;
 }
 
 /* ==========================================================================
-   Stage bar (design spec §5)
+   Stage bar (design spec §5, design file's "01 — Upload / 02 — Review /
+   03 — Apply" header)
 
-   Three stages — Upload, Review, Apply — laid out left to right with the
-   primary action pinned beside them. Status colour is the one place this
-   screen uses colour to mean something (complete/current/waiting/blocked);
+   Status colour is the one place this screen uses colour to mean something;
    everywhere else stays quiet on purpose, because a screen about to rewrite
    a catalogue should read as restrained, not decorated.
    ========================================================================== */
 
-.cadco-import-stagebar {
+.cadco-import .cadco-import-stagebar {
 	display: flex;
 	flex-wrap: wrap;
 	align-items: center;
 	justify-content: space-between;
-	gap: 1.5em 2em;
-	margin: 1em 0 2em;
-	padding: 1.5em 1.75em;
-	background: #fff;
-	border: 1px solid #dcdcde;
-	border-top: none;
+	gap: var(--cadco-space-6) var(--cadco-space-8);
+	margin: 0 0 24px;
+	padding: 20px 24px;
 }
 
-.cadco-import-stages {
+.cadco-import .cadco-import-stages {
 	display: flex;
-	flex-wrap: wrap;
-	gap: 2.5em;
+	align-items: stretch;
+	flex: 1;
+	min-width: 520px;
 	margin: 0;
 	padding: 0;
 	list-style: none;
+	gap: 0;
 }
 
-.cadco-import-stage {
-	min-width: 11em;
+.cadco-import .cadco-import-stage {
+	flex: 1;
+	min-width: 0;
+	padding: 0 22px;
 }
 
-.cadco-import-stage-status {
-	display: block;
-	margin-bottom: .35em;
-	font-size: 11px;
+.cadco-import .cadco-import-stage + .cadco-import-stage {
+	border-left: 1px solid var(--cadco-divider);
+}
+
+.cadco-import .cadco-import-stage:first-child {
+	padding-left: 0;
+}
+
+.cadco-import .cadco-import-stage:last-child {
+	padding-right: 0;
+}
+
+/* A square status pip, not a dot: Industry has no rounded objects. */
+.cadco-import .cadco-import-stage-status {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	margin-bottom: 7px;
+	font-family: var(--cadco-font-heading);
+	font-size: 10px;
 	font-weight: 600;
-	letter-spacing: .04em;
+	letter-spacing: .14em;
 	text-transform: uppercase;
-	color: #646970; /* waiting: quiet grey, the default */
+	color: var(--cadco-neutral-600);
 }
 
-.cadco-import-stage-status::before {
-	content: '';
-	display: inline-block;
-	width: 8px;
-	height: 8px;
-	margin-right: .5em;
-	border-radius: 50%;
+.cadco-import .cadco-import-stage-status::before {
+	content: "";
+	display: block;
+	width: 9px;
+	height: 9px;
+	flex: none;
+	border-radius: 0;
 	background: currentColor;
-	vertical-align: middle;
 }
 
-.cadco-import-stage-title {
+.cadco-import .cadco-import-stage-title {
 	display: block;
-	font-size: 15px;
+	font-family: var(--cadco-font-heading);
+	font-size: 18px;
 	font-weight: 600;
-	color: #1d2327;
+	letter-spacing: .02em;
+	line-height: 1.1;
+	color: var(--cadco-text);
 }
 
-.cadco-import-stage-subtitle {
+.cadco-import .cadco-import-stage-subtitle {
 	display: block;
-	margin-top: .2em;
-	color: #646970;
-	font-size: 13px;
+	margin-top: 5px;
+	font-size: 11px;
+	color: var(--cadco-neutral-700);
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
 }
 
-.cadco-import-stage.is-complete .cadco-import-stage-status {
-	color: #00a32a; /* WordPress's own "success" green (core admin notices) */
+.cadco-import .cadco-import-stage.is-complete .cadco-import-stage-status {
+	color: var(--cadco-ok);
 }
 
-.cadco-import-stage.is-current .cadco-import-stage-status {
-	color: var(--wp-admin-theme-color, #2271b1);
-}
-
-.cadco-import-stage.is-current .cadco-import-stage-title {
-	color: var(--wp-admin-theme-color, #2271b1);
+.cadco-import .cadco-import-stage.is-current .cadco-import-stage-status,
+.cadco-import .cadco-import-stage.is-current .cadco-import-stage-title {
+	color: var(--cadco-accent-700);
 }
 
 /* ==========================================================================
@@ -130,155 +401,177 @@
    it cannot proceed rather than just sitting greyed out.
    ========================================================================== */
 
-.cadco-import-cta {
-	flex-shrink: 0;
+.cadco-import .cadco-import-cta {
+	flex: none;
+	display: flex;
+	flex-direction: column;
+	align-items: flex-end;
+	gap: 8px;
+	min-width: 236px;
 }
 
-.cadco-import-cta .button:disabled {
-	/* Core already renders :disabled as greyed-out; widen it slightly so a
-	   longer "Fix N problems…" label doesn't wrap awkwardly. */
+.cadco-import .cadco-import-cta .button {
+	padding: 10px 22px;
+	font-size: 15px;
+	letter-spacing: .03em;
+}
+
+/* The idle CTA is disabled because nothing has happened yet, not because
+   anything is wrong — so it reads as a plain bordered box with legible text
+   rather than a 45%-opacity ghost. It is still genuinely disabled; it just
+   does not have to look broken to say "not yet". */
+.cadco-import .cadco-import-cta .button:disabled {
+	/* A longer "Fix N problems…" label must wrap rather than overflow. */
 	white-space: normal;
-	max-width: 20em;
+	max-width: 22em;
 	height: auto;
 	line-height: 1.4;
-	padding-top: .4em;
-	padding-bottom: .4em;
+	padding: 10px 18px;
+	opacity: 1;
+	border-color: var(--cadco-divider);
+	background: transparent;
+	color: var(--cadco-neutral-700);
 }
 
-.cadco-import-cta .cadco-import-cta-blocked:disabled {
-	/* The one place this screen spends red: a disabled CTA that is disabled
-	   *because something is wrong*, not merely because nothing has happened
-	   yet — see cta()'s $blocked distinction. */
-	background: #fcf0f1;
-	border-color: #d63638;
-	color: #8a2424;
+.cadco-import .cadco-import-cta-note {
+	font-size: 12px;
+	color: var(--cadco-neutral-700);
+	text-align: right;
+	max-width: 24ch;
+}
+
+/* The one place this screen spends red on a control: a CTA disabled *because
+   something is wrong*, not merely because nothing has happened yet. */
+.cadco-import .cadco-import-cta .cadco-import-cta-blocked:disabled {
+	background: var(--cadco-danger-bg);
+	border-color: var(--cadco-danger);
+	color: var(--cadco-danger-ink);
 	opacity: 1;
 }
 
-#cadco-import-progress {
-	margin-top: .75em;
+/* ==========================================================================
+   Progress and failures (Apply stage)
+   ========================================================================== */
+
+.cadco-import #cadco-import-progress {
+	width: 236px;
+	margin-top: var(--cadco-space-2);
 }
 
-#cadco-import-progress progress {
+/* A square, flat bar in the accent — the native widget is rounded and
+   platform-themed, so it is restyled rather than left to the browser. */
+.cadco-import #cadco-import-progress progress {
+	display: block;
 	width: 100%;
-	max-width: 22em;
-	height: 1.4em;
+	height: 7px;
+	border: 0;
+	border-radius: 0;
+	background: rgba(17, 17, 17, .12);
+	appearance: none;
+	-webkit-appearance: none;
 }
 
-#cadco-import-progress .cadco-import-status {
-	margin: .4em 0 0;
-	font-size: 13px;
+.cadco-import #cadco-import-progress progress::-webkit-progress-bar {
+	background: rgba(17, 17, 17, .12);
+	border-radius: 0;
 }
 
-#cadco-import-failures {
-	margin-top: .75em;
+.cadco-import #cadco-import-progress progress::-webkit-progress-value {
+	background: var(--cadco-accent);
+	border-radius: 0;
+}
+
+.cadco-import #cadco-import-progress progress::-moz-progress-bar {
+	background: var(--cadco-accent);
+	border-radius: 0;
+}
+
+.cadco-import #cadco-import-progress .cadco-import-status {
+	margin: 7px 0 0;
+	font-size: 11px;
+	font-variant-numeric: tabular-nums;
+	color: var(--cadco-neutral-700);
+	text-align: right;
+}
+
+.cadco-import #cadco-import-failures {
+	margin-top: var(--cadco-space-3);
 	max-width: 26em;
 }
 
-#cadco-import-failures .cadco-import-failures-heading {
+.cadco-import #cadco-import-failures .cadco-import-failures-heading {
+	font-family: var(--cadco-font-heading);
+	font-size: 14px;
 	font-weight: 600;
+	letter-spacing: .06em;
+	text-transform: uppercase;
+	color: var(--cadco-danger-ink);
 }
 
-#cadco-import-failures .cadco-import-failures-list {
+.cadco-import #cadco-import-failures .cadco-import-failures-list {
 	margin: .5em 0 1em 1.5em;
 	list-style: disc;
-	font-family: monospace;
 	font-size: 12px;
+	font-variant-numeric: tabular-nums;
+	color: var(--cadco-danger-ink);
 	max-height: 16em;
 	overflow-y: auto;
 }
 
 /* ==========================================================================
-   History tab — empty state
+   The figures strip
+
+   The design's six-cell count row: equal cells, hairline dividers, a large
+   condensed numeral over a small uppercase label.
    ========================================================================== */
 
-.cadco-import-history-empty {
-	padding: 2em 1.75em;
-	background: #fff;
-	border: 1px solid #dcdcde;
-	color: #646970;
-}
-
-/* ==========================================================================
-   History tab — the run list (design spec §8.1)
-   ========================================================================== */
-
-.cadco-import-history {
-	margin-top: 1em;
-}
-
-.cadco-import-history-label {
-	width: 100%;
-	max-width: 22em;
-}
-
-.cadco-import-history-label-status {
-	display: inline-block;
-	margin-left: .5em;
-	font-size: 12px;
-	color: #646970;
-}
-
-/* Fix round 1, finding 4: names which earlier run a restore was taken from,
-   directly under its filename. */
-.cadco-import-history-lineage {
-	display: inline-block;
-	margin-top: .2em;
-	font-size: 12px;
-	color: #646970;
-}
-
-/* Fix round 1, finding 1: a passed-but-never-applied run's Result column is
-   only ever a forecast, not a fact — the whole row reads quieter than an
-   applied one so it cannot be mistaken for one at a glance, on top of
-   run_result_summary()'s own "Not applied —" text prefix. */
-.cadco-import-history-unapplied td {
-	color: #646970;
-}
-
-.cadco-import-history-unapplied td:first-child {
-	border-left: 3px solid #dba617; /* WordPress's own admin "pending/warning" amber */
-}
-
-/* ==========================================================================
-   Restore banner (design spec §8.3): "a restore can never be mistaken for
-   a fresh import" — the one place this screen deliberately breaks its own
-   quiet-colour rule a second time (the other is the blocked CTA / in-use
-   warning), because applying this plan writes over the current catalogue
-   on purpose and the operator must never lose track of that mid-review.
-   ========================================================================== */
-
-.cadco-import-restore-banner {
-	margin: 1em 0 0;
-}
-
-.cadco-import-restore-banner p {
-	margin: .5em 0;
-}
-
-/* ==========================================================================
-   Plan counts panel
-   ========================================================================== */
-
-.cadco-import-counts {
+.cadco-import .cadco-import-counts {
 	display: flex;
+	align-items: stretch;
 	flex-wrap: wrap;
-	gap: 1.5em;
-	margin: 1.5em 0;
-	padding: 1em 1.25em;
-	border: 1px solid #dcdcde;
-	border-left: 4px solid var(--wp-admin-theme-color, #2271b1);
-	background: #fff;
+	gap: 0;
+	margin: 0 0 24px;
+	padding: 0;
+	list-style: none;
 }
 
-.cadco-import-counts li {
+.cadco-import .cadco-import-counts li {
+	flex: 1;
+	min-width: 8em;
 	margin: 0;
+	padding: 16px 18px;
+	border-right: 1px solid rgba(17, 17, 17, .1);
 }
 
-.cadco-import-counts strong {
+.cadco-import .cadco-import-counts li:last-child {
+	border-right: 0;
+}
+
+.cadco-import .cadco-import-counts strong {
 	display: block;
-	font-size: 22px;
-	line-height: 1.2;
+	font-family: var(--cadco-font-heading);
+	font-size: 36px;
+	font-weight: 600;
+	line-height: 1;
+	font-variant-numeric: tabular-nums;
+	color: var(--cadco-text);
+}
+
+.cadco-import .cadco-import-counts li.is-zero strong,
+.cadco-import .cadco-import-counts li.is-zero {
+	color: var(--cadco-neutral-500);
+}
+
+.cadco-import .cadco-import-counts .cadco-import-count-label {
+	display: block;
+	margin-top: 6px;
+	font-family: var(--cadco-font-heading);
+	font-size: 11px;
+	font-weight: 500;
+	letter-spacing: .13em;
+	text-transform: uppercase;
+	line-height: 1.3;
+	color: var(--cadco-neutral-600);
 }
 
 /* ==========================================================================
@@ -286,196 +579,697 @@
 
    A sticky sidebar next to a single scrollable pane holding every section.
    Every class of change stays listed, with its count, the whole time the
-   operator scrolls the plan — "nothing hides below a scroll" — which is why
-   this is sticky rather than a hide/show tab strip: the sections themselves
-   all stay on the page too (see .cadco-import-panels below), and a nav link
-   is a plain same-page anchor that assets/js/import-admin.js progressively
-   enhances into a smooth scroll-and-focus jump.
+   operator scrolls the plan — "nothing hides below a scroll".
    ========================================================================== */
 
-.cadco-import-panels-wrap {
-	display: flex;
-	align-items: flex-start;
-	gap: 2em;
-	margin-top: 1.5em;
+.cadco-import .cadco-import-panels-wrap {
+	display: grid;
+	grid-template-columns: 250px 1fr;
+	gap: 24px;
+	align-items: start;
+	margin-top: 0;
 }
 
-.cadco-import-navigator {
-	flex: 0 0 220px;
+.cadco-import .cadco-import-navigator {
 	position: sticky;
-	top: 40px; /* clears the wp-admin toolbar (32px) plus a little air */
-	align-self: flex-start;
-	background: #fff;
-	border: 1px solid #dcdcde;
+	top: 50px; /* clears the wp-admin toolbar plus the frame's corner marks */
+	align-self: start;
 }
 
-.cadco-import-navigator ul {
+.cadco-import .cadco-import-navigator ul {
 	margin: 0;
 	padding: 0;
 	list-style: none;
 }
 
-.cadco-import-nav-item {
-	border-bottom: 1px solid #f0f0f1;
+/* The navigator's own caption — "The plan" in the design file. */
+.cadco-import .cadco-import-navigator-title {
+	margin: 0;
+	padding: 11px 14px;
+	border-bottom: 1px solid rgba(17, 17, 17, .14);
+	font-family: var(--cadco-font-heading);
+	font-size: 10px;
+	font-weight: 600;
+	letter-spacing: .14em;
+	text-transform: uppercase;
+	color: var(--cadco-neutral-700);
 }
 
-.cadco-import-nav-item:last-child {
+.cadco-import .cadco-import-nav-item {
+	border-bottom: 1px solid rgba(17, 17, 17, .08);
+}
+
+.cadco-import .cadco-import-nav-item:last-child {
 	border-bottom: none;
 }
 
-.cadco-import-nav-link {
+.cadco-import .cadco-import-nav-link {
 	display: flex;
-	flex-direction: column;
-	gap: .15em;
-	padding: .65em .9em;
-	color: #1d2327;
+	align-items: center;
+	gap: 10px;
+	padding: 11px 14px;
+	color: var(--cadco-text);
 	text-decoration: none;
 }
 
-/* Scoped to the real link only — a.cadco-import-nav-link, never the muted
-   <span> below, which shares the class for layout but must never look
-   interactive (Finding 4: an inert entry lighting up on hover reads as
-   clickable when it is not). */
-a.cadco-import-nav-link:hover,
-a.cadco-import-nav-link:focus {
-	background: #f6f7f7;
+/* Scoped to the real link only — never the muted <span> below, which shares
+   the class for layout but must never look interactive: an inert entry
+   lighting up on hover reads as clickable when it is not. */
+.cadco-import a.cadco-import-nav-link:hover,
+.cadco-import a.cadco-import-nav-link:focus {
+	background: rgba(0, 71, 110, .09);
 }
 
-.cadco-import-nav-link[aria-current="true"] {
-	background: #f0f6fc;
-	box-shadow: inset 3px 0 0 var(--wp-admin-theme-color, #2271b1);
+.cadco-import .cadco-import-nav-link[aria-current="true"] {
+	background: var(--cadco-accent-100);
+	box-shadow: inset 3px 0 0 var(--cadco-accent-700);
 }
 
-.cadco-import-nav-label {
-	font-weight: 600;
+.cadco-import .cadco-import-nav-label {
+	flex: 1;
+	font-family: var(--cadco-font-heading);
 	font-size: 13px;
+	font-weight: 600;
+	letter-spacing: .08em;
+	text-transform: uppercase;
+	line-height: 1.2;
 }
 
-.cadco-import-nav-meta {
+.cadco-import .cadco-import-nav-meta {
 	font-size: 12px;
-	color: #646970;
+	color: var(--cadco-neutral-600);
 }
 
-/* A zero-count section (design/task brief: "the absence of renames is
-   itself information worth seeing") is still listed, but muted and
-   non-interactive — a plain <span>, not a link, so nothing to click and
-   nothing a screen reader should treat as actionable. Layout
-   (display/flex-direction/gap/padding) already comes from the base
-   .cadco-import-nav-link rule above, which this <span> also carries — only
-   colour and cursor need overriding here. */
-.cadco-import-nav-item.is-muted .cadco-import-nav-link {
-	color: #a7aaad;
+/* A zero-count section is still listed — "the absence of renames is itself
+   information worth seeing" — but muted and non-interactive. */
+.cadco-import .cadco-import-nav-item.is-muted .cadco-import-nav-link {
+	color: var(--cadco-neutral-400);
 	cursor: default;
+	opacity: .75;
 }
 
-.cadco-import-nav-item.is-muted .cadco-import-nav-label {
+.cadco-import .cadco-import-nav-item.is-muted .cadco-import-nav-meta {
+	color: var(--cadco-neutral-400);
+}
+
+/* A section carrying something that needs a person, not a nod. */
+.cadco-import .cadco-import-nav-item.is-attention .cadco-import-nav-meta {
+	color: var(--cadco-danger-ink);
 	font-weight: 600;
 }
 
-.cadco-import-panels {
-	flex: 1 1 auto;
+.cadco-import .cadco-import-navigator-note {
+	padding: 12px 14px;
+	border-top: 1px solid rgba(17, 17, 17, .08);
+	font-size: 12px;
+	line-height: 1.45;
+	color: var(--cadco-neutral-600);
+}
+
+/* ==========================================================================
+   Review panels
+   ========================================================================== */
+
+.cadco-import .cadco-import-panels {
 	min-width: 0;
 }
 
-.cadco-import-section {
-	padding: 1.5em 1.75em;
-	margin-bottom: 1.5em;
-	background: #fff;
-	border: 1px solid #dcdcde;
+.cadco-import .cadco-import-section {
+	padding: 20px 22px;
+	margin: 0 0 24px;
 	/* Unconditional, not scoped to :target: the navigator's click handler
-	   (assets/js/import-admin.js) calls preventDefault(), so the URL hash
-	   never changes and :target never matches — scrollIntoView() would
-	   otherwise park the section's <h2> right under the 32px fixed
-	   #wpadminbar, clipping the exact heading the operator just clicked to
-	   reach. */
-	scroll-margin-top: 40px;
+	   calls preventDefault(), so the URL hash never changes and :target never
+	   matches — scrollIntoView() would otherwise park the section's <h2>
+	   under the fixed admin bar, clipping the heading just clicked. */
+	scroll-margin-top: 50px;
 }
 
-.cadco-import-section h2 {
+.cadco-import .cadco-import-section:last-child {
+	margin-bottom: 0;
+}
+
+.cadco-import .cadco-import-section h2 {
+	margin: 0;
+	font-size: 21px;
+}
+
+.cadco-import .cadco-import-section > p:first-of-type {
+	margin: 5px 0 18px;
+	max-width: 80ch;
+}
+
+/* The count beside a section heading: a square tag, not a pill. */
+.cadco-import .cadco-import-section h2 .count {
+	display: inline-block;
+	margin-left: .5em;
+	padding: 2px 9px;
+	border-radius: 0;
+	background: var(--cadco-accent-100);
+	color: var(--cadco-accent-800);
+	font-family: var(--cadco-font-body);
+	font-size: 12px;
+	font-weight: 500;
+	font-variant-numeric: tabular-nums;
+	vertical-align: middle;
+}
+
+.cadco-import .cadco-import-section h2 .count.is-zero {
+	background: var(--cadco-neutral-200);
+	color: var(--cadco-neutral-700);
+}
+
+.cadco-import .cadco-import-section h3 {
+	margin: 0 0 10px;
+	font-size: 13px;
+	font-weight: 600;
+	letter-spacing: .12em;
+	text-transform: uppercase;
+	color: var(--cadco-neutral-700);
+}
+
+/* ==========================================================================
+   Tables
+   ========================================================================== */
+
+.cadco-import table,
+.cadco-import .wp-list-table {
+	width: 100%;
+	border-collapse: collapse;
+	border: 0;
+	border-radius: 0;
+	background: transparent;
+	box-shadow: none;
+	font-size: 14px;
 	margin-top: 0;
 }
 
-.cadco-import-section h2 .count.is-zero {
-	background: #dcdcde;
-	color: #50575e;
+.cadco-import table th {
+	padding: var(--cadco-space-2);
+	border-bottom: 1px solid var(--cadco-divider);
+	background: transparent;
+	text-align: left;
+	font-family: var(--cadco-font-body);
+	font-size: 11px;
+	font-weight: 500;
+	letter-spacing: .08em;
+	text-transform: uppercase;
+	color: var(--cadco-neutral-600);
 }
 
-.cadco-import-workbook-summary th {
+.cadco-import table td {
+	padding: var(--cadco-space-2);
+	border-bottom: 1px solid rgba(17, 17, 17, .08);
+	background: transparent;
+	font-size: 13px;
+	color: var(--cadco-text);
+}
+
+.cadco-import table tbody tr:hover td {
+	background: rgba(17, 17, 17, .04);
+}
+
+.cadco-import table code {
+	display: inline-block;
+	max-width: 32em;
+	padding: 0;
+	background: transparent;
+	color: inherit;
+	font-family: var(--cadco-font-body);
+	font-size: 12px;
+	font-variant-numeric: tabular-nums;
+	letter-spacing: .02em;
+	word-break: break-word;
+}
+
+/* A "was" value in a diff reads as the superseded half of the pair. */
+.cadco-import .cadco-import-was {
+	padding: 3px 7px;
+	background: rgba(17, 17, 17, .05);
+	color: var(--cadco-neutral-600);
+}
+
+.cadco-import .cadco-import-workbook-summary th {
 	width: 10em;
 }
 
 /* ==========================================================================
-   Categories section: the new term tree and the in-use warning
-   (design spec §7)
+   Categories: the new term tree and the in-use warning (design spec §7)
    ========================================================================== */
 
-.cadco-import-term-group-label {
+.cadco-import .cadco-import-term-group-label {
 	margin: 1em 0 .3em;
-	font-size: 11px;
+	font-family: var(--cadco-font-heading);
+	font-size: 13px;
 	font-weight: 600;
-	letter-spacing: .04em;
+	letter-spacing: .12em;
 	text-transform: uppercase;
-	color: #646970;
+	color: var(--cadco-neutral-700);
 }
 
-.cadco-import-term-tree,
-.cadco-import-term-list {
+.cadco-import .cadco-import-term-tree,
+.cadco-import .cadco-import-term-list {
 	margin: 0 0 1em;
 	padding: 0;
 	list-style: none;
 }
 
-.cadco-import-term-tree > li {
+.cadco-import .cadco-import-term-tree > li {
 	margin-bottom: .5em;
 }
 
-.cadco-import-term-tree ul {
+.cadco-import .cadco-import-term-tree ul {
 	margin: .3em 0 0 1.4em;
 	padding: 0;
 	list-style: none;
 }
 
-.cadco-import-term-tree ul li {
+/* A parent stays a block so its children stack beneath it, indented. Only the
+   leaf rows become flex, so the item count can sit hard right against the
+   term name — a parent turned into a flex row would put its whole child list
+   beside its own name instead of under it. */
+.cadco-import .cadco-import-term-tree > li {
+	display: block;
+	padding: 8px 0 0;
+	border-top: 1px solid rgba(17, 17, 17, .08);
+	font-size: 14px;
+}
+
+.cadco-import .cadco-import-term-tree ul li,
+.cadco-import .cadco-import-term-list li {
 	display: flex;
+	align-items: baseline;
 	justify-content: space-between;
-	gap: 1em;
-	max-width: 28em;
-	padding: .15em 0;
+	gap: 10px;
+	max-width: 34em;
+	padding: 8px 0;
+	font-size: 14px;
 }
 
-.cadco-import-term-new {
-	color: #00a32a;
+.cadco-import .cadco-import-term-tree ul li + li {
+	border-top: 1px solid rgba(17, 17, 17, .06);
 }
 
-.cadco-import-term-removed {
-	color: #646970;
+.cadco-import .cadco-import-term-list li + li {
+	border-top: 1px solid rgba(17, 17, 17, .06);
 }
 
-.cadco-import-term-count {
-	color: #646970;
-	font-size: 12px;
+.cadco-import .cadco-import-term-new {
+	color: var(--cadco-accent-700);
+}
+
+.cadco-import .cadco-import-term-removed {
+	color: var(--cadco-neutral-700);
+}
+
+.cadco-import .cadco-import-term-count {
+	font-size: 11px;
+	font-variant-numeric: tabular-nums;
+	color: var(--cadco-neutral-600);
 	white-space: nowrap;
 }
 
-/* The loud block: the one thing on this screen that needs a person, not a
-   nod (task brief). Visually the strongest thing here on purpose, in a
-   screen that otherwise stays quiet — see the stage bar's own comment on
-   colour discipline. */
-.cadco-import-in-use {
-	margin: .75em 0 1.5em;
-	padding: 1em 1.25em;
-	background: #fcf0f1;
-	border: 1px solid #d63638;
+/* The loud block: the one thing on this screen that needs a person rather
+   than a nod. Visually the strongest object here on purpose, on a screen
+   that otherwise stays quiet. */
+.cadco-import .cadco-import-in-use {
+	margin: 0 0 24px;
+	padding: 15px 18px;
+	background: var(--cadco-danger-bg);
+	border: 1px solid var(--cadco-danger);
+	border-left-width: 4px;
+	border-radius: 0;
+}
+
+.cadco-import .cadco-import-in-use-heading {
+	margin: 0 0 7px;
+	font-family: var(--cadco-font-heading);
+	font-size: 15px;
+	font-weight: 600;
+	letter-spacing: .06em;
+	text-transform: uppercase;
+	color: var(--cadco-danger-ink);
+}
+
+.cadco-import .cadco-import-in-use p {
+	margin: 0 0 10px;
+	max-width: 76ch;
+	color: var(--cadco-danger-ink);
+}
+
+.cadco-import .cadco-import-in-use ul {
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.cadco-import .cadco-import-in-use li {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	padding: 10px 12px;
+	background: #fff;
+	border: 1px solid rgba(214, 54, 56, .4);
+}
+
+.cadco-import .cadco-import-in-use li + li {
+	margin-top: 6px;
+}
+
+/* ==========================================================================
+   Restore banner (design spec §8.3)
+
+   "A restore can never be mistaken for a fresh import" — the second place
+   this screen deliberately breaks its own quiet-colour rule, because
+   applying this plan writes over the current catalogue on purpose and the
+   operator must never lose track of that mid-review.
+   ========================================================================== */
+
+.cadco-import .cadco-import-restore-banner {
+	margin: 0 0 24px;
+	padding: 15px 18px;
+	background: var(--cadco-danger-bg);
+	border: 1px solid var(--cadco-danger);
+	border-left-width: 4px;
+	border-radius: 0;
+}
+
+.cadco-import .cadco-import-restore-banner p {
+	margin: .4em 0;
+	color: var(--cadco-danger-ink);
+}
+
+.cadco-import .cadco-import-restore-banner strong {
+	font-family: var(--cadco-font-heading);
+	font-size: 15px;
+	font-weight: 600;
+	letter-spacing: .06em;
+	text-transform: uppercase;
+	color: var(--cadco-danger-ink);
+}
+
+/* ==========================================================================
+   Upload stage
+   ========================================================================== */
+
+.cadco-import .cadco-import-upload-grid {
+	display: grid;
+	grid-template-columns: 1.3fr .8fr;
+	gap: 24px;
+	align-items: start;
+}
+
+/* The upload panel carries the frame; the dashed drop target sits inside it
+   with a margin, exactly as the design nests the two. */
+.cadco-import .cadco-import-section.cadco-import-upload {
+	padding: 0;
+}
+
+.cadco-import .cadco-import-dropzone {
+	margin: 14px;
+	padding: 52px 40px;
+	border: 1px dashed rgba(0, 71, 110, .6);
+	background: rgba(0, 71, 110, .05);
+	text-align: center;
+	transition: background-color .12s ease, border-color .12s ease;
+}
+
+.cadco-import .cadco-import-dropzone.is-dragover {
+	border-color: var(--cadco-accent);
+	background: rgba(0, 71, 110, .12);
+}
+
+.cadco-import .cadco-import-dropzone-icon {
+	display: block;
+	margin: 0 auto 16px;
+	color: var(--cadco-accent);
+}
+
+.cadco-import .cadco-import-dropzone h2 {
+	margin: 0 0 8px;
+	font-size: 24px;
+}
+
+.cadco-import .cadco-import-dropzone p {
+	max-width: 48ch;
+	margin: 0 auto 18px;
+	font-size: 14px;
+}
+
+/* Visually hidden, never display:none — the input must stay focusable and
+   reachable by keyboard, screen readers and setInputFiles(). The <label
+   for="cadco-import-file"> styled as a button is what sighted users click. */
+.cadco-import .cadco-import-file {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	padding: 0;
+	margin: -1px;
+	overflow: hidden;
+	clip: rect(0 0 0 0);
+	clip-path: inset(50%);
+	white-space: nowrap;
+	border: 0;
+}
+
+.cadco-import .cadco-import-dropzone label.button {
+	cursor: pointer;
+	padding: 10px 22px;
+	font-size: 15px;
+}
+
+.cadco-import .cadco-import-dropzone label.button:hover {
+	background: var(--cadco-accent-600);
+}
+
+/* Keyboard focus lands on the visually hidden input, so the focus ring has to
+   be drawn on the label standing in for it — otherwise tabbing to the control
+   shows nothing at all. */
+.cadco-import .cadco-import-dropzone:has(.cadco-import-file:focus-visible) label.button {
+	outline: 2px solid var(--cadco-accent);
+	outline-offset: 2px;
+}
+
+.cadco-import .cadco-import-dropzone-hint {
+	margin: 16px 0 0;
+	font-size: 11px;
+	font-variant-numeric: tabular-nums;
+	letter-spacing: .02em;
+	text-transform: uppercase;
+	color: var(--cadco-neutral-600);
+}
+
+.cadco-import .cadco-import-filename {
+	color: var(--cadco-accent-700);
+	font-weight: 500;
+	text-transform: none;
+}
+
+/* Only ever visible without JavaScript — the script hides it and submits on
+   file choice instead. Sits inside the drop target so that, when it does show,
+   it reads as part of the same step rather than as a stray control below. */
+.cadco-import .cadco-import-submit-fallback {
+	margin-top: 18px;
+}
+
+/* — "What happens next" — */
+
+.cadco-import .cadco-import-steps {
+	margin: 0;
+	padding: 0;
+	list-style: none;
+	counter-reset: none;
+}
+
+.cadco-import .cadco-import-steps li {
+	display: flex;
+	gap: 12px;
+	padding: 12px 0;
+	border-top: 1px solid rgba(17, 17, 17, .1);
+}
+
+.cadco-import .cadco-import-step-n {
+	padding-top: 3px;
+	font-size: 11px;
+	font-variant-numeric: tabular-nums;
+	color: var(--cadco-accent-700);
+}
+
+.cadco-import .cadco-import-step-title {
+	display: block;
+	font-family: var(--cadco-font-heading);
+	font-size: 14px;
+	font-weight: 600;
+	letter-spacing: .08em;
+	text-transform: uppercase;
+	line-height: 1.2;
+}
+
+.cadco-import .cadco-import-step-text {
+	display: block;
+	margin-top: 3px;
+	font-size: 13px;
+	color: var(--cadco-neutral-700);
+}
+
+/* ==========================================================================
+   History tab (design spec §8.1)
+   ========================================================================== */
+
+.cadco-import .cadco-import-history-panel {
+	padding: 20px 22px;
+}
+
+.cadco-import .cadco-import-history-empty {
+	padding: 2em 1.75em;
+	color: var(--cadco-neutral-600);
+}
+
+.cadco-import .cadco-import-history {
+	margin-top: 16px;
+}
+
+.cadco-import .cadco-import-history-label {
+	width: 100%;
+	max-width: 22em;
+	min-height: 34px;
+	padding: 6px 10px;
+	border: 1px solid var(--cadco-divider);
+	border-radius: 0;
+	background: var(--cadco-surface);
+	font-family: var(--cadco-font-body);
+	font-size: 14px;
+	color: var(--cadco-text);
+	box-shadow: none;
+}
+
+.cadco-import .cadco-import-history-label:focus {
+	border-color: var(--cadco-accent);
+	box-shadow: none;
+}
+
+.cadco-import .cadco-import-history-label-status {
+	display: inline-block;
+	margin-left: .5em;
+	font-size: 12px;
+	color: var(--cadco-neutral-600);
+}
+
+/* Names which earlier run a restore was taken from, under its filename. */
+.cadco-import .cadco-import-history-lineage {
+	display: inline-block;
+	margin-top: .2em;
+	font-size: 12px;
+	font-variant-numeric: tabular-nums;
+	color: var(--cadco-neutral-600);
+}
+
+/* A passed-but-never-applied run's Result column is only ever a forecast,
+   never a fact — the whole row reads quieter than an applied one so it
+   cannot be mistaken for one at a glance, on top of the "Not applied —"
+   text prefix run_result_summary() already adds. */
+.cadco-import .cadco-import-history-unapplied td {
+	color: var(--cadco-neutral-600);
+}
+
+.cadco-import .cadco-import-history-unapplied td:first-child {
+	box-shadow: inset 3px 0 0 var(--cadco-warn);
+}
+
+/* ==========================================================================
+   Validation report (invalid workbook)
+   ========================================================================== */
+
+.cadco-import .cadco-import-invalid-banner {
+	margin: 0 0 22px;
+	padding: 16px 20px;
+	background: var(--cadco-danger-bg);
+	border: 1px solid var(--cadco-danger);
 	border-left-width: 4px;
 }
 
-.cadco-import-in-use-heading {
-	margin: 0 0 .35em;
-	font-weight: 700;
-	color: #8a2424;
+.cadco-import .cadco-import-invalid-banner h2 {
+	margin: 0;
+	font-size: 20px;
+	letter-spacing: .01em;
+	color: var(--cadco-danger-ink);
 }
 
-.cadco-import-in-use ul {
-	margin: .5em 0 0;
-	padding-left: 1.25em;
+.cadco-import .cadco-import-invalid-banner p {
+	margin: 7px 0 0;
+	max-width: 80ch;
+	color: var(--cadco-danger-ink);
+}
+
+.cadco-import .cadco-import-invalid-actions {
+	display: flex;
+	gap: 8px;
+	margin-top: 14px;
+}
+
+.cadco-import .cadco-import-invalid-actions .button {
+	background: #fff;
+}
+
+/* ==========================================================================
+   Responsive
+
+   Below the two-column breakpoint the navigator stops being sticky and sits
+   above the panels: a sticky sidebar that has become a full-width block
+   would otherwise pin itself over the content it is meant to index.
+   ========================================================================== */
+
+@media screen and (max-width: 960px) {
+	.cadco-import .cadco-import-panels-wrap,
+	.cadco-import .cadco-import-upload-grid {
+		grid-template-columns: 1fr;
+	}
+
+	.cadco-import .cadco-import-navigator {
+		position: static;
+	}
+
+	.cadco-import .cadco-import-stages {
+		min-width: 0;
+	}
+
+	.cadco-import .cadco-import-stage {
+		padding: 0 12px;
+	}
+}
+
+@media screen and (max-width: 782px) {
+	.cadco-import .cadco-import-stagebar {
+		flex-direction: column;
+		align-items: stretch;
+	}
+
+	.cadco-import .cadco-import-stages {
+		flex-direction: column;
+		gap: var(--cadco-space-4);
+	}
+
+	.cadco-import .cadco-import-stage {
+		padding: 0;
+	}
+
+	.cadco-import .cadco-import-stage + .cadco-import-stage {
+		border-left: 0;
+		border-top: 1px solid var(--cadco-divider);
+		padding-top: var(--cadco-space-4);
+	}
+
+	.cadco-import .cadco-import-cta {
+		align-items: stretch;
+		min-width: 0;
+	}
+
+	.cadco-import .cadco-import-cta-note {
+		text-align: left;
+		max-width: none;
+	}
+
+	.cadco-import .cadco-import-counts li {
+		flex-basis: 50%;
+		border-bottom: 1px solid rgba(17, 17, 17, .1);
+	}
 }

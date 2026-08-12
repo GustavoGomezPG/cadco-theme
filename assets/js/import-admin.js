@@ -225,6 +225,123 @@
 		});
 	}
 
+	/**
+	 * Stage 1's drop target.
+	 *
+	 * The design frames the upload as a drop zone, so it has to actually
+	 * accept a drop. This never replaces the <input type="file"> — it only
+	 * assigns to its `files` property, so the form still submits exactly as it
+	 * does for a keyboard user who used the file picker, and the E2E suite's
+	 * setInputFiles() keeps working untouched.
+	 *
+	 * Must stay above the `#cadco-import-apply` guard below: that element does
+	 * not exist on the Upload screen, and its early return would otherwise
+	 * skip all of this.
+	 */
+	var dropzone = document.getElementById('cadco-import-dropzone');
+	var fileInput = document.getElementById('cadco-import-file');
+
+	if (dropzone && fileInput) {
+		var filenameOut = document.getElementById('cadco-import-filename');
+		var fallback = document.getElementById('cadco-import-submit-fallback');
+		var form = fileInput.form;
+		var submitted = false;
+
+		// Choosing the workbook IS the step, so the form submits itself and the
+		// separate "Check workbook" button is redundant. It stays in the markup
+		// for the no-JS case and is hidden here — this line running is itself
+		// the proof that the auto-submit below will work.
+		if (fallback) {
+			fallback.hidden = true;
+		}
+
+		var showFilename = function () {
+			if (!filenameOut) {
+				return;
+			}
+
+			// textContent, never innerHTML: a filename is attacker-supplied.
+			filenameOut.textContent = fileInput.files && fileInput.files.length
+				? fileInput.files[0].name + ' · '
+				: '';
+		};
+
+		/**
+		 * Submit as soon as a workbook is chosen.
+		 *
+		 * Guarded against firing twice: a double-change (picker then drop, or a
+		 * browser that re-fires change) would otherwise post the form while the
+		 * first submission is still in flight.
+		 *
+		 * requestSubmit(), not submit(): submit() bypasses validation and, more
+		 * importantly here, does not carry the clicked submit button's
+		 * name/value — and the server keys the upload branch on
+		 * `cadco_import_upload` being present.
+		 */
+		var autoSubmit = function () {
+			if (submitted || !form || !fileInput.files || !fileInput.files.length) {
+				return;
+			}
+
+			submitted = true;
+			dropzone.classList.add('is-submitting');
+
+			var trigger = form.querySelector('#cadco_import_upload');
+
+			if (form.requestSubmit && trigger) {
+				form.requestSubmit(trigger);
+			} else if (trigger) {
+				// Older browsers: click the real button so its name/value is
+				// included exactly as a manual press would include it.
+				trigger.click();
+			} else {
+				form.submit();
+			}
+		};
+
+		fileInput.addEventListener('change', function () {
+			showFilename();
+			autoSubmit();
+		});
+
+		// dragover must be cancelled too, or the browser's default handler
+		// navigates the tab to the dropped file instead of firing `drop`.
+		['dragenter', 'dragover'].forEach(function (name) {
+			dropzone.addEventListener(name, function (event) {
+				event.preventDefault();
+				dropzone.classList.add('is-dragover');
+			});
+		});
+
+		['dragleave', 'drop'].forEach(function (name) {
+			dropzone.addEventListener(name, function (event) {
+				event.preventDefault();
+
+				// dragleave also fires when the pointer crosses onto a child
+				// element; ignore those so the highlight does not flicker.
+				if (name === 'dragleave' && dropzone.contains(event.relatedTarget)) {
+					return;
+				}
+
+				dropzone.classList.remove('is-dragover');
+			});
+		});
+
+		dropzone.addEventListener('drop', function (event) {
+			var dropped = event.dataTransfer && event.dataTransfer.files;
+
+			if (!dropped || !dropped.length) {
+				return;
+			}
+
+			// Assigning a DataTransfer's FileList straight across is what keeps
+			// this a real upload rather than a second, parallel code path.
+			fileInput.files = dropped;
+			showFilename();
+			autoSubmit();
+		});
+	}
+
 	var button = document.getElementById('cadco-import-apply');
 
 	if (!button || typeof window.cadcoImport === 'undefined') {
