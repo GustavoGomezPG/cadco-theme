@@ -117,6 +117,61 @@ final class PlannerTest extends TestCase
         );
     }
 
+    public function test_an_ambiguous_upc_never_triggers_a_rename(): void
+    {
+        // Two existing products share a UPC — a real data-entry error the
+        // validator blocks upstream. If the planner is ever called directly it
+        // must not guess which one a renamed row refers to.
+        $plan = \CADCO_Import_Planner::plan([self::row()], [
+            self::current(7, 'OLD-A', '654796-52113-5', 'stale'),
+            self::current(8, 'OLD-B', '654796-52113-5', 'stale'),
+        ]);
+
+        self::assertSame(0, $plan->counts()['rename'], 'an ambiguous UPC must not be used for rename detection');
+        self::assertSame(1, $plan->counts()['create']);
+        self::assertSame(2, $plan->counts()['trash']);
+    }
+
+    public function test_numeric_skus_and_upcs_do_not_crash_the_planner(): void
+    {
+        $rows = [
+            self::row(['Model #' => '1418', 'UPC#' => '65479652113']),
+            self::row(['Model #' => '2024', 'UPC#' => '65479652114']),
+        ];
+
+        $plan = \CADCO_Import_Planner::plan($rows, [
+            self::current(7, '1418', '65479652113', 'stale'),
+        ]);
+
+        self::assertSame(1, $plan->counts()['update']);
+        self::assertSame(1, $plan->counts()['create']);
+        self::assertSame(0, $plan->counts()['trash']);
+    }
+
+    public function test_a_row_matching_by_sku_never_becomes_a_rename_even_if_another_product_shares_its_upc(): void
+    {
+        $plan = \CADCO_Import_Planner::plan([self::row()], [
+            self::current(7, 'BLC-113', '999999-99999-9', 'stale'),
+            self::current(8, 'SOMETHING-ELSE', '654796-52113-5', 'stale'),
+        ]);
+
+        self::assertSame(1, $plan->counts()['update'], 'SKU match must win');
+        self::assertSame(0, $plan->counts()['rename']);
+        self::assertSame(7, $plan->updates()[0]['post_id']);
+        self::assertSame(1, $plan->counts()['trash'], 'the unrelated product is absent from the workbook');
+    }
+
+    public function test_a_blank_upc_is_not_an_identity(): void
+    {
+        $plan = \CADCO_Import_Planner::plan([self::row(['Model #' => 'NEW-1', 'UPC#' => ''])], [
+            self::current(7, 'OLD-1', '', 'stale'),
+        ]);
+
+        self::assertSame(0, $plan->counts()['rename'], 'a blank UPC must not be used to match');
+        self::assertSame(1, $plan->counts()['create']);
+        self::assertSame(1, $plan->counts()['trash']);
+    }
+
     private static function current(int $id, string $sku, string $upc, string $hash): array
     {
         return ['post_id' => $id, 'sku' => $sku, 'upc' => $upc, 'hash' => $hash];
