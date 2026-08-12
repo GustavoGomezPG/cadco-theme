@@ -19,7 +19,7 @@ final class CADCO_Import_Planner
 {
     /**
      * @param list<array<string, mixed>> $rows    normalised, validated rows
-     * @param list<array{post_id:int,sku:string,upc:string,hash:string}> $current
+     * @param list<array{post_id:int,sku:string,upc:string,hash:string,snapshot?:array<string,string>}> $current
      */
     public static function plan(array $rows, array $current): CADCO_Import_Plan
     {
@@ -66,7 +66,11 @@ final class CADCO_Import_Planner
                     continue;
                 }
 
-                $plan->add_update($row, (int) $match['post_id'], ['hash' => [(string) $match['hash'], $hash]]);
+                $plan->add_update(
+                    $row,
+                    (int) $match['post_id'],
+                    self::diff($match['snapshot'] ?? [], self::comparable($row))
+                );
                 continue;
             }
 
@@ -89,13 +93,20 @@ final class CADCO_Import_Planner
     }
 
     /**
-     * A stable fingerprint of everything this row would write.
+     * Everything this row would write, as the payload hash() fingerprints
+     * and diff() compares against a stored one.
      *
      * Only importable columns take part, so re-ordering rows in the sheet is
      * not a content change. Keys are sorted so that a column moving left or
-     * right does not alter the hash either.
+     * right does not alter the payload either. hash() is defined purely in
+     * terms of this method's return value so the two can never disagree:
+     * identical hashes always mean identical comparable() payloads, and vice
+     * versa. That is what lets diff() be skipped entirely on a matching hash,
+     * and guarantees a non-matching hash always has something real to show.
+     *
+     * @return array<string, string>
      */
-    public static function hash(array $row): string
+    public static function comparable(array $row): array
     {
         $relevant = array_merge(
             array_keys(cadco_import_native_columns()),
@@ -116,10 +127,72 @@ final class CADCO_Import_Planner
 
         ksort($payload);
 
+        return $payload;
+    }
+
+    /**
+     * A stable fingerprint of comparable()'s payload.
+     */
+    public static function hash(array $row): string
+    {
         // Plain json_encode rather than wp_json_encode: this unit is tested
         // with no WordPress loaded, so it cannot depend on WordPress helpers.
-        $json = (string) json_encode($payload, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+        $json = (string) json_encode(self::comparable($row), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
 
         return hash('sha256', $json);
+    }
+
+    /**
+     * column => [before, after] for every key that differs between two
+     * comparable() payloads, in either direction. A key present on only one
+     * side is reported with '' standing in for the missing side.
+     *
+     * An empty $before is a deliberate special case, not just a small one:
+     * comparable() drops blank cells, and every column the validator requires
+     * is guaranteed non-blank, so a real stored payload can never decode to
+     * []. The only way $before arrives here empty is that no snapshot was
+     * ever stored for this product — it predates diff tracking (see
+     * CADCO_Import_Repository::current_products()). Walking the union in
+     * that case would report every column of $after as newly "added", which
+     * would tell the operator the whole record changed when in truth nothing
+     * is known either way. An empty diff — rendered by the caller as "no
+     * previous snapshot" — is the honest answer.
+     *
+     * @param array<string, string> $before
+     * @param array<string, string> $after
+     * @return array<string, array{0: string, 1: string}>
+     */
+    public static function diff(array $before, array $after): array
+    {
+        if ($before === []) {
+            return [];
+        }
+
+        $diff = [];
+
+        foreach (array_unique(array_merge(array_keys($before), array_keys($after))) as $column) {
+            // array_keys() on a string-keyed array cannot actually produce an
+            // int here (comparable() never emits a numeric-looking column
+            // name), but the cast is cheap insurance against the same
+            // canonical-integer-string coercion that bites array keys
+            // elsewhere in this pipeline, and it keeps the key's type
+            // explicit for the array_key_exists() calls below.
+            $column = (string) $column;
+
+            // array_key_exists(), not isset(): a value of '' is not null, so
+            // isset() would already be fine here in practice, but
+            // array_key_exists() is what actually says "this side has the
+            // key" rather than "this side has a truthy-ish value for it".
+            $before_value = array_key_exists($column, $before) ? $before[$column] : '';
+            $after_value  = array_key_exists($column, $after) ? $after[$column] : '';
+
+            if ($before_value !== $after_value) {
+                $diff[$column] = [$before_value, $after_value];
+            }
+        }
+
+        ksort($diff);
+
+        return $diff;
     }
 }

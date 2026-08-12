@@ -464,6 +464,10 @@ final class CADCO_Import_Admin
             <li><strong><?php echo (int) $counts['skip']; ?></strong> <?php esc_html_e('unchanged', 'cadco-theme'); ?></li>
         </ul>
 
+        <?php self::render_update_table($plan); ?>
+        <?php self::render_create_table($plan); ?>
+        <?php self::render_trash_table($plan); ?>
+
         <?php if (get_option('cadco_import_redirects', []) !== []) : ?>
             <p>
                 <a class="button" href="<?php echo esc_url(wp_nonce_url(
@@ -537,6 +541,144 @@ final class CADCO_Import_Admin
             <p class="cadco-import-failures-heading"></p>
             <ul class="cadco-import-failures-list"></ul>
         </div>
+        <?php
+    }
+
+    /**
+     * The important table on this screen (design spec §8.1 step 3): the plan
+     * previously said only "N to update" with nothing to inspect. One row per
+     * changed field, so the operator can actually see what an update run will
+     * do — the run type every import after the first one is.
+     *
+     * Flattened across every update rather than one row per product, because
+     * a product can have several changed fields and the cap below has to
+     * bound the number of *facts* shown, not the number of products.
+     */
+    private static function render_update_table(CADCO_Import_Plan $plan): void
+    {
+        if ($plan->updates() === []) {
+            return;
+        }
+
+        $rows = [];
+
+        foreach ($plan->updates() as $update) {
+            $sku = (string) ($update['row']['Model #'] ?? '');
+
+            if ($update['diff'] === []) {
+                $rows[] = ['sku' => $sku, 'no_snapshot' => true, 'field' => '', 'before' => '', 'after' => ''];
+                continue;
+            }
+
+            foreach ($update['diff'] as $field => $pair) {
+                $rows[] = [
+                    'sku'         => $sku,
+                    'no_snapshot' => false,
+                    'field'       => (string) $field,
+                    'before'      => (string) $pair[0],
+                    'after'       => (string) $pair[1],
+                ];
+            }
+        }
+        ?>
+        <h2><?php esc_html_e('Products to update', 'cadco-theme'); ?> <span class="count"><?php echo count($plan->updates()); ?></span></h2>
+        <table class="widefat striped">
+            <thead><tr>
+                <th><?php esc_html_e('Model #', 'cadco-theme'); ?></th>
+                <th><?php esc_html_e('Field', 'cadco-theme'); ?></th>
+                <th><?php esc_html_e('Was', 'cadco-theme'); ?></th>
+                <th><?php esc_html_e('Now', 'cadco-theme'); ?></th>
+            </tr></thead>
+            <tbody>
+            <?php foreach (array_slice($rows, 0, 200) as $row) : ?>
+                <tr>
+                    <td><code><?php echo esc_html($row['sku']); ?></code></td>
+                    <?php if ($row['no_snapshot']) : ?>
+                        <td colspan="3"><em><?php esc_html_e('no previous snapshot — this product predates diff tracking', 'cadco-theme'); ?></em></td>
+                    <?php else : ?>
+                        <td><?php echo esc_html($row['field']); ?></td>
+                        <td><code><?php echo esc_html($row['before']); ?></code></td>
+                        <td><code><?php echo esc_html($row['after']); ?></code></td>
+                    <?php endif; ?>
+                </tr>
+            <?php endforeach; ?>
+            </tbody>
+        </table>
+        <?php self::render_truncation_note(count($rows)); ?>
+        <?php
+    }
+
+    private static function render_create_table(CADCO_Import_Plan $plan): void
+    {
+        if ($plan->creates() === []) {
+            return;
+        }
+        ?>
+        <h2><?php esc_html_e('Products to create', 'cadco-theme'); ?> <span class="count"><?php echo count($plan->creates()); ?></span></h2>
+        <table class="widefat striped">
+            <thead><tr>
+                <th><?php esc_html_e('Model #', 'cadco-theme'); ?></th>
+                <th><?php esc_html_e('Product Name', 'cadco-theme'); ?></th>
+            </tr></thead>
+            <tbody>
+            <?php foreach (array_slice($plan->creates(), 0, 200) as $create) : ?>
+                <tr>
+                    <td><code><?php echo esc_html((string) ($create['row']['Model #'] ?? '')); ?></code></td>
+                    <td><?php echo esc_html((string) ($create['row']['Product Name'] ?? '')); ?></td>
+                </tr>
+            <?php endforeach; ?>
+            </tbody>
+        </table>
+        <?php self::render_truncation_note(count($plan->creates())); ?>
+        <?php
+    }
+
+    private static function render_trash_table(CADCO_Import_Plan $plan): void
+    {
+        if ($plan->trashes() === []) {
+            return;
+        }
+        ?>
+        <h2><?php esc_html_e('Products to trash', 'cadco-theme'); ?> <span class="count"><?php echo count($plan->trashes()); ?></span></h2>
+        <p class="description">
+            <?php esc_html_e('These products are trashed, not deleted, and can be restored.', 'cadco-theme'); ?>
+        </p>
+        <table class="widefat striped">
+            <thead><tr>
+                <th><?php esc_html_e('Model #', 'cadco-theme'); ?></th>
+            </tr></thead>
+            <tbody>
+            <?php foreach (array_slice($plan->trashes(), 0, 200) as $trash) : ?>
+                <tr>
+                    <td><code><?php echo esc_html((string) $trash['sku']); ?></code></td>
+                </tr>
+            <?php endforeach; ?>
+            </tbody>
+        </table>
+        <?php self::render_truncation_note(count($plan->trashes())); ?>
+        <?php
+    }
+
+    /**
+     * A silent cap on a plan the operator is approving would be worse than no
+     * cap at all — so whenever array_slice(..., 0, 200) actually cut
+     * something, say how many rows were hidden.
+     */
+    private static function render_truncation_note(int $total): void
+    {
+        if ($total <= 200) {
+            return;
+        }
+        ?>
+        <p class="description">
+            <?php
+            printf(
+                /* translators: %d: number of rows not shown */
+                esc_html__('%d more not shown.', 'cadco-theme'),
+                $total - 200
+            );
+            ?>
+        </p>
         <?php
     }
 

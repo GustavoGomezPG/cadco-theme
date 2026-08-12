@@ -1,7 +1,7 @@
 const { test, expect } = require('@playwright/test');
 const {
-	productCount, counts, resetCatalogue, cleanupUploadRuns,
-	buildFixture, seedRenameSource, productIdBySku, trashedProductIdBySku, postStatus,
+	wp, productCount, counts, resetCatalogue, cleanupUploadRuns,
+	buildFixture, modifyWorkbookCell, seedRenameSource, productIdBySku, trashedProductIdBySku, postStatus,
 	permalinkFor, withoutCapability,
 	CORRECTED, SOURCE, IMPORT_PATH,
 } = require('./helpers');
@@ -433,6 +433,49 @@ test.describe('Product import', () => {
 		expect(counts).toMatch(/236[\s\S]*unchanged/i);
 
 		expect(productCount()).toBe(before);
+	});
+
+	// Task 15: the plan preview's "N to update" used to be the whole story —
+	// an operator approving an update run (every import after the first one)
+	// could not see what would actually change. This proves the real diff
+	// end to end: a real cell changed in a copy of the real corrected
+	// workbook, diffed against the real snapshot the earlier full import
+	// wrote for that exact product, rendered as a real table row.
+	test('an updated cell is shown as a real per-field diff in the update table', async ({ page }) => {
+		const model  = 'BLC-113';
+		const column = 'Weight';
+
+		// The exact "before" value the diff table's "Was" column must show —
+		// read back from the stored snapshot rather than assumed, so this
+		// test does not depend on the workbook's current contents matching
+		// whatever value a previous author of this test happened to expect.
+		const snapshotJson = wp(['eval', `
+			$id = wc_get_product_id_by_sku('${model}');
+			echo get_post_meta($id, '_cadco_import_snapshot', true);
+		`]);
+		const before = JSON.parse(snapshotJson)[column];
+		expect(before).toBeTruthy();
+
+		const after = String(Number(before) + 1);
+		expect(after).not.toBe(before);
+
+		const fixture = modifyWorkbookCell(CORRECTED, 'CONVECTION OVENS', model, column, after);
+
+		await page.goto(IMPORT_PATH);
+		await page.setInputFiles('input[type="file"]', fixture);
+		await page.getByRole('button', { name: /check workbook/i }).click();
+
+		await expect(page.locator('.cadco-import-counts')).toContainText(/1[\s\S]*to update/i);
+		await expect(page.getByRole('heading', { name: /Products to update/i })).toBeVisible();
+
+		const row = page.locator('table.widefat').filter({ hasText: model }).locator('tbody tr').first();
+		await expect(row).toContainText(model);
+		await expect(row).toContainText(column);
+		await expect(row).toContainText(before);
+		await expect(row).toContainText(after);
+
+		// Preview only — nothing was applied.
+		expect(productCount()).toBe(236);
 	});
 
 	test('a non-xlsx upload is refused', async ({ page }) => {

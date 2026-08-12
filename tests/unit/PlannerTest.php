@@ -192,6 +192,85 @@ final class PlannerTest extends TestCase
         self::assertSame(1, $plan->counts()['trash']);
     }
 
+    public function test_comparable_is_the_payload_the_hash_is_built_from(): void
+    {
+        $row = self::row();
+
+        // The invariant the whole diff rests on: two rows hash the same if and
+        // only if their comparable payloads are identical. If these ever come
+        // apart, a product could be reported as changed with an empty diff, or
+        // skipped despite having changed.
+        self::assertSame(
+            \CADCO_Import_Planner::hash($row),
+            \CADCO_Import_Planner::hash(self::row()),
+            'identical rows hash identically'
+        );
+        self::assertSame(
+            \CADCO_Import_Planner::comparable($row),
+            \CADCO_Import_Planner::comparable(self::row())
+        );
+
+        $changed = self::row(['Weight' => '52']);
+        self::assertNotSame(\CADCO_Import_Planner::hash($row), \CADCO_Import_Planner::hash($changed));
+        self::assertNotSame(\CADCO_Import_Planner::comparable($row), \CADCO_Import_Planner::comparable($changed));
+    }
+
+    public function test_comparable_ignores_row_position(): void
+    {
+        self::assertSame(
+            \CADCO_Import_Planner::comparable(self::row(['__row' => 2])),
+            \CADCO_Import_Planner::comparable(self::row(['__row' => 90])),
+            'moving a row in the sheet is not a content change'
+        );
+    }
+
+    public function test_diff_reports_only_what_changed(): void
+    {
+        $diff = \CADCO_Import_Planner::diff(
+            ['Weight' => '51', 'Product Name' => 'Oven'],
+            ['Weight' => '52', 'Product Name' => 'Oven']
+        );
+
+        self::assertSame(['Weight' => ['51', '52']], $diff);
+    }
+
+    public function test_diff_reports_added_and_removed_values(): void
+    {
+        $diff = \CADCO_Import_Planner::diff(
+            ['Wattage' => '1440'],
+            ['Voltage' => '120']
+        );
+
+        self::assertSame(
+            ['Voltage' => ['', '120'], 'Wattage' => ['1440', '']],
+            $diff
+        );
+    }
+
+    public function test_an_update_carries_a_real_per_field_diff(): void
+    {
+        $before = \CADCO_Import_Planner::comparable(self::row());
+
+        $plan = \CADCO_Import_Planner::plan([self::row(['Weight' => '52'])], [
+            self::current(7, 'BLC-113', '654796-52113-5', 'stale') + ['snapshot' => $before],
+        ]);
+
+        self::assertSame(1, $plan->counts()['update']);
+        self::assertSame(['Weight' => ['51', '52']], $plan->updates()[0]['diff']);
+    }
+
+    public function test_an_update_without_a_stored_snapshot_still_plans(): void
+    {
+        // Products imported before snapshots existed have none. The update must
+        // still be planned — the operator simply cannot be shown a diff for it.
+        $plan = \CADCO_Import_Planner::plan([self::row(['Weight' => '52'])], [
+            self::current(7, 'BLC-113', '654796-52113-5', 'stale'),
+        ]);
+
+        self::assertSame(1, $plan->counts()['update']);
+        self::assertSame([], $plan->updates()[0]['diff']);
+    }
+
     private static function current(int $id, string $sku, string $upc, string $hash): array
     {
         return ['post_id' => $id, 'sku' => $sku, 'upc' => $upc, 'hash' => $hash];

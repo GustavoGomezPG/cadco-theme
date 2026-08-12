@@ -21,36 +21,54 @@ final class CADCO_Import_Repository
      * not be resurrected as an "update" by the next one, and a genuinely
      * returning product is correctly treated as a create.
      *
-     * @return list<array{post_id:int,sku:string,upc:string,hash:string}>
+     * @return list<array{post_id:int,sku:string,upc:string,hash:string,snapshot:array<string,string>}>
      */
     public static function current_products(): array
     {
         global $wpdb;
 
         // SKU and UPC come from WooCommerce's lookup table, where both are
-        // indexed columns; only the import hash needs a postmeta join.
-        $lookup = $wpdb->prefix . 'wc_product_meta_lookup';
+        // indexed columns; only the import hash and snapshot need a postmeta
+        // join.
+        $lookup       = $wpdb->prefix . 'wc_product_meta_lookup';
+        $snapshot_key = '_cadco_' . cadco_import_snapshot_meta_key();
 
         $rows = $wpdb->get_results(
-            "SELECT p.ID AS post_id,
-                    COALESCE(l.sku, '')              AS sku,
-                    COALESCE(l.global_unique_id, '') AS upc,
-                    COALESCE(hash.meta_value, '')    AS hash
-               FROM {$wpdb->posts} p
-          LEFT JOIN {$lookup} l            ON l.product_id = p.ID
-          LEFT JOIN {$wpdb->postmeta} hash ON hash.post_id = p.ID AND hash.meta_key = '_cadco_import_hash'
-              WHERE p.post_type = 'product'
-                AND p.post_status NOT IN ('trash', 'auto-draft')",
+            $wpdb->prepare(
+                "SELECT p.ID AS post_id,
+                        COALESCE(l.sku, '')              AS sku,
+                        COALESCE(l.global_unique_id, '') AS upc,
+                        COALESCE(hash.meta_value, '')    AS hash,
+                        snap.meta_value                  AS snapshot
+                   FROM {$wpdb->posts} p
+              LEFT JOIN {$lookup} l            ON l.product_id = p.ID
+              LEFT JOIN {$wpdb->postmeta} hash ON hash.post_id = p.ID AND hash.meta_key = '_cadco_import_hash'
+              LEFT JOIN {$wpdb->postmeta} snap ON snap.post_id = p.ID AND snap.meta_key = %s
+                  WHERE p.post_type = 'product'
+                    AND p.post_status NOT IN ('trash', 'auto-draft')",
+                $snapshot_key
+            ),
             ARRAY_A
         );
 
         return array_map(
-            static fn (array $row): array => [
-                'post_id' => (int) $row['post_id'],
-                'sku'     => (string) $row['sku'],
-                'upc'     => (string) $row['upc'],
-                'hash'    => (string) $row['hash'],
-            ],
+            static function (array $row): array {
+                // json_decode() returns null both for a missing snapshot
+                // (meta_value is SQL NULL, cast to '' by PHP's string
+                // coercion) and for one that is somehow corrupt — either way
+                // this must decode to [], never null, because
+                // CADCO_Import_Planner::diff() is typed to take an array and
+                // treats [] itself as "no snapshot" (see its docblock).
+                $decoded = json_decode((string) ($row['snapshot'] ?? ''), true);
+
+                return [
+                    'post_id'  => (int) $row['post_id'],
+                    'sku'      => (string) $row['sku'],
+                    'upc'      => (string) $row['upc'],
+                    'hash'     => (string) $row['hash'],
+                    'snapshot' => is_array($decoded) ? $decoded : [],
+                ];
+            },
             $rows ?: []
         );
     }

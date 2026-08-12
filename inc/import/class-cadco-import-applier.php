@@ -455,6 +455,29 @@ final class CADCO_Import_Applier
         update_post_meta($post_id, self::META_PREFIX . 'source_sheet', (string) ($row['__sheet'] ?? ''));
         update_post_meta($post_id, self::META_PREFIX . 'source_row', (int) ($row['__row'] ?? 0));
         update_post_meta($post_id, self::META_PREFIX . 'import_hash', CADCO_Import_Planner::hash($row));
+
+        // The payload the next run's plan will diff this product's new row
+        // against — see CADCO_Import_Planner::diff(). Stored as exactly what
+        // comparable() returns, never anything derived from it, because
+        // diff() only stays honest (identical hash <=> identical payload) if
+        // hash() and this snapshot are built from the same payload.
+        //
+        // wp_slash() here is load-bearing, not decorative: update_metadata()
+        // (which update_post_meta() wraps) unconditionally runs the incoming
+        // value through wp_unslash() before storing it — it is designed to
+        // accept values straight from $_POST, which WordPress itself
+        // slashes on every request. A JSON string is exactly the kind of
+        // value that gets corrupted by that: every real backslash a bullet
+        // list's '\n' or a '•' escape contributes is stripped before it
+        // ever reaches the database, leaving json_decode() unable to parse
+        // the value back. wp_slash() adds the one level of escaping that
+        // wp_unslash() is about to remove, so the JSON that lands in the
+        // database is byte-for-byte what comparable() produced.
+        update_post_meta(
+            $post_id,
+            self::META_PREFIX . cadco_import_snapshot_meta_key(),
+            wp_slash(wp_json_encode(CADCO_Import_Planner::comparable($row)))
+        );
     }
 
     private static function write_brand(int $post_id, array $row): void

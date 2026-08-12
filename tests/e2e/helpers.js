@@ -177,6 +177,24 @@ function buildFixture(scenario) {
 }
 
 /**
+ * Copy a real workbook and change exactly one cell in it via
+ * tests/e2e/fixtures/modify-cell.php + PhpSpreadsheet, locating the cell by
+ * header text and by the value in 'Model #' — never by position. Used to
+ * exercise the per-field update diff against a real snapshot written by a
+ * real import of the real corrected workbook, which a small synthetic
+ * fixture cannot prove anything about.
+ *
+ * @returns {string} absolute path to the modified copy
+ */
+function modifyWorkbookCell(source, sheet, model, column, newValue) {
+	const out = path.join(os.tmpdir(), `cadco-e2e-modified-${Date.now()}-${process.pid}.xlsx`);
+
+	wp(['eval-file', 'tests/e2e/fixtures/modify-cell.php', source, out, sheet, model, column, newValue]);
+
+	return out;
+}
+
+/**
  * Seed the "before" side of a rename directly in the database, bypassing the
  * importer entirely — the fixture built with buildFixture('rename') carries a
  * row whose UPC matches this product's, so the planner offers a rename rather
@@ -265,6 +283,7 @@ module.exports = {
 	resetCatalogue,
 	cleanupUploadRuns,
 	buildFixture,
+	modifyWorkbookCell,
 	seedRenameSource,
 	productIdBySku,
 	trashedProductIdBySku,

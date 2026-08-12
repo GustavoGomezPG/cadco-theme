@@ -209,6 +209,24 @@ function cadco_import_meta_columns(): array
 }
 
 /**
+ * The meta key suffix the importer stores each product's comparable payload
+ * under — the snapshot Task 15's per-field diff compares the next run
+ * against. Declared here, next to the rest of the column/key rules, so the
+ * applier that writes it and the repository that reads it back can never
+ * disagree on the key.
+ *
+ * Not a workbook column, so it carries no entry in cadco_import_meta_columns().
+ * It is machine bookkeeping rather than product data — CADCO_Product_Meta_Box's
+ * groups() is an explicit allow-list of what the CADCO Specifications panel
+ * shows, so a suffix simply absent from every group there, this one included,
+ * cannot appear on the panel and swamp it.
+ */
+function cadco_import_snapshot_meta_key(): string
+{
+    return 'import_snapshot';
+}
+
+/**
  * Columns read straight into native WooCommerce fields.
  */
 function cadco_import_native_columns(): array
