@@ -1093,15 +1093,11 @@ final class CADCO_Import_Admin
         $report = $result['report'];
 
         if (!$report->passed()) {
-            CADCO_Import_View::notice(
-                'error',
-                sprintf(
-                    /* translators: %d: number of problems found */
-                    _n('%d problem found. Nothing has been imported.', '%d problems found. Nothing has been imported.', $report->count(), 'cadco-theme'),
-                    $report->count()
-                )
-            );
-
+            // The banner is part of the report now (CADCO_Import_View::report()
+            // -> invalid_banner()): the design puts the count, the "nothing has
+            // been imported" guarantee and both recovery actions in one panel,
+            // and a separate notice emitted here would be relocated to the top
+            // of the page by wp-admin, splitting the two apart.
             CADCO_Import_View::report($report);
 
             return;

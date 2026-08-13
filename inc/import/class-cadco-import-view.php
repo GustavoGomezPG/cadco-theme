@@ -67,6 +67,16 @@ final class CADCO_Import_View
 
         if ($state === 'upload') {
             $subtitle_review = __('waiting for a workbook', 'cadco-theme');
+        } elseif ($state === 'invalid') {
+            // A failed check has no plan behind it, so reporting a row count
+            // here would imply progress that did not happen. What matters is
+            // the number blocking the import and the fact that nothing can be
+            // applied until it is zero.
+            $subtitle_review = sprintf(
+                /* translators: %d: number of validation problems found */
+                _n('%d problem, no changes possible', '%d problems, no changes possible', $issues, 'cadco-theme'),
+                $issues
+            );
         } else {
             // Two independent nouns, each pluralised on its own count — a
             // single _n() keyed to $rows would silently mis-pluralise
@@ -101,12 +111,21 @@ final class CADCO_Import_View
             'complete' => __('Complete', 'cadco-theme'),
             'current'  => __('Current', 'cadco-theme'),
             'waiting'  => __('Waiting', 'cadco-theme'),
+            'problems' => __('Problems found', 'cadco-theme'),
         ];
         ?>
         <div class="cadco-import-stagebar">
             <ol class="cadco-import-stages">
                 <?php foreach ($stages as $number => $stage) :
                     $status = $number < $current ? 'complete' : ($number === $current ? 'current' : 'waiting');
+
+                    // Review is still the stage the operator stands on when a
+                    // workbook fails, but calling that "current" says nothing.
+                    // "Problems found" is the one place the stage bar itself
+                    // carries the blocking signal.
+                    if ($state === 'invalid' && $number === $current) {
+                        $status = 'problems';
+                    }
                     ?>
                     <?php
                     // data-stage gives the checking flow a stable handle on
@@ -116,7 +135,13 @@ final class CADCO_Import_View
                     // "no workbook yet" on screen while one is visibly being
                     // read. See assets/js/import-admin.js.
                     ?>
-                    <li class="cadco-import-stage is-<?php echo esc_attr($status); ?>" data-stage="<?php echo (int) $number; ?>"<?php echo $status === 'current' ? ' aria-current="step"' : ''; ?>>
+                    <?php
+                    // Keyed to the stage number, not the status word: a failed
+                    // check relabels this stage "Problems found", but it is
+                    // still the step the operator is standing on and assistive
+                    // technology must keep being told so.
+                    ?>
+                    <li class="cadco-import-stage is-<?php echo esc_attr($status); ?>" data-stage="<?php echo (int) $number; ?>"<?php echo $number === $current ? ' aria-current="step"' : ''; ?>>
                         <span class="cadco-import-stage-status"><?php echo esc_html($status_words[$status]); ?></span>
                         <span class="cadco-import-stage-title"><?php echo esc_html($stage['title']); ?></span>
                         <span class="cadco-import-stage-subtitle"><?php echo esc_html($stage['subtitle']); ?></span>
@@ -155,7 +180,7 @@ final class CADCO_Import_View
                 <progress value="0" max="100"></progress>
                 <p class="cadco-import-status" aria-live="polite"></p>
             </div>
-            <div id="cadco-import-failures" class="notice notice-error" hidden>
+            <div id="cadco-import-failures" class="cadco-import-message is-error" hidden>
                 <p class="cadco-import-failures-heading"></p>
                 <ul class="cadco-import-failures-list"></ul>
             </div>
@@ -187,6 +212,11 @@ final class CADCO_Import_View
         >
             <?php echo esc_html($label); ?>
         </button>
+        <?php if ($blocked) : ?>
+            <p class="cadco-import-cta-note">
+                <?php esc_html_e('Nothing was written. The catalogue is untouched.', 'cadco-theme'); ?>
+            </p>
+        <?php endif; ?>
         <?php
     }
 
@@ -611,52 +641,190 @@ final class CADCO_Import_View
         ];
     }
 
+    /**
+     * The invalid state (design spec §6.3): the same shell as Review, so a
+     * failed check reads as the same screen rather than a different one — a
+     * loud banner across the top, a "problems by kind" navigator on the left,
+     * and one tier's table at a time on the right.
+     *
+     * The tiers are always all three, even when a tier is clean: a zero next
+     * to "Completeness" tells the operator something a missing row cannot.
+     * That mirrors the change navigator's own treatment of zero-count
+     * sections.
+     */
     public static function report(CADCO_Import_Report $report): void
     {
-        // The report is the system's primary deliverable (design spec §8.1) —
-        // it must leave the browser as a file CADCO can hand to whoever
-        // maintains the workbook, not just sit on screen.
-        printf(
-            '<p><a class="button" href="%s">%s</a></p>',
-            esc_url(wp_nonce_url(
-                admin_url('edit.php?post_type=product&page=cadco-import&action=export-report'),
-                CADCO_Import_Admin::NONCE
-            )),
-            esc_html__('Download report (CSV)', 'cadco-theme')
-        );
-
-        $labels = [
-            'A' => __('Identity — duplicate, missing or malformed product identifiers', 'cadco-theme'),
-            'B' => __('Consistency — the same value spelled several ways', 'cadco-theme'),
-            'C' => __('Completeness — blank fields that must state a value', 'cadco-theme'),
+        $tiers = [
+            'A' => [
+                'id'    => 'tier-a',
+                'name'  => __('Identity', 'cadco-theme'),
+                'hint'  => __('Duplicate or missing Model #', 'cadco-theme'),
+                'blurb' => __('Duplicate, missing or malformed product identifiers. Blocking: two rows claiming the same Model # cannot both become a product.', 'cadco-theme'),
+            ],
+            'B' => [
+                'id'    => 'tier-b',
+                'name'  => __('Consistency', 'cadco-theme'),
+                'hint'  => __('The same value spelled several ways', 'cadco-theme'),
+                'blurb' => __('One value written more than one way. Left alone these become separate categories, brands or attributes that should have been a single one.', 'cadco-theme'),
+            ],
+            'C' => [
+                'id'    => 'tier-c',
+                'name'  => __('Completeness', 'cadco-theme'),
+                'hint'  => __('Blank fields that must state a value', 'cadco-theme'),
+                'blurb' => __('Fields a product cannot be published without. A blank here is not a default — it is a value nobody has decided yet.', 'cadco-theme'),
+            ],
         ];
 
-        foreach ($report->by_tier() as $tier => $issues) {
-            printf('<h2>%s <span class="count">%d</span></h2>', esc_html($labels[$tier] ?? $tier), count($issues));
+        $by_tier = $report->by_tier();
+        $count   = $report->count();
 
-            echo '<table class="widefat striped"><thead><tr>';
-            echo '<th>' . esc_html__('Sheet', 'cadco-theme') . '</th>';
-            echo '<th>' . esc_html__('Row', 'cadco-theme') . '</th>';
-            echo '<th>' . esc_html__('Column', 'cadco-theme') . '</th>';
-            echo '<th>' . esc_html__('Found', 'cadco-theme') . '</th>';
-            echo '<th>' . esc_html__('Problem', 'cadco-theme') . '</th>';
-            echo '<th>' . esc_html__('How to fix', 'cadco-theme') . '</th>';
-            echo '</tr></thead><tbody>';
+        self::invalid_banner($count);
+        ?>
+        <div class="cadco-import-panels-wrap">
+            <nav class="cadco-import-navigator cadco-import-navigator-issues" aria-label="<?php esc_attr_e('Problems by kind', 'cadco-theme'); ?>">
+                <p class="cadco-import-navigator-title"><?php esc_html_e('Problems by kind', 'cadco-theme'); ?></p>
+                <ul>
+                    <?php
+                    $first = true;
 
-            foreach ($issues as $issue) {
+                    foreach ($tiers as $key => $tier) :
+                        $issues = $by_tier[$key] ?? [];
+                        $muted  = $issues === [];
+                        ?>
+                        <li class="cadco-import-nav-item<?php echo $muted ? ' is-muted' : ''; ?>">
+                            <?php if ($muted) : ?>
+                                <span class="cadco-import-nav-link" aria-disabled="true">
+                                    <span class="cadco-import-nav-body">
+                                        <span class="cadco-import-nav-label"><?php echo esc_html($tier['name']); ?></span>
+                                        <span class="cadco-import-nav-hint"><?php echo esc_html($tier['hint']); ?></span>
+                                    </span>
+                                    <span class="cadco-import-nav-meta">0</span>
+                                </span>
+                            <?php else : ?>
+                                <a
+                                    href="#cadco-section-<?php echo esc_attr($tier['id']); ?>"
+                                    id="cadco-nav-<?php echo esc_attr($tier['id']); ?>"
+                                    class="cadco-import-nav-link"
+                                    aria-controls="cadco-section-<?php echo esc_attr($tier['id']); ?>"
+                                    <?php echo $first ? ' aria-current="true"' : ''; ?>
+                                >
+                                    <span class="cadco-import-nav-body">
+                                        <span class="cadco-import-nav-label"><?php echo esc_html($tier['name']); ?></span>
+                                        <span class="cadco-import-nav-hint"><?php echo esc_html($tier['hint']); ?></span>
+                                    </span>
+                                    <span class="cadco-import-nav-meta"><?php echo (int) count($issues); ?></span>
+                                </a>
+                                <?php $first = false; ?>
+                            <?php endif; ?>
+                        </li>
+                    <?php endforeach; ?>
+                </ul>
+            </nav>
+
+            <div class="cadco-import-panels">
+                <?php
+                foreach ($tiers as $key => $tier) {
+                    $issues = $by_tier[$key] ?? [];
+
+                    if ($issues === []) {
+                        continue;
+                    }
+
+                    self::section_open($tier['id']);
+                    printf(
+                        '<h2 id="cadco-heading-%s">%s <span class="count">%d</span></h2>',
+                        esc_attr($tier['id']),
+                        esc_html($tier['name']),
+                        (int) count($issues)
+                    );
+                    printf('<p>%s</p>', esc_html($tier['blurb']));
+
+                    self::issue_table($issues);
+                    self::section_close();
+                }
+                ?>
+            </div>
+        </div>
+        <?php
+    }
+
+    /**
+     * The banner across the top of a failed check.
+     *
+     * The controller no longer emits a separate message for this: the design
+     * puts the count, the guarantee and both recovery actions in one panel,
+     * and a wp-admin `.notice` would have been hoisted to the top of the page
+     * away from them (see notice()).
+     * The "Nothing has been imported" guarantee stays in the copy — it is the
+     * single most important thing on the screen, and the reason an operator
+     * can act on the list below without worrying about the catalogue.
+     */
+    private static function invalid_banner(int $count): void
+    {
+        $export_url = wp_nonce_url(
+            admin_url('edit.php?post_type=product&page=cadco-import&action=export-report'),
+            CADCO_Import_Admin::NONCE
+        );
+        ?>
+        <div class="cadco-import-invalid-banner">
+            <h2>
+                <?php
                 printf(
-                    '<tr><td>%s</td><td>%s</td><td>%s</td><td><code>%s</code></td><td>%s</td><td>%s</td></tr>',
-                    esc_html($issue->sheet),
-                    esc_html($issue->row === null ? '—' : (string) $issue->row),
-                    esc_html($issue->column),
-                    esc_html($issue->found),
-                    esc_html($issue->message),
-                    esc_html($issue->fix)
+                    /* translators: %d: number of validation problems found */
+                    esc_html(_n(
+                        '%d problem must be fixed in the workbook before anything can be imported.',
+                        '%d problems must be fixed in the workbook before anything can be imported.',
+                        $count,
+                        'cadco-theme'
+                    )),
+                    (int) $count
                 );
-            }
+                ?>
+            </h2>
+            <p>
+                <?php esc_html_e('Nothing has been imported. Fix them in the spreadsheet and upload it again. Every row below names the sheet, the cell, what was found and what to change it to — the report is the same list as a CSV you can send on.', 'cadco-theme'); ?>
+            </p>
+            <p class="cadco-import-invalid-actions">
+                <a class="button" href="<?php echo esc_url($export_url); ?>">
+                    <?php esc_html_e('Download report (CSV)', 'cadco-theme'); ?>
+                </a>
+                <a class="button" href="<?php echo esc_url(admin_url('edit.php?post_type=product&page=cadco-import')); ?>">
+                    <?php esc_html_e('Upload a corrected workbook', 'cadco-theme'); ?>
+                </a>
+            </p>
+        </div>
+        <?php
+    }
 
-            echo '</tbody></table>';
+    /**
+     * One tier's issues. Every value comes from the workbook and is untrusted.
+     *
+     * @param list<CADCO_Import_Issue> $issues
+     */
+    private static function issue_table(array $issues): void
+    {
+        echo '<table class="widefat striped"><thead><tr>';
+        echo '<th>' . esc_html__('Sheet', 'cadco-theme') . '</th>';
+        echo '<th>' . esc_html__('Row', 'cadco-theme') . '</th>';
+        echo '<th>' . esc_html__('Column', 'cadco-theme') . '</th>';
+        echo '<th>' . esc_html__('Found', 'cadco-theme') . '</th>';
+        echo '<th>' . esc_html__('Problem', 'cadco-theme') . '</th>';
+        echo '<th>' . esc_html__('How to fix', 'cadco-theme') . '</th>';
+        echo '</tr></thead><tbody>';
+
+        foreach ($issues as $issue) {
+            printf(
+                '<tr><td>%s</td><td>%s</td><td>%s</td><td><code>%s</code></td><td>%s</td><td>%s</td></tr>',
+                esc_html($issue->sheet),
+                esc_html($issue->row === null ? '—' : (string) $issue->row),
+                esc_html($issue->column),
+                esc_html($issue->found),
+                esc_html($issue->message),
+                esc_html($issue->fix)
+            );
         }
+
+        echo '</tbody></table>';
     }
 
     /**
@@ -829,15 +997,14 @@ final class CADCO_Import_View
      * the "escaped on output" half of the brief's label requirement; the
      * write side only sanitizes, which is not a substitute.
      *
-     * Fix round 1, finding 6: `notice-warning` alone, without `inline`, is
-     * exactly what wp-admin/js/common.js looks for to relocate a notice to
-     * just after the page header — this screen has no `.wp-header-end`, so
-     * an un-inlined notice here would jump above the tab nav and stage bar
-     * instead of staying in flow between the success notice and the counts
-     * summary where review() places it and where its margin is tuned. The
-     * `inline` class opts this banner out of that relocation, the same as
-     * WordPress's own admin screens do for any notice meant to stay exactly
-     * where it was rendered.
+     * This banner is not a wp-admin `.notice` and must not become one. It has
+     * to stay exactly where review() renders it — between the message and the
+     * counts summary, where its margin is tuned — and core's common.js hoists
+     * anything carrying `.notice` to just under the page heading. Earlier
+     * revisions carried `notice-warning inline`, where `inline` was doing
+     * nothing but opting back out of that hoisting; dropping the class
+     * entirely removes the problem rather than working around it. See
+     * notice().
      *
      * @param array{run_id:string, label:string, filename:string, created:string} $restore
      */
@@ -848,7 +1015,7 @@ final class CADCO_Import_View
         $name     = $label !== '' ? $label : $filename;
         $date     = self::format_run_date((string) $restore['created']);
         ?>
-        <div class="notice notice-warning inline cadco-import-restore-banner">
+        <div class="cadco-import-restore-banner">
             <p>
                 <strong><?php esc_html_e('Restoring a previous import — this is not a fresh upload.', 'cadco-theme'); ?></strong>
             </p>
@@ -1777,10 +1944,21 @@ final class CADCO_Import_View
         <?php
     }
 
+    /**
+     * A message belonging to this screen.
+     *
+     * Deliberately NOT a wp-admin `.notice`. Core's common.js hoists every
+     * element carrying that class to a fixed position just under the page
+     * heading, regardless of where it was rendered — so a message meant to sit
+     * inside the layout would silently jump to the top of the page and break
+     * the design's composition. Using our own class keeps placement ours.
+     *
+     * $type is 'error' | 'success' | 'warning'.
+     */
     public static function notice(string $type, string $message): void
     {
         printf(
-            '<div class="notice notice-%s"><p>%s</p></div>',
+            '<div class="cadco-import-message is-%s"><p>%s</p></div>',
             esc_attr($type),
             esc_html($message)
         );

@@ -142,7 +142,7 @@ test.describe('Product import', () => {
 		await page.setInputFiles('input[type="file"]', SOURCE);
 
 		// The report must say plainly that nothing happened.
-		await expect(page.locator('.notice-error')).toContainText(/nothing has been imported/i);
+		await expect(page.locator('.cadco-import-invalid-banner')).toContainText(/nothing has been imported/i);
 
 		// All three tiers are named, so the client can act on the report.
 		await expect(page.getByRole('heading', { name: /Identity/ })).toBeVisible();
@@ -168,7 +168,7 @@ test.describe('Product import', () => {
 		await page.goto(IMPORT_PATH);
 		await page.setInputFiles('input[type="file"]', CORRECTED);
 
-		await expect(page.locator('.notice-success')).toBeVisible();
+		await expect(page.locator('.cadco-import-message.is-success')).toBeVisible();
 		await expect(page.locator('.cadco-import-counts')).toContainText('236');
 		await expect(page.locator('#cadco-import-apply')).toBeVisible();
 
@@ -623,7 +623,7 @@ test.describe('Product import', () => {
 			buffer: Buffer.from('Model #,UPC#\nBLC-113,654796-52113-5\n'),
 		});
 
-		await expect(page.locator('.notice-error')).toContainText(/not an \.xlsx workbook/i);
+		await expect(page.locator('.cadco-import-message.is-error')).toContainText(/not an \.xlsx workbook/i);
 	});
 
 	// Task 11: the "Checking the workbook" stage — the staged AJAX flow
@@ -689,7 +689,7 @@ test.describe('Product import', () => {
 		await page.goto(IMPORT_PATH);
 		await page.setInputFiles('input[type="file"]', SOURCE);
 
-		await expect(page.locator('.notice-error')).toContainText(/nothing has been imported/i);
+		await expect(page.locator('.cadco-import-invalid-banner')).toContainText(/nothing has been imported/i);
 		await expect(page.locator('#cadco-import-apply')).toHaveCount(0);
 
 		expect(planRequested).toBe(false);
@@ -1027,17 +1027,15 @@ test.describe('Product import', () => {
 			// restore lands here, never back on a bare upload form.
 			await expect(page).toHaveURL(/restored_run=/);
 
-			// The banner's selector carries `.inline`, which is what tells
-			// wp-admin's own admin.js to leave it exactly where
-			// CADCO_Import_View::review() rendered it rather than relocating
-			// it to just after the page header (see restore_banner()'s own
-			// docblock, fix round 1 finding 6) — asserted here, not just
-			// claimed: the class itself, and that the banner still sits
-			// immediately before the counts summary review() renders right
-			// after it, rather than having drifted anywhere else in the DOM.
+			// The banner must sit exactly where review() rendered it. It is
+			// deliberately not a wp-admin `.notice` — core's common.js hoists
+			// those to just under the page heading — so the check that matters
+			// is positional: it still sits immediately before the counts
+			// summary review() renders right after it, rather than having
+			// drifted anywhere else in the DOM.
 			const banner = page.locator('.cadco-import-restore-banner');
 			await expect(banner).toBeVisible();
-			await expect(banner).toHaveClass(/\binline\b/);
+			await expect(banner).not.toHaveClass(/\bnotice\b/);
 			await expect(banner).toContainText(/Restoring a previous import/i);
 			await expect(banner).toContainText(aFilename);
 			await expect(banner.locator('xpath=following-sibling::*[1]')).toHaveClass(/cadco-import-counts/);

@@ -420,11 +420,18 @@
 
 		/**
 		 * Mirrors CADCO_Import_View::notice()'s own markup exactly
-		 * (`<div class="notice notice-error"><p>…</p></div>`) so an error
-		 * surfaced by the staged check reads identically to one the
-		 * synchronous, no-JS path renders server-side — including to the E2E
-		 * suite's `.notice-error` selector. textContent throughout: the
-		 * message may echo server-supplied text derived from the upload.
+		 * (`<div class="cadco-import-message is-error"><p>…</p></div>`) so an
+		 * error surfaced by the staged check reads identically to one the
+		 * synchronous, no-JS path renders server-side — same component, same
+		 * selector.
+		 *
+		 * Deliberately NOT a wp-admin `.notice`: core's common.js hoists
+		 * anything carrying that class to just under the page heading, which
+		 * would tear this message away from the stage bar it is rendered
+		 * beside. See CADCO_Import_View::notice().
+		 *
+		 * textContent throughout: the message may echo server-supplied text
+		 * derived from the uploaded filename.
 		 */
 		var showCheckError = function (message) {
 			var wrap = document.querySelector('.cadco-import');
@@ -440,7 +447,7 @@
 			}
 
 			var notice = document.createElement('div');
-			notice.className = 'notice notice-error cadco-import-checking-notice';
+			notice.className = 'cadco-import-message is-error cadco-import-checking-notice';
 
 			var p = document.createElement('p');
 			p.textContent = message;

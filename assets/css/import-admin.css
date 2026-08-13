@@ -397,6 +397,52 @@
 	color: var(--cadco-accent-700);
 }
 
+/* The blocking signal, carried by the stage bar itself. */
+.cadco-import .cadco-import-stage.is-problems .cadco-import-stage-status {
+	color: var(--cadco-danger);
+}
+
+/* ==========================================================================
+   Messages
+
+   This screen's own message component. It is deliberately not a wp-admin
+   `.notice`: core's common.js hoists anything with that class to a fixed
+   position under the page heading, wherever it was rendered, which takes
+   placement out of the design's hands. See CADCO_Import_View::notice().
+   ========================================================================== */
+
+.cadco-import .cadco-import-message {
+	margin: 0 0 24px;
+	padding: 12px 16px;
+	border: 1px solid var(--cadco-divider);
+	border-left-width: 4px;
+	background: transparent;
+}
+
+.cadco-import .cadco-import-message p {
+	margin: 0;
+	font-size: 13px;
+}
+
+.cadco-import .cadco-import-message.is-success {
+	border-color: var(--cadco-ok);
+	background: rgba(26, 127, 55, .06);
+}
+
+.cadco-import .cadco-import-message.is-error {
+	border-color: var(--cadco-danger);
+	background: var(--cadco-danger-bg);
+}
+
+.cadco-import .cadco-import-message.is-error p {
+	color: var(--cadco-danger-ink);
+}
+
+.cadco-import .cadco-import-message.is-warning {
+	border-color: var(--cadco-warn);
+	background: rgba(178, 104, 0, .07);
+}
+
 /* ==========================================================================
    Stage bar CTA
 
@@ -423,8 +469,15 @@
 /* The idle CTA is disabled because nothing has happened yet, not because
    anything is wrong — so it reads as a plain bordered box with legible text
    rather than a 45%-opacity ghost. It is still genuinely disabled; it just
-   does not have to look broken to say "not yet". */
-.cadco-import .cadco-import-cta .button:disabled {
+   does not have to look broken to say "not yet".
+
+   !important is not decoration here: core styles
+   `.wp-core-ui .button-primary:disabled` with !important on background,
+   border-color and color, so nothing short of !important reaches this
+   element. Kept as tight as possible — only the three declarations core
+   forces, only inside the CTA. */
+.cadco-import .cadco-import-cta .button:disabled,
+.cadco-import .cadco-import-cta .button[disabled] {
 	/* A longer "Fix N problems…" label must wrap rather than overflow. */
 	white-space: normal;
 	max-width: 22em;
@@ -432,9 +485,9 @@
 	line-height: 1.4;
 	padding: 10px 18px;
 	opacity: 1;
-	border-color: var(--cadco-divider);
-	background: transparent;
-	color: var(--cadco-neutral-700);
+	background: transparent !important;
+	border-color: var(--cadco-divider) !important;
+	color: var(--cadco-neutral-700) !important;
 }
 
 .cadco-import .cadco-import-cta-note {
@@ -445,12 +498,19 @@
 }
 
 /* The one place this screen spends red on a control: a CTA disabled *because
-   something is wrong*, not merely because nothing has happened yet. */
-.cadco-import .cadco-import-cta .cadco-import-cta-blocked:disabled {
-	background: var(--cadco-danger-bg);
-	border-color: var(--cadco-danger);
-	color: var(--cadco-danger-ink);
+   something is wrong*, not merely because nothing has happened yet. Drawn as
+   a red-outlined box with legible dark text rather than a red fill — it is a
+   statement of what is blocking, not a button asking to be pressed. */
+.cadco-import .cadco-import-cta .cadco-import-cta-blocked:disabled,
+.cadco-import .cadco-import-cta .cadco-import-cta-blocked[disabled] {
+	background: transparent !important;
+	border-color: var(--cadco-danger) !important;
+	color: var(--cadco-text) !important;
 	opacity: 1;
+}
+
+.cadco-import .cadco-import-cta .cadco-import-cta-blocked:disabled + .cadco-import-cta-note {
+	color: var(--cadco-text);
 }
 
 /* ==========================================================================
@@ -1335,24 +1395,31 @@
    Validation report (invalid workbook)
    ========================================================================== */
 
+/* The banner is a wp-admin .notice, so core's own left border and padding
+   have to be overridden rather than merely added to. `inline` keeps
+   common.js from relocating it (same reasoning as the restore banner). */
 .cadco-import .cadco-import-invalid-banner {
-	margin: 0 0 22px;
+	margin: 0 0 24px;
 	padding: 16px 20px;
 	background: var(--cadco-danger-bg);
 	border: 1px solid var(--cadco-danger);
 	border-left-width: 4px;
+	border-radius: 0;
+	box-shadow: none;
 }
 
 .cadco-import .cadco-import-invalid-banner h2 {
 	margin: 0;
 	font-size: 20px;
+	line-height: 1.15;
 	letter-spacing: .01em;
 	color: var(--cadco-danger-ink);
 }
 
 .cadco-import .cadco-import-invalid-banner p {
 	margin: 7px 0 0;
-	max-width: 80ch;
+	max-width: 84ch;
+	font-size: 13px;
 	color: var(--cadco-danger-ink);
 }
 
@@ -1362,8 +1429,71 @@
 	margin-top: 14px;
 }
 
+/* Solid white against the tinted panel: an outlined button on a pink ground
+   reads as disabled. */
 .cadco-import .cadco-import-invalid-actions .button {
 	background: #fff;
+	border-color: rgba(214, 54, 56, .45);
+	color: var(--cadco-text);
+}
+
+.cadco-import .cadco-import-invalid-actions .button:hover {
+	background: #fff;
+	border-color: var(--cadco-danger);
+}
+
+/* ==========================================================================
+   The "problems by kind" navigator
+
+   Structurally the change navigator, so it inherits every layout rule above;
+   only the two-line row and the danger colouring are new. It keeps the same
+   aria-controls contract, which is what lets the existing scroll-spy and
+   jump-to-section behaviour in import-admin.js drive it with no extra code.
+   ========================================================================== */
+
+.cadco-import .cadco-import-navigator-issues .cadco-import-nav-link {
+	align-items: flex-start;
+	gap: 10px;
+	padding: 12px 14px;
+}
+
+.cadco-import .cadco-import-nav-body {
+	flex: 1;
+	min-width: 0;
+}
+
+.cadco-import .cadco-import-nav-hint {
+	display: block;
+	margin-top: 3px;
+	font-family: var(--cadco-font-body);
+	font-size: 12px;
+	font-weight: 400;
+	letter-spacing: 0;
+	text-transform: none;
+	line-height: 1.35;
+	color: var(--cadco-neutral-600);
+}
+
+.cadco-import .cadco-import-navigator-issues .cadco-import-nav-meta {
+	padding-top: 1px;
+	font-size: 12px;
+	color: var(--cadco-danger-ink);
+}
+
+.cadco-import .cadco-import-navigator-issues a.cadco-import-nav-link:hover,
+.cadco-import .cadco-import-navigator-issues a.cadco-import-nav-link:focus {
+	background: rgba(214, 54, 56, .07);
+}
+
+.cadco-import .cadco-import-navigator-issues .cadco-import-nav-link[aria-current="true"] {
+	background: var(--cadco-danger-bg);
+	box-shadow: inset 3px 0 0 var(--cadco-danger);
+}
+
+/* A clean tier still gets a row — a zero beside "Completeness" says something
+   a missing row cannot — but nothing about it should look actionable. */
+.cadco-import .cadco-import-navigator-issues .is-muted .cadco-import-nav-meta {
+	color: var(--cadco-neutral-400);
 }
 
 /* ==========================================================================
