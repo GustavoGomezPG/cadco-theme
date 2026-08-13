@@ -108,7 +108,15 @@ final class CADCO_Import_View
                 <?php foreach ($stages as $number => $stage) :
                     $status = $number < $current ? 'complete' : ($number === $current ? 'current' : 'waiting');
                     ?>
-                    <li class="cadco-import-stage is-<?php echo esc_attr($status); ?>"<?php echo $status === 'current' ? ' aria-current="step"' : ''; ?>>
+                    <?php
+                    // data-stage gives the checking flow a stable handle on
+                    // each stage so it can keep the bar honest while the check
+                    // runs client-side: this markup was rendered before the
+                    // workbook existed, so without it the bar would still read
+                    // "no workbook yet" on screen while one is visibly being
+                    // read. See assets/js/import-admin.js.
+                    ?>
+                    <li class="cadco-import-stage is-<?php echo esc_attr($status); ?>" data-stage="<?php echo (int) $number; ?>"<?php echo $status === 'current' ? ' aria-current="step"' : ''; ?>>
                         <span class="cadco-import-stage-status"><?php echo esc_html($status_words[$status]); ?></span>
                         <span class="cadco-import-stage-title"><?php echo esc_html($stage['title']); ?></span>
                         <span class="cadco-import-stage-subtitle"><?php echo esc_html($stage['subtitle']); ?></span>

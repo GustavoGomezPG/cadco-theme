@@ -351,11 +351,40 @@
 			}
 		};
 
+		/**
+		 * Keep the wizard's own stage bar honest while the check runs.
+		 *
+		 * That bar was rendered by the server before this workbook existed, so
+		 * it still reads "no workbook yet" / "waiting for a workbook" on screen
+		 * while one is visibly being read. These two subtitles are the only
+		 * parts of it that can go stale during the check.
+		 *
+		 * Both values are facts, not forecasts: the filename comes from the
+		 * File the operator just chose, and the phase label is read back out of
+		 * the checklist row that is actually running — so it cannot drift from
+		 * what the list says. textContent, never innerHTML: a filename is
+		 * attacker-supplied.
+		 */
+		var setWizardSubtitle = function (stageNumber, text) {
+			var stage = document.querySelector('.cadco-import-stage[data-stage="' + stageNumber + '"]');
+			var subtitle = stage ? stage.querySelector('.cadco-import-stage-subtitle') : null;
+
+			if (subtitle) {
+				subtitle.textContent = text;
+			}
+		};
+
 		var setStagePending = function (name) {
 			var row = stageRow(name);
 
 			if (row) {
 				row.classList.add('is-active');
+
+				var label = row.querySelector('.cadco-import-checklist-name');
+
+				if (label) {
+					setWizardSubtitle(2, label.textContent.trim().toLowerCase() + '…');
+				}
 			}
 		};
 
@@ -587,6 +616,10 @@
 				// textContent: file.name is attacker-supplied.
 				fileInfoOut.textContent = file.name + ' · ' + formatBytes(file.size);
 			}
+
+			// Stage 01's subtitle was rendered as "no workbook yet"; there is
+			// one now, and its name is a fact the browser already holds.
+			setWizardSubtitle(1, file.name);
 
 			uploadGrid.hidden = true;
 			checkingPanel.hidden = false;
