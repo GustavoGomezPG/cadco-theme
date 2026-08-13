@@ -74,22 +74,33 @@
 	--cadco-space-8: 27.2px;
 
 	/* The design file's page wrapper is `padding: 34px 40px 96px` around a
-	   1180px column. wp-admin already supplies the left/right gutter, so only
-	   the vertical padding is taken here — without it the kicker jams against
-	   the admin bar and the whole screen reads cramped. */
-	max-width: 1180px;
+	   1180px column; this runs slightly more generous on the top and left so
+	   the screen breathes at the larger type size below.
+
+	   border-box so max-width stays the width of the *column*: the padding is
+	   added outside the 1180px of content rather than eating into it, which is
+	   how the design's centred wrapper behaves. wp-admin supplies a small
+	   left gutter of its own, so this stacks on top of that. */
+	box-sizing: border-box;
+	max-width: 1224px;
 	margin-right: 20px;
-	padding: 34px 0 96px;
+	padding: 48px 0 96px 44px;
 	background: var(--cadco-bg);
 	color: var(--cadco-text);
 	font-family: var(--cadco-font-body);
-	font-size: 15px;
+	font-size: 17px;
 	line-height: 1.55;
 }
 
-/* Type scale taken value-for-value from Product Importer.dc.html: 38/1 for
-   the page title, 21/1.1 for a section heading, 18/1.1 for a stage title,
-   36/1 for a figure, 13/1 for the small uppercase captions. */
+/* Type scale: the design file's own ratios, scaled up 1.15x throughout for
+   legibility at the sizes this screen is actually read at. The design's
+   38/21/18/36/13 became 44/24/21/41/15, and every other size in this sheet
+   moved by the same factor — so the relationships the design sets up are
+   preserved even though no single number matches it any more.
+
+   If this ever needs re-tuning, scale the whole set again rather than
+   adjusting values individually; the hierarchy is the point, not the
+   absolute numbers. */
 .cadco-import h1,
 .cadco-import h2,
 .cadco-import h3,
@@ -103,13 +114,13 @@
 
 .cadco-import > h1,
 .cadco-import .cadco-import-title {
-	font-size: 38px;
+	font-size: 44px;
 	line-height: 1;
 	margin: 0;
 }
 
 .cadco-import p {
-	font-size: 13px;
+	font-size: 15px;
 	color: var(--cadco-neutral-700);
 }
 
@@ -184,7 +195,7 @@
 .cadco-import .cadco-import-kicker {
 	margin: 0 0 7px;
 	font-family: var(--cadco-font-heading);
-	font-size: 10px;
+	font-size: 11.5px;
 	font-weight: 500;
 	letter-spacing: .18em;
 	text-transform: uppercase;
@@ -216,7 +227,7 @@
 	background: transparent;
 	color: var(--cadco-text);
 	font-family: var(--cadco-font-heading);
-	font-size: 13px;
+	font-size: 15px;
 	font-weight: 600;
 	letter-spacing: .1em;
 	text-transform: uppercase;
@@ -259,7 +270,7 @@
 	background: transparent;
 	color: var(--cadco-text);
 	font-family: var(--cadco-font-heading);
-	font-size: 14px;
+	font-size: 16px;
 	font-weight: 600;
 	line-height: 1.2;
 	text-shadow: none;
@@ -351,7 +362,7 @@
 	gap: 8px;
 	margin-bottom: 7px;
 	font-family: var(--cadco-font-heading);
-	font-size: 10px;
+	font-size: 11.5px;
 	font-weight: 600;
 	letter-spacing: .14em;
 	text-transform: uppercase;
@@ -371,7 +382,7 @@
 .cadco-import .cadco-import-stage-title {
 	display: block;
 	font-family: var(--cadco-font-heading);
-	font-size: 18px;
+	font-size: 21px;
 	font-weight: 600;
 	letter-spacing: .02em;
 	line-height: 1.1;
@@ -381,7 +392,7 @@
 .cadco-import .cadco-import-stage-subtitle {
 	display: block;
 	margin-top: 5px;
-	font-size: 11px;
+	font-size: 12.5px;
 	color: var(--cadco-neutral-700);
 	overflow: hidden;
 	text-overflow: ellipsis;
@@ -421,7 +432,7 @@
 
 .cadco-import .cadco-import-message p {
 	margin: 0;
-	font-size: 13px;
+	font-size: 15px;
 }
 
 .cadco-import .cadco-import-message.is-success {
@@ -462,7 +473,7 @@
 
 .cadco-import .cadco-import-cta .button {
 	padding: 10px 22px;
-	font-size: 15px;
+	font-size: 17px;
 	letter-spacing: .03em;
 }
 
@@ -491,7 +502,7 @@
 }
 
 .cadco-import .cadco-import-cta-note {
-	font-size: 12px;
+	font-size: 14px;
 	color: var(--cadco-neutral-700);
 	text-align: right;
 	max-width: 24ch;
@@ -552,7 +563,7 @@
 
 .cadco-import #cadco-import-progress .cadco-import-status {
 	margin: 7px 0 0;
-	font-size: 11px;
+	font-size: 12.5px;
 	font-variant-numeric: tabular-nums;
 	color: var(--cadco-neutral-700);
 	text-align: right;
@@ -565,7 +576,7 @@
 
 .cadco-import #cadco-import-failures .cadco-import-failures-heading {
 	font-family: var(--cadco-font-heading);
-	font-size: 14px;
+	font-size: 16px;
 	font-weight: 600;
 	letter-spacing: .06em;
 	text-transform: uppercase;
@@ -575,7 +586,7 @@
 .cadco-import #cadco-import-failures .cadco-import-failures-list {
 	margin: .5em 0 1em 1.5em;
 	list-style: disc;
-	font-size: 12px;
+	font-size: 14px;
 	font-variant-numeric: tabular-nums;
 	color: var(--cadco-danger-ink);
 	max-height: 16em;
@@ -614,7 +625,7 @@
 .cadco-import .cadco-import-counts strong {
 	display: block;
 	font-family: var(--cadco-font-heading);
-	font-size: 36px;
+	font-size: 41px;
 	font-weight: 600;
 	line-height: 1;
 	font-variant-numeric: tabular-nums;
@@ -630,7 +641,7 @@
 	display: block;
 	margin-top: 6px;
 	font-family: var(--cadco-font-heading);
-	font-size: 11px;
+	font-size: 12.5px;
 	font-weight: 500;
 	letter-spacing: .13em;
 	text-transform: uppercase;
@@ -672,7 +683,7 @@
 	padding: 11px 14px;
 	border-bottom: 1px solid rgba(17, 17, 17, .14);
 	font-family: var(--cadco-font-heading);
-	font-size: 10px;
+	font-size: 11.5px;
 	font-weight: 600;
 	letter-spacing: .14em;
 	text-transform: uppercase;
@@ -712,7 +723,7 @@
 .cadco-import .cadco-import-nav-label {
 	flex: 1;
 	font-family: var(--cadco-font-heading);
-	font-size: 13px;
+	font-size: 15px;
 	font-weight: 600;
 	letter-spacing: .08em;
 	text-transform: uppercase;
@@ -720,7 +731,7 @@
 }
 
 .cadco-import .cadco-import-nav-meta {
-	font-size: 12px;
+	font-size: 14px;
 	color: var(--cadco-neutral-600);
 }
 
@@ -745,7 +756,7 @@
 .cadco-import .cadco-import-navigator-note {
 	padding: 12px 14px;
 	border-top: 1px solid rgba(17, 17, 17, .08);
-	font-size: 12px;
+	font-size: 14px;
 	line-height: 1.45;
 	color: var(--cadco-neutral-600);
 }
@@ -774,7 +785,7 @@
 
 .cadco-import .cadco-import-section h2 {
 	margin: 0;
-	font-size: 21px;
+	font-size: 24px;
 }
 
 .cadco-import .cadco-import-section > p:first-of-type {
@@ -791,7 +802,7 @@
 	background: var(--cadco-accent-100);
 	color: var(--cadco-accent-800);
 	font-family: var(--cadco-font-body);
-	font-size: 12px;
+	font-size: 14px;
 	font-weight: 500;
 	font-variant-numeric: tabular-nums;
 	vertical-align: middle;
@@ -804,7 +815,7 @@
 
 .cadco-import .cadco-import-section h3 {
 	margin: 0 0 10px;
-	font-size: 13px;
+	font-size: 15px;
 	font-weight: 600;
 	letter-spacing: .12em;
 	text-transform: uppercase;
@@ -823,7 +834,7 @@
 	border-radius: 0;
 	background: transparent;
 	box-shadow: none;
-	font-size: 14px;
+	font-size: 16px;
 	margin-top: 0;
 }
 
@@ -833,7 +844,7 @@
 	background: transparent;
 	text-align: left;
 	font-family: var(--cadco-font-body);
-	font-size: 11px;
+	font-size: 12.5px;
 	font-weight: 500;
 	letter-spacing: .08em;
 	text-transform: uppercase;
@@ -844,7 +855,7 @@
 	padding: var(--cadco-space-2);
 	border-bottom: 1px solid rgba(17, 17, 17, .08);
 	background: transparent;
-	font-size: 13px;
+	font-size: 15px;
 	color: var(--cadco-text);
 }
 
@@ -859,7 +870,7 @@
 	background: transparent;
 	color: inherit;
 	font-family: var(--cadco-font-body);
-	font-size: 12px;
+	font-size: 14px;
 	font-variant-numeric: tabular-nums;
 	letter-spacing: .02em;
 	word-break: break-word;
@@ -883,7 +894,7 @@
 .cadco-import .cadco-import-term-group-label {
 	margin: 1em 0 .3em;
 	font-family: var(--cadco-font-heading);
-	font-size: 13px;
+	font-size: 15px;
 	font-weight: 600;
 	letter-spacing: .12em;
 	text-transform: uppercase;
@@ -915,7 +926,7 @@
 	display: block;
 	padding: 8px 0 0;
 	border-top: 1px solid rgba(17, 17, 17, .08);
-	font-size: 14px;
+	font-size: 16px;
 }
 
 .cadco-import .cadco-import-term-tree ul li,
@@ -926,7 +937,7 @@
 	gap: 10px;
 	max-width: 34em;
 	padding: 8px 0;
-	font-size: 14px;
+	font-size: 16px;
 }
 
 .cadco-import .cadco-import-term-tree ul li + li {
@@ -946,7 +957,7 @@
 }
 
 .cadco-import .cadco-import-term-count {
-	font-size: 11px;
+	font-size: 12.5px;
 	font-variant-numeric: tabular-nums;
 	color: var(--cadco-neutral-600);
 	white-space: nowrap;
@@ -967,7 +978,7 @@
 .cadco-import .cadco-import-in-use-heading {
 	margin: 0 0 7px;
 	font-family: var(--cadco-font-heading);
-	font-size: 15px;
+	font-size: 17px;
 	font-weight: 600;
 	letter-spacing: .06em;
 	text-transform: uppercase;
@@ -1024,7 +1035,7 @@
 
 .cadco-import .cadco-import-restore-banner strong {
 	font-family: var(--cadco-font-heading);
-	font-size: 15px;
+	font-size: 17px;
 	font-weight: 600;
 	letter-spacing: .06em;
 	text-transform: uppercase;
@@ -1079,13 +1090,13 @@
 
 .cadco-import .cadco-import-dropzone h2 {
 	margin: 0 0 8px;
-	font-size: 24px;
+	font-size: 28px;
 }
 
 .cadco-import .cadco-import-dropzone p {
 	max-width: 48ch;
 	margin: 0 auto 18px;
-	font-size: 14px;
+	font-size: 16px;
 }
 
 /* Visually hidden, never display:none — the input must stay focusable and
@@ -1107,7 +1118,7 @@
 .cadco-import .cadco-import-dropzone label.button {
 	cursor: pointer;
 	padding: 10px 22px;
-	font-size: 15px;
+	font-size: 17px;
 }
 
 .cadco-import .cadco-import-dropzone label.button:hover {
@@ -1124,7 +1135,7 @@
 
 .cadco-import .cadco-import-dropzone-hint {
 	margin: 16px 0 0;
-	font-size: 11px;
+	font-size: 12.5px;
 	font-variant-numeric: tabular-nums;
 	letter-spacing: .02em;
 	text-transform: uppercase;
@@ -1162,7 +1173,7 @@
 
 .cadco-import .cadco-import-step-n {
 	padding-top: 3px;
-	font-size: 11px;
+	font-size: 12.5px;
 	font-variant-numeric: tabular-nums;
 	color: var(--cadco-accent-700);
 }
@@ -1170,7 +1181,7 @@
 .cadco-import .cadco-import-step-title {
 	display: block;
 	font-family: var(--cadco-font-heading);
-	font-size: 14px;
+	font-size: 16px;
 	font-weight: 600;
 	letter-spacing: .08em;
 	text-transform: uppercase;
@@ -1180,7 +1191,7 @@
 .cadco-import .cadco-import-step-text {
 	display: block;
 	margin-top: 3px;
-	font-size: 13px;
+	font-size: 15px;
 	color: var(--cadco-neutral-700);
 }
 
@@ -1209,17 +1220,17 @@
 
 .cadco-import .cadco-import-checking-head h2 {
 	margin: 0;
-	font-size: 21px;
+	font-size: 24px;
 }
 
 .cadco-import .cadco-import-checking-percent {
-	font-size: 13px;
+	font-size: 15px;
 	color: var(--cadco-neutral-600);
 }
 
 .cadco-import .cadco-import-checking-file {
 	margin: 6px 0 0;
-	font-size: 11px;
+	font-size: 12.5px;
 	letter-spacing: .02em;
 	text-transform: uppercase;
 	color: var(--cadco-neutral-600);
@@ -1302,7 +1313,7 @@
 .cadco-import .cadco-import-checklist-name {
 	flex: 1;
 	font-family: var(--cadco-font-heading);
-	font-size: 14px;
+	font-size: 16px;
 	font-weight: 600;
 	letter-spacing: .02em;
 	color: var(--cadco-text);
@@ -1317,7 +1328,7 @@
 }
 
 .cadco-import .cadco-import-checklist-figure {
-	font-size: 12px;
+	font-size: 14px;
 	letter-spacing: .04em;
 	text-transform: uppercase;
 	color: var(--cadco-neutral-600);
@@ -1353,7 +1364,7 @@
 	border-radius: 0;
 	background: var(--cadco-surface);
 	font-family: var(--cadco-font-body);
-	font-size: 14px;
+	font-size: 16px;
 	color: var(--cadco-text);
 	box-shadow: none;
 }
@@ -1366,7 +1377,7 @@
 .cadco-import .cadco-import-history-label-status {
 	display: inline-block;
 	margin-left: .5em;
-	font-size: 12px;
+	font-size: 14px;
 	color: var(--cadco-neutral-600);
 }
 
@@ -1374,7 +1385,7 @@
 .cadco-import .cadco-import-history-lineage {
 	display: inline-block;
 	margin-top: .2em;
-	font-size: 12px;
+	font-size: 14px;
 	font-variant-numeric: tabular-nums;
 	color: var(--cadco-neutral-600);
 }
@@ -1410,7 +1421,7 @@
 
 .cadco-import .cadco-import-invalid-banner h2 {
 	margin: 0;
-	font-size: 20px;
+	font-size: 23px;
 	line-height: 1.15;
 	letter-spacing: .01em;
 	color: var(--cadco-danger-ink);
@@ -1419,7 +1430,7 @@
 .cadco-import .cadco-import-invalid-banner p {
 	margin: 7px 0 0;
 	max-width: 84ch;
-	font-size: 13px;
+	font-size: 15px;
 	color: var(--cadco-danger-ink);
 }
 
@@ -1466,7 +1477,7 @@
 	display: block;
 	margin-top: 3px;
 	font-family: var(--cadco-font-body);
-	font-size: 12px;
+	font-size: 14px;
 	font-weight: 400;
 	letter-spacing: 0;
 	text-transform: none;
@@ -1476,7 +1487,7 @@
 
 .cadco-import .cadco-import-navigator-issues .cadco-import-nav-meta {
 	padding-top: 1px;
-	font-size: 12px;
+	font-size: 14px;
 	color: var(--cadco-danger-ink);
 }
 

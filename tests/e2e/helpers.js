@@ -8,9 +8,16 @@ const THEME = path.resolve(__dirname, '../..');
 // Overridable so the suite runs on any machine, not just the one it was
 // developed on. Falls back to the original developer's path for local runs
 // that don't set the variable.
+//
+// This points at a dated snapshot deliberately, not at "whatever is newest".
+// The suite asserts exact figures against these two files — 236 rows and 0
+// issues for CORRECTED, 266 issues for SOURCE — so pointing it at a folder
+// whose contents change would turn a workbook revision into a test failure
+// with no code change behind it. When CADCO ships a new workbook, validate it
+// first, then move this path and re-baseline the numbers together.
 const WORKBOOKS = path.resolve(
 	process.env.CADCO_WORKBOOKS
-		|| '/Users/gustavogomez/Documents/Projects/CADCO/Products Excel Spreadsheet latest'
+		|| '/Users/gustavogomez/Documents/Projects/CADCO/Product Workbook/Aug 11 2026'
 );
 
 const CORRECTED = path.join(WORKBOOKS, 'Product Index Spreadsheet 2026_Website_CORRECTED.xlsx');
