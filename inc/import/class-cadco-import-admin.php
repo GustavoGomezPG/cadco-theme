@@ -35,6 +35,9 @@ final class CADCO_Import_Admin
         add_action('admin_enqueue_scripts', [self::class, 'assets']);
         add_action('wp_ajax_cadco_import_batch', [self::class, 'ajax_batch']);
         add_action('wp_ajax_cadco_import_label', [self::class, 'ajax_label']);
+        add_action('wp_ajax_cadco_import_check_read', [self::class, 'ajax_check_read']);
+        add_action('wp_ajax_cadco_import_check_validate', [self::class, 'ajax_check_validate']);
+        add_action('wp_ajax_cadco_import_check_plan', [self::class, 'ajax_check_plan']);
         add_action('admin_init', [self::class, 'maybe_export_redirects']);
         add_action('admin_init', [self::class, 'maybe_export_report']);
         add_action('admin_init', [self::class, 'maybe_export_archived_report']);
@@ -104,6 +107,13 @@ final class CADCO_Import_Admin
                 'failuresHeading'  => __('{count} row(s) failed and were not applied:', 'cadco-theme'),
                 'labelSaved'       => __('Saved.', 'cadco-theme'),
                 'labelFailed'      => __('Could not save the label.', 'cadco-theme'),
+                /* translators: {read} and {total} are each replaced with a number of sheets, e.g. "4 of 4 sheets" */
+                'sheetsChecked'    => __('{read} of {total} sheets', 'cadco-theme'),
+                /* translators: {count} is replaced with the number of rows checked */
+                'rowsChecked'      => __('{count} checked', 'cadco-theme'),
+                /* translators: {count} is replaced with the number of changes the plan contains */
+                'planChanges'      => __('{count} changes', 'cadco-theme'),
+                'checkFailed'      => __('The workbook could not be checked.', 'cadco-theme'),
             ],
         ]);
     }
@@ -234,6 +244,16 @@ final class CADCO_Import_Admin
             // read-only admin view gated only by current_user_can() above —
             // nothing here writes anything.
             $result = self::handle_restored_review(self::request_string($_GET['restored_run']));
+        } elseif (isset($_GET['checked_run'])) {
+            // Where the staged "Checking the workbook" flow (task 11, assets/js/import-admin.js)
+            // lands once its three AJAX stages have all finished: a read-only
+            // re-render of a run ajax_check_read()/ajax_check_validate()/
+            // ajax_check_plan() already archived and stored the full result
+            // for. Read-only for the same reason handle_restored_review()
+            // above is — no nonce required, gated only by current_user_can()
+            // above, and a reload can only ever re-show the same result, never
+            // create or prune anything.
+            $result = self::handle_checked_review(self::request_string($_GET['checked_run']));
         }
 
         CADCO_Import_View::stage_bar(self::screen_state($result), self::stage_bar_context($result));
@@ -329,21 +349,11 @@ final class CADCO_Import_Admin
             return null;
         }
 
-        $error = (int) ($_FILES['workbook']['error'] ?? UPLOAD_ERR_NO_FILE);
+        $file          = $_FILES['workbook'];
+        $reject_reason = self::reject_invalid_upload($file);
 
-        if ($error !== UPLOAD_ERR_OK) {
-            CADCO_Import_View::notice('error', self::upload_error_message($error));
-
-            return null;
-        }
-
-        $file  = $_FILES['workbook'];
-        $check = wp_check_filetype_and_ext($file['tmp_name'], $file['name'], [
-            'xlsx' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        ]);
-
-        if (($check['ext'] ?? '') !== 'xlsx') {
-            CADCO_Import_View::notice('error', __('That file is not an .xlsx workbook.', 'cadco-theme'));
+        if ($reject_reason !== null) {
+            CADCO_Import_View::notice('error', $reject_reason);
 
             return null;
         }
@@ -373,6 +383,304 @@ final class CADCO_Import_Admin
         $result['size']      = $size !== false ? $size : 0;
 
         return self::archive_and_track($archive, $result, (string) $file['name'], false);
+    }
+
+    /**
+     * The staged, AJAX-driven counterpart to handle_upload() (task 11): the
+     * "Checking the workbook" screen (assets/js/import-admin.js) that has no
+     * synchronous equivalent, because a single POST cannot report real
+     * per-phase progress back to the browser mid-request. Three requests, one
+     * slice of the same pipeline each, exactly the way ajax_batch() already
+     * does one slice of the apply run per request:
+     *
+     *   1. ajax_check_read()     — file-type check, archive the run, Reader +
+     *                              Normaliser. Returns sheet/row counts.
+     *   2. ajax_check_validate() — Validator, over the rows step 1 already
+     *      read. Returns the checked-row count and the three real tier
+     *      counts from ONE validate() pass — never three separately-animated
+     *      fake phases (task brief's central rule).
+     *   3. ajax_check_plan()     — Planner, only reached if step 2 passed.
+     *      Returns the plan's real counts.
+     *
+     * Between requests, whatever the previous step computed (rows, the
+     * report, the plan) is persisted to a file inside the run's own archive
+     * directory — write_check_state()/read_check_state() — the same
+     * technique ajax_batch() already uses for its job queue (queue.bin) and
+     * for the same reason: a WP transient backed by an external object cache
+     * has a size ceiling this can approach, and a plain file has none. This
+     * is also what lets the browser's final navigation
+     * (?checked_run=<run id>, handled by handle_checked_review() below) skip
+     * straight to rendering Review or the issue report from what these three
+     * calls already computed — Reader, Normaliser, Validator and Planner are
+     * never invoked a second time for the same run.
+     *
+     * The terminal side effects — report.csv, plan.json, manifest.json,
+     * prune(), the per-user run transient ajax_batch() reads at apply time —
+     * are exactly archive_and_track(), the same method handle_upload() ends
+     * on. finalise_check_run() below calls it exactly once per run: from
+     * ajax_check_validate() when the workbook fails, or from
+     * ajax_check_plan() when it passes — whichever request is the one that
+     * first knows the run's final report/plan.
+     */
+    public static function ajax_check_read(): void
+    {
+        check_ajax_referer(self::NONCE);
+
+        if (!current_user_can(self::CAPABILITY)) {
+            wp_send_json_error(['message' => __('Not allowed.', 'cadco-theme')], 403);
+        }
+
+        if (!isset($_FILES['workbook'])) {
+            wp_send_json_error(['message' => __('No file was uploaded.', 'cadco-theme')], 400);
+        }
+
+        $file          = $_FILES['workbook'];
+        $reject_reason = self::reject_invalid_upload($file);
+
+        if ($reject_reason !== null) {
+            wp_send_json_error(['message' => $reject_reason], 400);
+        }
+
+        $archive = CADCO_Import_Archive::create(get_current_user_id());
+        $dir     = $archive['dir'];
+        $path    = $dir . '/workbook.xlsx';
+
+        if (!move_uploaded_file($file['tmp_name'], $path)) {
+            wp_send_json_error(['message' => __('The uploaded file could not be saved.', 'cadco-theme')], 500);
+        }
+
+        $read       = CADCO_Import_Reader::read($path);
+        $normalised = CADCO_Import_Normaliser::normalise($read['rows']);
+        $size       = filesize($path);
+
+        self::write_check_state($dir, [
+            'filename' => (string) $file['name'],
+            'size'     => $size !== false ? $size : 0,
+            'rows'     => $normalised['rows'],
+            'changes'  => $normalised['changes'],
+            'errors'   => $read['errors'],
+        ]);
+
+        wp_send_json_success([
+            'run_id' => $archive['run_id'],
+            'sheets' => self::sheet_breakdown($normalised['rows']),
+            'rows'   => count($normalised['rows']),
+        ]);
+    }
+
+    /**
+     * Stage 2 of the staged check (task 11). See ajax_check_read()'s
+     * docblock for the shape of the whole flow.
+     */
+    public static function ajax_check_validate(): void
+    {
+        check_ajax_referer(self::NONCE);
+
+        if (!current_user_can(self::CAPABILITY)) {
+            wp_send_json_error(['message' => __('Not allowed.', 'cadco-theme')], 403);
+        }
+
+        $run_id = self::request_string($_POST['run_id'] ?? null);
+        $dir    = self::archive_dir($run_id);
+
+        if ($dir === null) {
+            wp_send_json_error(['message' => __('That import run could not be found.', 'cadco-theme')], 400);
+        }
+
+        $state = self::read_check_state($dir);
+
+        if ($state === null || !isset($state['rows'], $state['errors'])) {
+            wp_send_json_error(['message' => __('The uploaded workbook has expired. Please upload it again.', 'cadco-theme')], 400);
+        }
+
+        $report           = CADCO_Import_Validator::validate($state['rows'], $state['errors']);
+        $state['report']  = $report;
+        self::write_check_state($dir, $state);
+
+        // A failing workbook has nothing left to compute — ajax_check_plan()
+        // never runs for this request, so this IS the request that knows the
+        // run's final result. Finalise here, not in ajax_check_plan(), or a
+        // failed run would never get archived at all.
+        if (!$report->passed()) {
+            self::finalise_check_run($run_id, $dir, $state, null);
+        }
+
+        wp_send_json_success([
+            'checked' => count($state['rows']),
+            'issues'  => $report->count(),
+            'by_tier' => $report->tier_counts_padded(),
+        ]);
+    }
+
+    /**
+     * Stage 3 of the staged check (task 11), reached only when
+     * ajax_check_validate() reported a passing workbook. See
+     * ajax_check_read()'s docblock for the shape of the whole flow.
+     */
+    public static function ajax_check_plan(): void
+    {
+        check_ajax_referer(self::NONCE);
+
+        if (!current_user_can(self::CAPABILITY)) {
+            wp_send_json_error(['message' => __('Not allowed.', 'cadco-theme')], 403);
+        }
+
+        $run_id = self::request_string($_POST['run_id'] ?? null);
+        $dir    = self::archive_dir($run_id);
+
+        if ($dir === null) {
+            wp_send_json_error(['message' => __('That import run could not be found.', 'cadco-theme')], 400);
+        }
+
+        $state = self::read_check_state($dir);
+
+        if (
+            $state === null
+            || !($state['report'] ?? null) instanceof CADCO_Import_Report
+            || !$state['report']->passed()
+        ) {
+            wp_send_json_error(['message' => __('The workbook no longer validates.', 'cadco-theme')], 400);
+        }
+
+        // Ordinary imports (as opposed to a restore) always plan with no
+        // trashed candidates — see run_pipeline()'s own docblock for why
+        // that asymmetry exists. The staged flow only ever drives an
+        // ordinary upload; restore keeps its own separate,
+        // already-synchronous path (handle_restore()).
+        $plan          = CADCO_Import_Planner::plan($state['rows'], CADCO_Import_Repository::current_products(), []);
+        $state['plan'] = $plan;
+        self::write_check_state($dir, $state);
+
+        self::finalise_check_run($run_id, $dir, $state, $plan);
+
+        wp_send_json_success(['counts' => $plan->counts()]);
+    }
+
+    /**
+     * The shared terminal step of the staged check (task 11): whichever of
+     * ajax_check_validate() (a failing workbook) or ajax_check_plan() (a
+     * passing one) is the request that first knows the run's final
+     * report/plan calls this, exactly once per run, with exactly the same
+     * archive_and_track() the synchronous handle_upload() ends on — so a run
+     * archived through the staged flow gets report.csv, an optional
+     * plan.json, its manifest, retention pruning and the apply-time run
+     * transient on the identical terms a synchronous upload would.
+     *
+     * @param array{report:CADCO_Import_Report,rows:array,changes:array,filename:string,size:int} $state
+     */
+    private static function finalise_check_run(string $run_id, string $dir, array $state, ?CADCO_Import_Plan $plan): void
+    {
+        $result = [
+            'report'   => $state['report'],
+            'plan'     => $plan,
+            'rows'     => $state['rows'],
+            'changes'  => $state['changes'],
+            'filename' => $state['filename'],
+            'size'     => $state['size'],
+        ];
+
+        self::archive_and_track(['run_id' => $run_id, 'dir' => $dir], $result, $state['filename'], false);
+    }
+
+    /**
+     * Where the staged check's intermediate state lives between its three
+     * requests — one file per run, inside that run's own archive directory,
+     * alongside workbook.xlsx. Not .bin.ser: see ajax_batch()'s queue_file
+     * comment for why an extension mod_mime could ever map to a handler is
+     * unsafe for a file built from untrusted workbook content.
+     */
+    private static function check_state_path(string $dir): string
+    {
+        return $dir . '/check.bin';
+    }
+
+    /**
+     * @param array<string, mixed> $state
+     */
+    private static function write_check_state(string $dir, array $state): void
+    {
+        // CADCO_Import_Report, CADCO_Import_Issue and CADCO_Import_Plan are
+        // all plain-property value objects with no resources or closures, so
+        // a serialize()/unserialize() round trip carries them intact — the
+        // same property build_queue()'s job arrays rely on for queue.bin.
+        file_put_contents(self::check_state_path($dir), serialize($state), LOCK_EX);
+    }
+
+    /**
+     * Read back a run's staged-check state, or null for anything that isn't
+     * cleanly readable — a missing/symlinked file, or content that doesn't
+     * unserialize to an array. Never falls back to re-deriving anything: a
+     * state that cannot be read back intact means the caller reports failure
+     * and the operator starts again, the same discipline ajax_batch() applies
+     * to its own queue file.
+     *
+     * @return array<string, mixed>|null
+     */
+    private static function read_check_state(string $dir): ?array
+    {
+        $path = self::check_state_path($dir);
+
+        if (is_link($path) || !is_readable($path)) {
+            return null;
+        }
+
+        $raw = file_get_contents($path);
+
+        if ($raw === false) {
+            return null;
+        }
+
+        $state = unserialize($raw, ['allowed_classes' => [
+            CADCO_Import_Report::class,
+            CADCO_Import_Issue::class,
+            CADCO_Import_Plan::class,
+        ]]);
+
+        return is_array($state) ? $state : null;
+    }
+
+    /**
+     * Where the staged check (task 11) lands once its three AJAX stages have
+     * all finished — $run_id is whatever ajax_check_read() minted. Reads back
+     * exactly what those three calls already computed and stored
+     * (read_check_state()) and hands it to render_result() the same shape
+     * handle_upload() and handle_restored_review() do. Reader, Normaliser,
+     * Validator and Planner are never invoked here — that is the entire point
+     * of persisting the state between requests instead of re-deriving it.
+     *
+     * A run that only ever reached ajax_check_validate() and failed has a
+     * report but no plan — render_result() already renders that as the
+     * failing report, exactly as it does for a synchronous upload that
+     * failed validation.
+     *
+     * @return array{report:CADCO_Import_Report,plan:?CADCO_Import_Plan,rows:array,changes:array,filename:string,size:int}|null
+     */
+    private static function handle_checked_review(string $run_id): ?array
+    {
+        $dir = self::archive_dir($run_id);
+
+        if ($dir === null) {
+            CADCO_Import_View::notice('error', __('That import run could not be found.', 'cadco-theme'));
+
+            return null;
+        }
+
+        $state = self::read_check_state($dir);
+
+        if ($state === null || !($state['report'] ?? null) instanceof CADCO_Import_Report) {
+            CADCO_Import_View::notice('error', __('That import run could not be found.', 'cadco-theme'));
+
+            return null;
+        }
+
+        return [
+            'report'   => $state['report'],
+            'plan'     => $state['plan'] ?? null,
+            'rows'     => $state['rows'] ?? [],
+            'changes'  => $state['changes'] ?? [],
+            'filename' => (string) ($state['filename'] ?? ''),
+            'size'     => (int) ($state['size'] ?? 0),
+        ];
     }
 
     /**
@@ -724,6 +1032,35 @@ final class CADCO_Import_Admin
         }
 
         return $dir;
+    }
+
+    /**
+     * The reason a submitted file cannot be accepted, or null when it is a
+     * genuine .xlsx workbook. Shared between handle_upload() (the synchronous,
+     * no-JS path) and ajax_check_read() (the staged path, task 11) so a
+     * rejected file produces byte-identical wording on both — there is an
+     * E2E test asserting the exact "not an .xlsx workbook" message, and it
+     * must hold regardless of which path a browser takes to get here.
+     *
+     * @param array{name?:mixed,type?:mixed,tmp_name?:mixed,error?:mixed,size?:mixed} $file one $_FILES entry
+     */
+    private static function reject_invalid_upload(array $file): ?string
+    {
+        $error = (int) ($file['error'] ?? UPLOAD_ERR_NO_FILE);
+
+        if ($error !== UPLOAD_ERR_OK) {
+            return self::upload_error_message($error);
+        }
+
+        $check = wp_check_filetype_and_ext((string) ($file['tmp_name'] ?? ''), (string) ($file['name'] ?? ''), [
+            'xlsx' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        ]);
+
+        if (($check['ext'] ?? '') !== 'xlsx') {
+            return __('That file is not an .xlsx workbook.', 'cadco-theme');
+        }
+
+        return null;
     }
 
     /**

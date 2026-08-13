@@ -982,6 +982,15 @@
 	align-items: start;
 }
 
+/* Specificity, not the `hidden` attribute alone, is what actually hides this:
+   two chained classes above outrank the UA stylesheet's own `[hidden] {
+   display: none }`, so assets/js/import-admin.js setting `.hidden = true` to
+   swap in the checking panel would otherwise leave the grid laid out and
+   merely invisible-attribute-flagged. Explicit and unconditional. */
+.cadco-import .cadco-import-upload-grid[hidden] {
+	display: none;
+}
+
 /* The upload panel carries the frame; the dashed drop target sits inside it
    with a margin, exactly as the design nests the two. */
 .cadco-import .cadco-import-section.cadco-import-upload {
@@ -1113,6 +1122,149 @@
 	margin-top: 3px;
 	font-size: 13px;
 	color: var(--cadco-neutral-700);
+}
+
+/* ==========================================================================
+   "Checking the workbook" (task 11)
+
+   The one screen between Upload and Review: staged validation progress,
+   driven entirely by assets/js/import-admin.js over three AJAX requests.
+   Rendered hidden inside the Upload screen (CADCO_Import_View::checking_panel())
+   and revealed once a workbook is chosen, in place of the two-column upload
+   grid. Every figure here is real — see the panel's own PHP docblock — so
+   nothing here is styled as an indeterminate/animated fill; the bar's width
+   only ever moves in the three whole steps a real stage completion produces.
+   ========================================================================== */
+
+.cadco-import .cadco-import-checking {
+	padding: 22px 26px 26px;
+}
+
+.cadco-import .cadco-import-checking-head {
+	display: flex;
+	align-items: baseline;
+	justify-content: space-between;
+	gap: 16px;
+}
+
+.cadco-import .cadco-import-checking-head h2 {
+	margin: 0;
+	font-size: 21px;
+}
+
+.cadco-import .cadco-import-checking-percent {
+	font-size: 13px;
+	color: var(--cadco-neutral-600);
+}
+
+.cadco-import .cadco-import-checking-file {
+	margin: 6px 0 0;
+	font-size: 11px;
+	letter-spacing: .02em;
+	text-transform: uppercase;
+	color: var(--cadco-neutral-600);
+}
+
+/* Square, flat, in the accent — identical treatment to the apply stage's own
+   #cadco-import-progress bar, so the two staged-progress moments in this
+   wizard read as the same object. */
+.cadco-import .cadco-import-checking-bar {
+	margin-top: var(--cadco-space-4);
+}
+
+.cadco-import .cadco-import-checking-bar progress {
+	display: block;
+	width: 100%;
+	height: 7px;
+	border: 0;
+	border-radius: 0;
+	background: rgba(17, 17, 17, .12);
+	appearance: none;
+	-webkit-appearance: none;
+}
+
+.cadco-import .cadco-import-checking-bar progress::-webkit-progress-bar {
+	background: rgba(17, 17, 17, .12);
+	border-radius: 0;
+}
+
+.cadco-import .cadco-import-checking-bar progress::-webkit-progress-value {
+	background: var(--cadco-accent);
+	border-radius: 0;
+}
+
+.cadco-import .cadco-import-checking-bar progress::-moz-progress-bar {
+	background: var(--cadco-accent);
+	border-radius: 0;
+}
+
+.cadco-import .cadco-import-checklist {
+	margin: var(--cadco-space-6) 0 0;
+	padding: 0;
+	list-style: none;
+}
+
+.cadco-import .cadco-import-checklist-row {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	padding: 11px 0;
+	border-top: 1px solid var(--cadco-divider);
+}
+
+/* A square status pip — Industry has no rounded objects — empty until its
+   stage actually finishes. Waiting is the honest default: no fill, no
+   colour, nothing claimed. */
+.cadco-import .cadco-import-checklist-pip {
+	display: block;
+	flex: none;
+	width: 9px;
+	height: 9px;
+	border: 1px solid var(--cadco-neutral-400);
+	background: transparent;
+}
+
+.cadco-import .cadco-import-checklist-row.is-active .cadco-import-checklist-pip {
+	border-color: var(--cadco-accent);
+	background: var(--cadco-accent-200);
+}
+
+.cadco-import .cadco-import-checklist-row.is-done .cadco-import-checklist-pip {
+	border-color: var(--cadco-ok);
+	background: var(--cadco-ok);
+}
+
+.cadco-import .cadco-import-checklist-row.is-error .cadco-import-checklist-pip {
+	border-color: var(--cadco-danger);
+	background: var(--cadco-danger);
+}
+
+.cadco-import .cadco-import-checklist-name {
+	flex: 1;
+	font-family: var(--cadco-font-heading);
+	font-size: 14px;
+	font-weight: 600;
+	letter-spacing: .02em;
+	color: var(--cadco-text);
+}
+
+.cadco-import .cadco-import-checklist-row.is-active .cadco-import-checklist-name {
+	color: var(--cadco-accent-700);
+}
+
+.cadco-import .cadco-import-checklist-row.is-error .cadco-import-checklist-name {
+	color: var(--cadco-danger-ink);
+}
+
+.cadco-import .cadco-import-checklist-figure {
+	font-size: 12px;
+	letter-spacing: .04em;
+	text-transform: uppercase;
+	color: var(--cadco-neutral-600);
+}
+
+.cadco-import .cadco-import-checklist-row.is-done .cadco-import-checklist-figure {
+	color: var(--cadco-text);
 }
 
 /* ==========================================================================

@@ -532,7 +532,75 @@ final class CADCO_Import_View
                 </ol>
             </div>
         </div>
+
+        <?php self::checking_panel(); ?>
         <?php
+    }
+
+    /**
+     * The "Checking the workbook" panel (task 11) — the staged validation
+     * screen assets/js/import-admin.js drives over AJAX once a workbook is
+     * chosen, replacing the old straight-to-submit auto-submit. Rendered
+     * hidden inside the Upload screen and revealed by script when a file is
+     * picked or dropped, the same ready-made-but-hidden pattern
+     * #cadco-import-progress already uses on the Review screen for the apply
+     * flow.
+     *
+     * Every figure here starts empty (no pip class, no figure text).
+     * JavaScript only ever fills one in after the request that produced it
+     * has actually returned — see assets/js/import-admin.js's runCheck(). A
+     * stage that has not run yet stays exactly as rendered here: an empty
+     * pip, no figure. That is the task's central rule (task brief) applied to
+     * markup — there is nothing here for script to fake, only real slots for
+     * it to fill once the server has actually reported a number.
+     *
+     * Without JavaScript this panel is simply never shown: the "Check
+     * workbook" submit button (#cadco-import-submit-fallback, just above)
+     * stays the only route forward, and the synchronous handle_upload()
+     * renders Review or the report directly, exactly as it always has.
+     */
+    private static function checking_panel(): void
+    {
+        ?>
+        <div class="cadco-import-section cadco-import-checking" id="cadco-import-checking" hidden>
+            <div class="cadco-import-checking-head">
+                <h2>
+                    <?php esc_html_e('Checking the workbook', 'cadco-theme'); ?>
+                    <span class="cadco-import-checking-percent cadco-mono" id="cadco-import-checking-percent">0%</span>
+                </h2>
+                <p class="cadco-import-checking-file cadco-mono" id="cadco-import-checking-file"></p>
+            </div>
+            <div class="cadco-import-checking-bar">
+                <progress value="0" max="100" id="cadco-import-checking-progress"></progress>
+            </div>
+            <ul class="cadco-import-checklist" id="cadco-import-checklist" aria-live="polite">
+                <?php foreach (self::checking_stages() as $stage => $label) : ?>
+                    <li class="cadco-import-checklist-row" data-stage="<?php echo esc_attr($stage); ?>">
+                        <span class="cadco-import-checklist-pip" aria-hidden="true"></span>
+                        <span class="cadco-import-checklist-name"><?php echo esc_html($label); ?></span>
+                        <span class="cadco-import-checklist-figure cadco-mono"></span>
+                    </li>
+                <?php endforeach; ?>
+            </ul>
+        </div>
+        <?php
+    }
+
+    /**
+     * The checking panel's three rows, in render order, keyed by the same
+     * stage name assets/js/import-admin.js uses for
+     * `[data-stage="…"]` lookups and for the run's three AJAX actions
+     * (cadco_import_check_read / _validate / _plan).
+     *
+     * @return array<string, string>
+     */
+    private static function checking_stages(): array
+    {
+        return [
+            'read'     => __('Reading sheets', 'cadco-theme'),
+            'validate' => __('Validating rows', 'cadco-theme'),
+            'plan'     => __('Building the plan', 'cadco-theme'),
+        ];
     }
 
     public static function report(CADCO_Import_Report $report): void

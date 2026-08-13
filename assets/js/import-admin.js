@@ -244,13 +244,16 @@
 	if (dropzone && fileInput) {
 		var filenameOut = document.getElementById('cadco-import-filename');
 		var fallback = document.getElementById('cadco-import-submit-fallback');
+		var uploadGrid = document.querySelector('.cadco-import-upload-grid');
+		var checkingPanel = document.getElementById('cadco-import-checking');
+		var checkingConfig = window.cadcoImport;
 		var form = fileInput.form;
 		var submitted = false;
 
 		// Choosing the workbook IS the step, so the form submits itself and the
 		// separate "Check workbook" button is redundant. It stays in the markup
 		// for the no-JS case and is hidden here — this line running is itself
-		// the proof that the auto-submit below will work.
+		// the proof that the staged check below will work.
 		if (fallback) {
 			fallback.hidden = true;
 		}
@@ -267,41 +270,333 @@
 		};
 
 		/**
-		 * Submit as soon as a workbook is chosen.
-		 *
-		 * Guarded against firing twice: a double-change (picker then drop, or a
-		 * browser that re-fires change) would otherwise post the form while the
-		 * first submission is still in flight.
-		 *
-		 * requestSubmit(), not submit(): submit() bypasses validation and, more
-		 * importantly here, does not carry the clicked submit button's
-		 * name/value — and the server keys the upload branch on
-		 * `cadco_import_upload` being present.
+		 * bytes -> "2.1 MB". Client-side only, straight from the File API's own
+		 * `.size` — a real number the browser itself measured, not anything the
+		 * server has to be asked for. Good enough for the checking panel's
+		 * transient filename/size line; the Review screen's own Workbook
+		 * section still reports size_format() of the archived copy on disk.
 		 */
-		var autoSubmit = function () {
-			if (submitted || !form || !fileInput.files || !fileInput.files.length) {
-				return;
+		var formatBytes = function (bytes) {
+			if (typeof bytes !== 'number' || isNaN(bytes)) {
+				return '';
 			}
 
-			submitted = true;
-			dropzone.classList.add('is-submitting');
+			var units = ['B', 'KB', 'MB', 'GB'];
+			var value = bytes;
+			var i = 0;
+
+			while (value >= 1024 && i < units.length - 1) {
+				value = value / 1024;
+				i += 1;
+			}
+
+			return (i === 0 ? String(value) : value.toFixed(1)) + ' ' + units[i];
+		};
+
+		/**
+		 * The submit button's real name/value still travels with a plain
+		 * requestSubmit(), for the network-unavailable / no-JS-config edge
+		 * case below. requestSubmit(), not submit(): submit() bypasses
+		 * validation and does not carry the clicked submit button's
+		 * name/value, and the server keys the upload branch on
+		 * `cadco_import_upload` being present.
+		 */
+		var submitFormDirectly = function () {
+			if (!form) {
+				return;
+			}
 
 			var trigger = form.querySelector('#cadco_import_upload');
 
 			if (form.requestSubmit && trigger) {
 				form.requestSubmit(trigger);
 			} else if (trigger) {
-				// Older browsers: click the real button so its name/value is
-				// included exactly as a manual press would include it.
 				trigger.click();
 			} else {
 				form.submit();
 			}
 		};
 
+		// ---- The "Checking the workbook" stage (task 11) ----
+		//
+		// Three requests, one slice of CADCO_Import_Admin::run_pipeline() each,
+		// the same shape as the batched apply loop's step() below: the browser
+		// drives, the server reports a real number per finished phase, and
+		// nothing here is drawn until that number has actually arrived.
+
+		var checklistRows = checkingPanel
+			? checkingPanel.querySelectorAll('.cadco-import-checklist-row')
+			: [];
+		var percentOut = document.getElementById('cadco-import-checking-percent');
+		var progressOut = document.getElementById('cadco-import-checking-progress');
+		var fileInfoOut = document.getElementById('cadco-import-checking-file');
+		var totalStages = checklistRows.length;
+		var stagesDone = 0;
+
+		var stageRow = function (name) {
+			return checkingPanel
+				? checkingPanel.querySelector('.cadco-import-checklist-row[data-stage="' + name + '"]')
+				: null;
+		};
+
+		var updateCheckingProgress = function () {
+			var percent = totalStages ? Math.round((stagesDone / totalStages) * 100) : 0;
+
+			if (percentOut) {
+				percentOut.textContent = percent + '%';
+			}
+
+			if (progressOut) {
+				progressOut.value = percent;
+			}
+		};
+
+		var setStagePending = function (name) {
+			var row = stageRow(name);
+
+			if (row) {
+				row.classList.add('is-active');
+			}
+		};
+
+		/** A stage is only ever marked done here, with the real figure the server just returned. */
+		var setStageDone = function (name, figureText) {
+			var row = stageRow(name);
+
+			if (!row) {
+				return;
+			}
+
+			row.classList.remove('is-active');
+			row.classList.add('is-done');
+
+			var figure = row.querySelector('.cadco-import-checklist-figure');
+
+			if (figure) {
+				figure.textContent = figureText;
+			}
+
+			stagesDone += 1;
+			updateCheckingProgress();
+		};
+
+		var setStageError = function (name) {
+			var row = stageRow(name);
+
+			if (row) {
+				row.classList.remove('is-active');
+				row.classList.add('is-error');
+			}
+		};
+
+		/**
+		 * Mirrors CADCO_Import_View::notice()'s own markup exactly
+		 * (`<div class="notice notice-error"><p>…</p></div>`) so an error
+		 * surfaced by the staged check reads identically to one the
+		 * synchronous, no-JS path renders server-side — including to the E2E
+		 * suite's `.notice-error` selector. textContent throughout: the
+		 * message may echo server-supplied text derived from the upload.
+		 */
+		var showCheckError = function (message) {
+			var wrap = document.querySelector('.cadco-import');
+
+			if (!wrap) {
+				return;
+			}
+
+			var existing = wrap.querySelector('.cadco-import-checking-notice');
+
+			if (existing) {
+				existing.parentNode.removeChild(existing);
+			}
+
+			var notice = document.createElement('div');
+			notice.className = 'notice notice-error cadco-import-checking-notice';
+
+			var p = document.createElement('p');
+			p.textContent = message;
+			notice.appendChild(p);
+
+			var stagebar = wrap.querySelector('.cadco-import-stagebar');
+
+			if (stagebar && stagebar.parentNode) {
+				stagebar.parentNode.insertBefore(notice, stagebar);
+			} else {
+				wrap.insertBefore(notice, wrap.firstChild);
+			}
+		};
+
+		/** Let the operator try again after a failed stage. */
+		var resetToUpload = function () {
+			submitted = false;
+
+			if (checkingPanel) {
+				checkingPanel.hidden = true;
+			}
+
+			if (uploadGrid) {
+				uploadGrid.hidden = false;
+			}
+		};
+
+		var totalWrites = function (planCounts) {
+			planCounts = planCounts || {};
+
+			return ['create', 'update', 'rename', 'trash', 'untrash'].reduce(function (sum, key) {
+				return sum + (Number(planCounts[key]) || 0);
+			}, 0);
+		};
+
+		var postCheckStage = function (action, extra) {
+			var body = new FormData();
+			body.append('action', action);
+			body.append('_wpnonce', checkingConfig.nonce);
+
+			if (extra) {
+				Object.keys(extra).forEach(function (key) {
+					body.append(key, extra[key]);
+				});
+			}
+
+			return window.fetch(checkingConfig.ajaxUrl, {
+				method: 'POST',
+				body: body,
+				credentials: 'same-origin'
+			}).then(function (response) { return response.json(); });
+		};
+
+		var navigateToChecked = function (runId) {
+			window.location.href = window.location.pathname
+				+ '?post_type=product&page=cadco-import&checked_run=' + encodeURIComponent(runId);
+		};
+
+		var errorMessage = function (result) {
+			return (result && result.data && result.data.message) || checkingConfig.i18n.checkFailed;
+		};
+
+		/**
+		 * Stage 3: build the plan. Only ever reached once stage 2 has already
+		 * reported a passing workbook — an invalid one stops at stage 2 and
+		 * never calls this.
+		 */
+		var runPlanStage = function (runId) {
+			setStagePending('plan');
+
+			return postCheckStage('cadco_import_check_plan', { run_id: runId }).then(function (result) {
+				if (!result.success) {
+					setStageError('plan');
+					showCheckError(errorMessage(result));
+					resetToUpload();
+					return;
+				}
+
+				setStageDone('plan', format(checkingConfig.i18n.planChanges, { count: totalWrites(result.data.counts) }));
+				navigateToChecked(runId);
+			});
+		};
+
+		/** Stage 2: validate the rows stage 1 already read. */
+		var runValidateStage = function (runId) {
+			setStagePending('validate');
+
+			return postCheckStage('cadco_import_check_validate', { run_id: runId }).then(function (result) {
+				if (!result.success) {
+					setStageError('validate');
+					showCheckError(errorMessage(result));
+					resetToUpload();
+					return;
+				}
+
+				setStageDone('validate', format(checkingConfig.i18n.rowsChecked, { count: result.data.checked }));
+
+				// An invalid workbook has nothing left to plan — stop here and
+				// let the browser land on the issue report, exactly as the
+				// task brief requires ("stops at the validate stage").
+				if (result.data.issues > 0) {
+					navigateToChecked(runId);
+					return;
+				}
+
+				return runPlanStage(runId);
+			});
+		};
+
+		/** Stage 1: file-type check, archive the run, read the workbook. */
+		var runCheck = function (file) {
+			setStagePending('read');
+
+			var body = new FormData();
+			body.append('action', 'cadco_import_check_read');
+			body.append('_wpnonce', checkingConfig.nonce);
+			body.append('workbook', file);
+
+			window.fetch(checkingConfig.ajaxUrl, {
+				method: 'POST',
+				body: body,
+				credentials: 'same-origin'
+			})
+				.then(function (response) { return response.json(); })
+				.then(function (result) {
+					if (!result.success) {
+						setStageError('read');
+						showCheckError(errorMessage(result));
+						resetToUpload();
+						return;
+					}
+
+					var sheetsRead = result.data.sheets ? result.data.sheets.length : 0;
+
+					setStageDone('read', format(checkingConfig.i18n.sheetsChecked, { read: sheetsRead, total: sheetsRead }));
+
+					return runValidateStage(result.data.run_id);
+				})
+				.catch(function () {
+					setStageError('read');
+					showCheckError(checkingConfig.i18n.network);
+					resetToUpload();
+				});
+		};
+
+		/**
+		 * Reveal the checking panel and start the staged flow — the
+		 * replacement for the old straight-to-submit auto-submit. Guarded
+		 * against firing twice the same way the auto-submit was: a
+		 * double-change (picker then drop) must not start a second run while
+		 * the first is still in flight.
+		 */
+		var beginCheck = function () {
+			if (submitted || !fileInput.files || !fileInput.files.length) {
+				return;
+			}
+
+			var file = fileInput.files[0];
+
+			// No localized config means admin_enqueue_scripts never ran for
+			// this hook (the one real gap the "enqueues its script" E2E test
+			// exists to catch) — fall back to the plain synchronous submit
+			// rather than calling fetch() against undefined config.
+			if (!checkingConfig || !checkingPanel || !uploadGrid) {
+				submitted = true;
+				submitFormDirectly();
+				return;
+			}
+
+			submitted = true;
+
+			if (fileInfoOut) {
+				// textContent: file.name is attacker-supplied.
+				fileInfoOut.textContent = file.name + ' · ' + formatBytes(file.size);
+			}
+
+			uploadGrid.hidden = true;
+			checkingPanel.hidden = false;
+
+			runCheck(file);
+		};
+
 		fileInput.addEventListener('change', function () {
 			showFilename();
-			autoSubmit();
+			beginCheck();
 		});
 
 		// dragover must be cancelled too, or the browser's default handler
@@ -338,7 +633,7 @@
 			// this a real upload rather than a second, parallel code path.
 			fileInput.files = dropped;
 			showFilename();
-			autoSubmit();
+			beginCheck();
 		});
 	}
 

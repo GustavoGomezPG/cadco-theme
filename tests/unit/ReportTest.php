@@ -44,6 +44,27 @@ final class ReportTest extends TestCase
         self::assertSame(['A' => 1, 'B' => 1, 'C' => 1], $report->tier_counts());
     }
 
+    /**
+     * tier_counts() omits a tier with no issues entirely — correct for its
+     * own purpose, but the "Checking the workbook" stage (task 11) renders
+     * one checklist row per tier and needs a real 0 for a clean tier, not a
+     * missing array key. This is the padded form that guarantees all three.
+     */
+    public function test_tier_counts_padded_always_carries_all_three_tiers(): void
+    {
+        $report = new \CADCO_Import_Report();
+        $report->add(new \CADCO_Import_Issue('B', 'S', 2, 'Color', 'Grey', 'b', ''));
+
+        self::assertSame(['A' => 0, 'B' => 1, 'C' => 0], $report->tier_counts_padded());
+    }
+
+    public function test_tier_counts_padded_on_a_clean_report_is_all_zero(): void
+    {
+        $report = new \CADCO_Import_Report();
+
+        self::assertSame(['A' => 0, 'B' => 0, 'C' => 0], $report->tier_counts_padded());
+    }
+
     public function test_csv_has_a_header_and_one_line_per_issue(): void
     {
         $report = new \CADCO_Import_Report();

@@ -626,6 +626,76 @@ test.describe('Product import', () => {
 		await expect(page.locator('.notice-error')).toContainText(/not an \.xlsx workbook/i);
 	});
 
+	// Task 11: the "Checking the workbook" stage — the staged AJAX flow
+	// (cadco_import_check_read/_validate/_plan) that drives the panel
+	// between Upload and Review. Every figure it shows has to be one the
+	// server actually returned, so these tests read the panel's own DOM
+	// rather than only the screen it eventually lands on.
+	test('the checking panel appears with the real filename and carries a real figure per stage', async ({ page }) => {
+		resetCatalogue();
+
+		try {
+			await page.goto(IMPORT_PATH);
+			await page.setInputFiles('input[type="file"]', CORRECTED);
+
+			await expect(page.locator('#cadco-import-checking')).toBeVisible();
+			await expect(page.locator('#cadco-import-checking-file')).toContainText(path.basename(CORRECTED));
+
+			const readRow     = page.locator('.cadco-import-checklist-row[data-stage="read"]');
+			const validateRow = page.locator('.cadco-import-checklist-row[data-stage="validate"]');
+
+			// Real sheet count (4 canonical sheets) from cadco_import_check_read
+			// and real row count (236) from cadco_import_check_validate — two
+			// different AJAX responses, two different real numbers, neither
+			// interpolated or guessed client-side. Both rows finish, and stay
+			// on screen, well before the third (plan) stage's own response
+			// triggers the navigation to Review, so reading them here is not a
+			// race against that navigation the way reading the plan stage's own
+			// row would be.
+			await expect(readRow).toHaveClass(/is-done/);
+			await expect(readRow.locator('.cadco-import-checklist-figure')).toContainText('4');
+
+			await expect(validateRow).toHaveClass(/is-done/);
+			await expect(validateRow.locator('.cadco-import-checklist-figure')).toContainText('236');
+
+			// The flow completes by navigating to exactly the same Review a
+			// synchronous, no-JS upload would show — the plan stage's own real
+			// total (236 creates) is what got it there.
+			await expect(page.locator('#cadco-import-apply')).toBeVisible();
+			await expect(page.locator('.cadco-import-counts')).toContainText('236');
+			expect(productCount()).toBe(0);
+		} finally {
+			resetCatalogue();
+		}
+	});
+
+	test('an invalid workbook stops at the validate stage and lands on the issue report, with nothing written', async ({ page }) => {
+		const before = productCount();
+		let planRequested = false;
+
+		// The plan stage must never run for a workbook that failed validation
+		// — this is the direct proof of that, not just an inference from the
+		// screen that happens to land afterwards.
+		await page.route('**/admin-ajax.php', async (route) => {
+			const body = route.request().postData() || '';
+
+			if (body.includes('cadco_import_check_plan')) {
+				planRequested = true;
+			}
+
+			await route.continue();
+		});
+
+		await page.goto(IMPORT_PATH);
+		await page.setInputFiles('input[type="file"]', SOURCE);
+
+		await expect(page.locator('.notice-error')).toContainText(/nothing has been imported/i);
+		await expect(page.locator('#cadco-import-apply')).toHaveCount(0);
+
+		expect(planRequested).toBe(false);
+		expect(productCount()).toBe(before);
+	});
+
 	// Task 9: end-to-end coverage of the wizard shell (Task 5), the Review
 	// screen's Categories section (Tasks 5-7), the History tab and restore
 	// (Task 8). Everything above this point predates those tasks.

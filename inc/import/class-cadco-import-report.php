@@ -82,6 +82,30 @@ final class CADCO_Import_Report
         return array_map('count', $this->by_tier());
     }
 
+    /**
+     * tier_counts(), but always carrying all three tier keys rather than
+     * only the ones with an issue in them.
+     *
+     * The "Checking the workbook" stage (task 11) reports Tier A/B/C as one
+     * real number each, sourced from a single validate() pass rather than
+     * three separately-animated phases. A tier with zero issues is a real,
+     * honest 0 — not a key that silently disappears, which is what
+     * tier_counts() itself does and is correct for its own purpose (grouping
+     * issues that exist).
+     *
+     * @return array{A:int,B:int,C:int}
+     */
+    public function tier_counts_padded(): array
+    {
+        $counts = $this->tier_counts();
+
+        return [
+            'A' => $counts['A'] ?? 0,
+            'B' => $counts['B'] ?? 0,
+            'C' => $counts['C'] ?? 0,
+        ];
+    }
+
     public function to_csv(): string
     {
         $handle = fopen('php://temp', 'r+');
