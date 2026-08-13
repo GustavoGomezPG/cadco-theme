@@ -295,14 +295,43 @@ final class CADCO_Import_Admin
     private static function stage_bar_context(?array $result): array
     {
         if ($result === null) {
-            return ['filename' => '', 'rows' => 0, 'issues' => 0];
+            return ['filename' => '', 'rows' => 0, 'issues' => 0, 'run_id' => ''];
         }
 
         return [
             'filename' => (string) ($result['filename'] ?? ''),
             'rows'     => count($result['rows']),
             'issues'   => $result['report']->count(),
+            // Which run this screen is rendering. It is printed on the Apply
+            // button and sent back with every batch so ajax_batch() can refuse
+            // to apply a plan the operator is not looking at — see
+            // current_run_id() and ajax_batch()'s own guard.
+            'run_id'   => self::current_run_id(),
         ];
+    }
+
+    /**
+     * The run id the apply transient currently points at, or '' if there is
+     * none.
+     *
+     * Read from the transient rather than from $result on purpose: the
+     * transient is what ajax_batch() resolves the workbook from, so binding
+     * the screen to *it* is what makes the two provably the same run. The id
+     * is the archive directory's own basename — create() builds the directory
+     * from the run id — so no separate field has to be stored, and transients
+     * written before this guard existed keep working.
+     */
+    private static function current_run_id(): string
+    {
+        $run = get_transient('cadco_import_run_' . get_current_user_id());
+
+        if (!is_array($run) || !isset($run['dir']) || !is_string($run['dir'])) {
+            return '';
+        }
+
+        $id = basename($run['dir']);
+
+        return CADCO_Import_Archive::is_valid_run_id($id) ? $id : '';
     }
 
     /**
@@ -1238,6 +1267,30 @@ final class CADCO_Import_Admin
             || !is_readable($run['path'])
         ) {
             wp_send_json_error(['message' => __('The uploaded workbook has expired. Please upload it again.', 'cadco-theme')], 400);
+        }
+
+        // The plan the operator approved must be the plan this request writes.
+        //
+        // Without this, the only thing naming the workbook is the per-user
+        // transient, which always points at whatever was checked *last* — while
+        // a Review screen stays addressable in browser history at
+        // ?checked_run=<id> (check.bin is never deleted) and keeps a live Apply
+        // button. Two tabs, or the Back button, and Apply would re-plan from a
+        // different workbook and write changes that were never on screen: a
+        // restore showing "3 to restore, 0 to trash" could trash 40 products
+        // instead. The stale approved[] UPCs would not match either, so renames
+        // in the applied plan would silently lose their approval.
+        //
+        // The screen prints the run id it was rendered for on the Apply button
+        // (see stage_bar_context() -> current_run_id()); refusing any mismatch
+        // is what binds the two together.
+        $posted_run_id = self::request_string($_POST['run_id'] ?? '');
+        $current_run_id = basename($run['dir']);
+
+        if ($posted_run_id === '' || $posted_run_id !== $current_run_id) {
+            wp_send_json_error([
+                'message' => __('This page is showing a different import from the one now loaded. Reload the page to review the current import before applying it — nothing has been written.', 'cadco-theme'),
+            ], 409);
         }
 
         if ($offset === 0) {

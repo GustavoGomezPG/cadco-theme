@@ -16,6 +16,19 @@ const {
 	CORRECTED, SOURCE, IMPORT_PATH,
 } = require('./helpers');
 
+/**
+ * The count for one figure in the six-item plan summary.
+ *
+ * `.cadco-import-counts` is a single <ul> holding create, update, rename,
+ * trash, untrash and skip in that fixed order, so any regex run against the
+ * whole list spans all six: /236[\s\S]*unchanged/ is satisfied by
+ * "236 to create ... 0 unchanged" just as happily as by the intended
+ * "0 to create ... 236 unchanged". Scope to the one <li>, and assert the
+ * <strong> exactly, so 1 cannot be satisfied by 11.
+ */
+const planCount = (page, label) =>
+	page.locator('.cadco-import-counts li').filter({ hasText: label }).locator('strong');
+
 test.describe('Product import', () => {
 	test.beforeAll(() => resetCatalogue());
 	test.afterAll(() => {
@@ -443,7 +456,7 @@ test.describe('Product import', () => {
 			await page.goto(IMPORT_PATH);
 			await page.setInputFiles('input[type="file"]', reduced);
 			await expect(page.locator('.cadco-import-counts')).toBeVisible();
-			await expect(page.locator('.cadco-import-counts')).toContainText(/1[\s\S]*to trash/i);
+			await expect(planCount(page, 'to trash')).toHaveText('1');
 
 			// Step 3: apply. Four products remain published (one target row
 			// plus the three untouched background rows); the fifth is trashed.
@@ -566,9 +579,16 @@ test.describe('Product import', () => {
 
 		await expect(page.locator('.cadco-import-counts')).toBeVisible();
 
-		// 236 unchanged, nothing to create, nothing to update.
-		const counts = await page.locator('.cadco-import-counts').innerText();
-		expect(counts).toMatch(/236[\s\S]*unchanged/i);
+		// The whole point of a re-import: every row is recognised as unchanged
+		// and nothing is created or updated. All three are asserted, because
+		// this is the only coverage of the snapshot/hash round-trip through
+		// real storage (write_meta()'s JSON snapshot -> current_products()'s
+		// read-back -> Planner::hash()). PlannerTest cannot cover it: it hands
+		// the planner a hash it computed itself, so a snapshot-encoding
+		// regression is invisible there but would show up here as 236 updates.
+		await expect(planCount(page, 'unchanged')).toHaveText('236');
+		await expect(planCount(page, 'to create')).toHaveText('0');
+		await expect(planCount(page, 'to update')).toHaveText('0');
 
 		expect(productCount()).toBe(before);
 	});
@@ -602,7 +622,7 @@ test.describe('Product import', () => {
 		await page.goto(IMPORT_PATH);
 		await page.setInputFiles('input[type="file"]', fixture);
 
-		await expect(page.locator('.cadco-import-counts')).toContainText(/1[\s\S]*to update/i);
+		await expect(planCount(page, 'to update')).toHaveText('1');
 		await expect(page.getByRole('heading', { name: /Products to update/i })).toBeVisible();
 
 		const row = page.locator('table.widefat').filter({ hasText: model }).locator('tbody tr').first();
@@ -1047,7 +1067,7 @@ test.describe('Product import', () => {
 			// trash" (E2E-RESTORE-BG-1, missing from the restored workbook),
 			// so an unscoped match against the whole list would pass even if
 			// the untrash count itself had regressed to 0.
-			await expect(page.locator('.cadco-import-counts li').filter({ hasText: 'to restore' })).toContainText('1');
+			await expect(planCount(page, 'to restore')).toHaveText('1');
 		} finally {
 			resetCatalogue();
 		}
@@ -1237,4 +1257,108 @@ test.describe('Product import', () => {
 			cleanupUploadRuns();
 		}
 	});
+
+	// C1 (whole-branch review): the plan the operator approved must be the plan
+	// that gets written. ajax_batch() used to resolve the workbook purely from
+	// the per-user transient, which always points at whatever was checked LAST
+	// — while a Review screen stays addressable at ?checked_run=<id> with a
+	// live Apply button. Two tabs, or the Back button, and Apply wrote a
+	// different workbook than the one on screen.
+	test('applying a plan the screen no longer shows is refused, and the current one still applies', async ({ page }) => {
+		const first = buildFixture('history-run');
+		const second = buildFixture('history-run');
+
+		try {
+			await page.goto(IMPORT_PATH);
+			await page.setInputFiles('input[type="file"]', first);
+			await expect(page.locator('#cadco-import-apply')).toBeVisible();
+
+			const staleRunId = await page.locator('#cadco-import-apply').getAttribute('data-run-id');
+			const nonce = await page.evaluate(() => window.cadcoImport.nonce);
+			const ajaxUrl = new URL('/wp-admin/admin-ajax.php', page.url()).toString();
+
+			expect(staleRunId).toBeTruthy();
+
+			// A second check moves the transient on, exactly as a second tab would.
+			await page.goto(IMPORT_PATH);
+			await page.setInputFiles('input[type="file"]', second);
+			await expect(page.locator('#cadco-import-apply')).toBeVisible();
+
+			const currentRunId = await page.locator('#cadco-import-apply').getAttribute('data-run-id');
+			expect(currentRunId).not.toBe(staleRunId);
+
+			const before = counts();
+
+			// The stale screen must not be able to write anything.
+			const refused = await page.request.post(ajaxUrl, {
+				form: { action: 'cadco_import_batch', _wpnonce: nonce, offset: 0, size: 25, run_id: staleRunId },
+			});
+			expect(refused.status()).toBe(409);
+			expect((await refused.json()).success).toBe(false);
+
+			const after = counts();
+			expect(after.published).toBe(before.published);
+			expect(after.trashed).toBe(before.trashed);
+
+			// Positive control: without this, a handler that refused everything
+			// would pass the assertion above and break the importer entirely.
+			const accepted = await page.request.post(ajaxUrl, {
+				form: { action: 'cadco_import_batch', _wpnonce: nonce, offset: 0, size: 25, run_id: currentRunId },
+			});
+			expect(accepted.status()).toBe(200);
+			expect((await accepted.json()).success).toBe(true);
+		} finally {
+			resetCatalogue();
+		}
+	});
+
+	// C3 (whole-branch review): the checking panel kept the failed attempt's
+	// state, so a retry opened showing the PREVIOUS workbook's figures already
+	// green — and stagesDone accumulated across attempts, printing >100%.
+	test('a retry after a failed check starts from a clean panel', async ({ page }) => {
+		await page.goto(IMPORT_PATH);
+
+		// Fail stage 1 with a file the reader refuses.
+		await page.setInputFiles('input[type="file"]', {
+			name: 'not-a-workbook.txt',
+			mimeType: 'text/plain',
+			buffer: Buffer.from('Model #,UPC#\nBLC-113,654796-52113-5\n'),
+		});
+		await expect(page.locator('.cadco-import-message.is-error')).toBeVisible();
+
+		// Hold the retry's first stage open so the panel can be inspected at
+		// the moment it re-opens, before any new figure has arrived.
+		await page.route('**/admin-ajax.php', async (route) => {
+			if ((route.request().postData() || '').includes('cadco_import_check_read')) {
+				await new Promise((r) => setTimeout(r, 4000));
+			}
+			await route.continue();
+		});
+
+		const fixture = buildFixture('history-run');
+
+		try {
+			await page.setInputFiles('input[type="file"]', fixture);
+
+			const rows = page.locator('.cadco-import-checklist-row');
+			await expect(rows.first()).toBeVisible();
+
+			// No row carries a state from the failed attempt, and no figure
+			// survives it. The error pip in particular used to win over
+			// is-active, so a good workbook was read under a red pip.
+			await expect(page.locator('.cadco-import-checklist-row.is-error')).toHaveCount(0);
+			await expect(page.locator('.cadco-import-checklist-row.is-done')).toHaveCount(0);
+
+			for (const text of await rows.locator('.cadco-import-checklist-figure').allTextContents()) {
+				expect(text.trim()).toBe('');
+			}
+
+			// And the percentage restarts rather than continuing to climb.
+			await expect(page.locator('.cadco-import-checking-percent')).toHaveText('0%');
+		} finally {
+			await page.unroute('**/admin-ajax.php');
+			resetCatalogue();
+		}
+	});
+
 });

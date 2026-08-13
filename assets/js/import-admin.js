@@ -333,10 +333,53 @@
 		var totalStages = checklistRows.length;
 		var stagesDone = 0;
 
+		// The stage-bar subtitles as the server rendered them, captured before
+		// anything overwrites them so a failed check can put them back. Without
+		// this the operator is returned to the upload form under a bar still
+		// reading "validating rows…" for a check that is no longer running.
+		var serverSubtitles = {};
+
 		var stageRow = function (name) {
 			return checkingPanel
 				? checkingPanel.querySelector('.cadco-import-checklist-row[data-stage="' + name + '"]')
 				: null;
+		};
+
+		/**
+		 * Return the checking panel to the state a fresh workbook deserves.
+		 *
+		 * Called when a NEW check begins, not when a failed one is dismissed:
+		 * the failed state must stay readable until the operator has chosen
+		 * another file, or the reason for the failure vanishes with it.
+		 *
+		 * Without this the panel is re-shown exactly as the failed attempt left
+		 * it. A retry after a stage-2 failure would open with "Reading sheets —
+		 * 4 of 4" and "Validating rows — 236 checked" already green, carrying
+		 * the PREVIOUS workbook's numbers before a byte of the new one had been
+		 * posted — which is precisely what this panel exists not to do — and
+		 * `stagesDone` would keep accumulating across attempts, printing 133%
+		 * and 167% while the <progress> element silently clamped at 100.
+		 */
+		var resetCheckingPanel = function () {
+			stagesDone = 0;
+
+			Array.prototype.forEach.call(checklistRows, function (row) {
+				row.classList.remove('is-done', 'is-active', 'is-error');
+
+				var figure = row.querySelector('.cadco-import-checklist-figure');
+
+				if (figure) {
+					figure.textContent = '';
+				}
+			});
+
+			updateCheckingProgress();
+
+			var existingNotice = document.querySelector('.cadco-import-checking-notice');
+
+			if (existingNotice && existingNotice.parentNode) {
+				existingNotice.parentNode.removeChild(existingNotice);
+			}
 		};
 
 		var updateCheckingProgress = function () {
@@ -369,9 +412,37 @@
 			var stage = document.querySelector('.cadco-import-stage[data-stage="' + stageNumber + '"]');
 			var subtitle = stage ? stage.querySelector('.cadco-import-stage-subtitle') : null;
 
-			if (subtitle) {
-				subtitle.textContent = text;
+			if (!subtitle) {
+				return;
 			}
+
+			// Remember what the server rendered the first time this stage is
+			// overwritten, so restoreWizardSubtitles() can put it back.
+			if (!Object.prototype.hasOwnProperty.call(serverSubtitles, stageNumber)) {
+				serverSubtitles[stageNumber] = subtitle.textContent;
+			}
+
+			subtitle.textContent = text;
+			// The subtitle is ellipsised (white-space: nowrap), and a filename
+			// is exactly the kind of value whose distinguishing part is at the
+			// end — two workbooks differing only in a trailing v2/v3 render
+			// identically without this.
+			subtitle.setAttribute('title', text);
+		};
+
+		/** Undo setWizardSubtitle(), so a bar that survives a failed check stops describing it. */
+		var restoreWizardSubtitles = function () {
+			Object.keys(serverSubtitles).forEach(function (stageNumber) {
+				var stage = document.querySelector('.cadco-import-stage[data-stage="' + stageNumber + '"]');
+				var subtitle = stage ? stage.querySelector('.cadco-import-stage-subtitle') : null;
+
+				if (subtitle) {
+					subtitle.textContent = serverSubtitles[stageNumber];
+					subtitle.removeAttribute('title');
+				}
+			});
+
+			serverSubtitles = {};
 		};
 
 		var setStagePending = function (name) {
@@ -465,6 +536,12 @@
 		/** Let the operator try again after a failed stage. */
 		var resetToUpload = function () {
 			submitted = false;
+
+			// The bar must stop describing a check that is no longer running;
+			// the checklist itself is deliberately NOT cleared here, so the
+			// failed state stays readable until another file is chosen (see
+			// resetCheckingPanel()).
+			restoreWizardSubtitles();
 
 			if (checkingPanel) {
 				checkingPanel.hidden = true;
@@ -624,6 +701,10 @@
 				fileInfoOut.textContent = file.name + ' · ' + formatBytes(file.size);
 			}
 
+			// A new workbook gets a clean panel — never the figures the last
+			// attempt left behind.
+			resetCheckingPanel();
+
 			// Stage 01's subtitle was rendered as "no workbook yet"; there is
 			// one now, and its name is a fact the browser already holds.
 			setWizardSubtitle(1, file.name);
@@ -736,6 +817,12 @@
 		body.append('action', 'cadco_import_batch');
 		body.append('_wpnonce', config.nonce);
 		body.append('offset', offset);
+		// Binds this request to the run the screen was rendered for. The
+		// server refuses any mismatch (CADCO_Import_Admin::ajax_batch()), which
+		// is what stops a Review left open in one tab from applying a workbook
+		// checked later in another. Read from the button rather than held in a
+		// closure so it cannot drift from what was rendered.
+		body.append('run_id', button.getAttribute('data-run-id') || '');
 		body.append('size', config.batchSize);
 		approved().forEach(function (upc) { body.append('approved[]', upc); });
 

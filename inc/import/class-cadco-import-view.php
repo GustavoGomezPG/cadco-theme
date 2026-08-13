@@ -48,12 +48,14 @@ final class CADCO_Import_View
      *  - filename: string   the uploaded workbook's original name, or '' before any upload
      *  - rows:     int       rows read from the workbook (0 before any upload)
      *  - issues:   int       validation issues found (0 before any upload, or once clean)
+     *  - run_id:   string    the run this screen is rendering, or '' when there is none
      */
     public static function stage_bar(string $state, array $context): void
     {
         $filename = (string) ($context['filename'] ?? '');
         $rows     = (int) ($context['rows'] ?? 0);
         $issues   = (int) ($context['issues'] ?? 0);
+        $run_id   = (string) ($context['run_id'] ?? '');
 
         // Only 'upload' leaves stage 1 itself current; both 'invalid' and
         // 'review' mean a workbook was already read, so stage 2 (Review) is
@@ -149,7 +151,7 @@ final class CADCO_Import_View
                 <?php endforeach; ?>
             </ol>
             <div class="cadco-import-cta">
-                <?php self::cta($state, $issues); ?>
+                <?php self::cta($state, $issues, $run_id); ?>
             </div>
         </div>
         <?php
@@ -169,11 +171,23 @@ final class CADCO_Import_View
      * zero elements match #cadco-import-apply on an invalid workbook, so the
      * inert stand-in must never claim that id.
      */
-    private static function cta(string $state, int $issues): void
+    private static function cta(string $state, int $issues, string $run_id = ''): void
     {
         if ($state === 'review') {
             ?>
-            <button type="button" class="button button-primary" id="cadco-import-apply">
+            <?php
+            // data-run-id binds this button to the run the screen was rendered
+            // for. assets/js/import-admin.js sends it with every batch and
+            // CADCO_Import_Admin::ajax_batch() refuses any mismatch, so a
+            // Review left open in another tab can never apply the workbook
+            // that was checked after it.
+            ?>
+            <button
+                type="button"
+                class="button button-primary"
+                id="cadco-import-apply"
+                data-run-id="<?php echo esc_attr($run_id); ?>"
+            >
                 <?php esc_html_e('Apply plan', 'cadco-theme'); ?>
             </button>
             <div id="cadco-import-progress" hidden>
