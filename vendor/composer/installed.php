@@ -3,7 +3,7 @@
         'name' => 'cadco/cadco-theme',
         'pretty_version' => 'dev-main',
         'version' => 'dev-main',
-        'reference' => 'a091f3a47923665e9addc003ae6bce56e1459929',
+        'reference' => 'c5b8b7c9b63db10a91f73cc04c346b00f095086e',
         'type' => 'wordpress-theme',
         'install_path' => __DIR__ . '/../../',
         'aliases' => array(),
@@ -13,7 +13,7 @@
         'cadco/cadco-theme' => array(
             'pretty_version' => 'dev-main',
             'version' => 'dev-main',
-            'reference' => 'a091f3a47923665e9addc003ae6bce56e1459929',
+            'reference' => 'c5b8b7c9b63db10a91f73cc04c346b00f095086e',
             'type' => 'wordpress-theme',
             'install_path' => __DIR__ . '/../../',
             'aliases' => array(),
