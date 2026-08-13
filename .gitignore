@@ -5,3 +5,34 @@ tests/e2e/.auth.json
 tests/e2e/.password-restore.json
 test-results/
 playwright-report/
+
+# ── PHPUnit's dependency tree ────────────────────────────────────────────────
+#
+# vendor/ is committed on purpose — the WP Engine deploy has no build step — so
+# it cannot simply be ignored wholesale. These directories are the exception:
+# they are dev-only, are never loaded in production, and come to about 9 MB.
+#
+# They are listed because this has gone wrong twice. Running `composer install`
+# without `--no-dev` installs them, and a subsequent `git add -A` will happily
+# stage PHPUnit for production. Install with `composer install --no-dev -o`
+# before committing vendor/; these rules are the safety net for when someone
+# forgets.
+#
+# Derived from composer.lock's packages-dev. No vendor namespace is shared
+# between a production and a dev package, so ignoring each namespace whole is
+# safe. Note what is deliberately NOT here: vendor/composer/, which holds the
+# autoloader *and* the production package composer/pcre.
+vendor/myclabs/
+vendor/nikic/
+vendor/phar-io/
+vendor/phpunit/
+vendor/sebastian/
+vendor/theseer/
+vendor/bin/
+
+# Generated only when some installed package uses `files` autoloading. In this
+# project only myclabs/deep-copy and phpunit/phpunit do, both dev-only, so this
+# file exists solely while dev dependencies are installed — a --no-dev install
+# removes it. Listed by path, not by directory, because vendor/composer/ also
+# holds the real autoloader and the production package composer/pcre.
+vendor/composer/autoload_files.php
