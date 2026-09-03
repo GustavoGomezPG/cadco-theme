@@ -16,19 +16,110 @@
 declare(strict_types=1);
 
 /**
- * The sheets the importer recognises, in canonical order.
+ * The sheets the importer recognises, mapped to the top-level product
+ * category each one creates on the storefront.
+ *
+ * The tab name used to *be* the category name — CADCO_Import_Plan::categories_for()
+ * title-cased it and used it as the parent term. That made a spreadsheet tab
+ * label a public-facing category name and a URL segment, so renaming a tab
+ * silently restructured the shop: categories match by name and are never
+ * renamed in place, so a retitled tab creates a second category and strands
+ * the first, empty, on a live URL.
+ *
+ * Declaring the category here breaks that coupling. CADCO may retitle a tab
+ * however they like; what customers see changes only when this map does.
+ *
+ * The workbook's tab is currently 'CONVECTION | COOK & HOLD OVENS' — the pipe
+ * is a tab-label convention, not something that belongs in a category name.
  *
  * Matched case-insensitively. A sheet whose name begins with '_' is skipped
  * so CADCO can keep working notes in the workbook; any other unrecognised
- * sheet is a Tier A error rather than a silent skip.
+ * sheet is a Tier A error rather than a silent skip, because a genuinely new
+ * product line should be a deliberate decision rather than a new category
+ * appearing on the shop because someone added a tab.
+ *
+ * @return array<string, string> sheet name => category name
+ */
+function cadco_import_sheet_categories(): array
+{
+    return [
+        'CONVECTION | COOK & HOLD OVENS' => 'Convection & Cook-Hold Ovens',
+        'FAST COOKING OVENS'             => 'Fast Cooking Ovens',
+        'COUNTERTOP EQUIPMENT'           => 'Countertop Equipment',
+        'FOODSERVICE CARTS'              => 'Foodservice Carts',
+    ];
+}
+
+/**
+ * Tab names CADCO has shipped before, mapped to the canonical name above.
+ *
+ * A workbook is not always the newest one: the History tab restores an
+ * archived run from an earlier revision, and CADCO occasionally reverts a
+ * change. Without this an older workbook stops importing the moment a tab is
+ * retitled, which is the failure this whole indirection exists to avoid.
+ *
+ * Declared rather than guessed, for the same reason as
+ * cadco_import_value_aliases(): no string-distance rule relates
+ * 'CONVECTION OVENS' to 'CONVECTION | COOK & HOLD OVENS' without also
+ * matching sheets that are genuinely different.
+ *
+ * @return array<string, string> former sheet name => canonical sheet name
+ */
+function cadco_import_sheet_aliases(): array
+{
+    return [
+        // Retitled in the 12 August 2026 revision.
+        'CONVECTION OVENS' => 'CONVECTION | COOK & HOLD OVENS',
+    ];
+}
+
+/**
+ * The sheets the importer recognises, in canonical order.
  */
 function cadco_import_sheets(): array
 {
+    return array_keys(cadco_import_sheet_categories());
+}
+
+/**
+ * The storefront category a sheet places its products under, or '' if the
+ * sheet is not one the importer recognises.
+ *
+ * Resolves a former tab name too. The Reader canonicalises '__sheet' as it
+ * reads, so in a live run the alias branch is never needed — it is here so
+ * that a row carrying a name from an older revision, wherever it reaches this
+ * function from, still lands in the same category rather than in none.
+ */
+function cadco_import_sheet_category(string $sheet): string
+{
+    $sheet = trim($sheet);
+
+    foreach (cadco_import_sheet_aliases() as $alias => $canonical) {
+        if (strcasecmp($sheet, $alias) === 0) {
+            $sheet = $canonical;
+            break;
+        }
+    }
+
+    return cadco_import_sheet_categories()[$sheet] ?? '';
+}
+
+/**
+ * Column headings that mean the same field, mapped to the canonical heading.
+ *
+ * Applied by the Reader as it builds each sheet's header row, so every unit
+ * downstream sees one name. The convection sheet calls its manual column
+ * 'Install / Manual URL' while the other three call it 'Manual URL'; because
+ * the manual column is not required, the mismatch dropped 73 links per run
+ * without raising anything.
+ *
+ * @return array<string, string> heading as written => canonical heading
+ */
+function cadco_import_column_aliases(): array
+{
     return [
-        'CONVECTION OVENS',
-        'FAST COOKING OVENS',
-        'COUNTERTOP EQUIPMENT',
-        'FOODSERVICE CARTS',
+        'Install / Manual URL' => 'Manual URL',
+        'Installation Manual URL' => 'Manual URL',
     ];
 }
 
@@ -174,6 +265,30 @@ function cadco_import_attribute_columns(): array
 function cadco_import_multi_value_attributes(): array
 {
     return ['Certifications'];
+}
+
+/**
+ * Media columns whose cell may hold several links.
+ *
+ * A product often has more than one of a thing — two spec sheets, a manual
+ * plus an installation guide, several product photographs — and the workbook
+ * has one column for each kind. CADCO separate them with a comma or a line
+ * break inside the cell, so both are accepted; see CADCO_Import_Media::urls().
+ *
+ * 'Warranty URL' and 'Website URL' are deliberately absent. They are single
+ * addresses rather than collections, and 'Website URL' in particular is the
+ * left-hand side of the legacy redirect map — a cell holding two of them
+ * would make the old address ambiguous.
+ */
+function cadco_import_multi_url_columns(): array
+{
+    return [
+        'Images URL',
+        'Video URL',
+        'Spec Sheet URL',
+        'Diagram URL',
+        'Manual URL',
+    ];
 }
 
 /**

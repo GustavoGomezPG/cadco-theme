@@ -57,7 +57,9 @@ final class CADCO_Import_Reader
                 continue;
             }
 
-            $canonical = array_search(strtoupper($title), $known, true);
+            // A tab CADCO has since retitled still names the same sheet.
+            $resolved  = self::resolve_sheet($title);
+            $canonical = array_search(strtoupper($resolved), $known, true);
 
             if ($canonical === false) {
                 $errors[] = self::error(
@@ -101,7 +103,30 @@ final class CADCO_Import_Reader
     }
 
     /**
+     * The canonical name for a sheet title, resolving a former title through
+     * cadco_import_sheet_aliases(). An unknown title is returned unchanged so
+     * the caller still reports it as unrecognised.
+     */
+    private static function resolve_sheet(string $title): string
+    {
+        foreach (cadco_import_sheet_aliases() as $alias => $canonical) {
+            if (strcasecmp($title, $alias) === 0) {
+                return $canonical;
+            }
+        }
+
+        return $title;
+    }
+
+    /**
      * Header text from row 1, indexed by column number.
+     *
+     * Headings are canonicalised through cadco_import_column_aliases() so
+     * that a column one sheet spells differently reaches the rest of the
+     * pipeline under one name. An alias is only applied when the canonical
+     * heading is absent from the sheet: were both present, renaming would
+     * make one silently overwrite the other, which is a worse failure than
+     * the one the alias exists to fix.
      *
      * @return array<int, string>
      */
@@ -115,6 +140,16 @@ final class CADCO_Import_Reader
 
             if ($value !== '') {
                 $headers[$c] = $value;
+            }
+        }
+
+        $aliases = cadco_import_column_aliases();
+
+        foreach ($headers as $c => $heading) {
+            $canonical = $aliases[$heading] ?? null;
+
+            if ($canonical !== null && !in_array($canonical, $headers, true)) {
+                $headers[$c] = $canonical;
             }
         }
 

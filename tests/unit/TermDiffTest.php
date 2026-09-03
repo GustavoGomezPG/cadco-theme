@@ -19,15 +19,15 @@ final class TermDiffTest extends TestCase
     public function test_new_categories_are_nested_parent_to_child(): void
     {
         $diff = \CADCO_Import_Term_Diff::compare([
-            self::row('BLC-113', 'CONVECTION OVENS', 'Bakerlux Classic'),
-            self::row('BLC-133', 'CONVECTION OVENS', 'Bakerlux Classic'),
-            self::row('BLS-113', 'CONVECTION OVENS', 'Bakerlux Station'),
+            self::row('BLC-113', 'CONVECTION | COOK & HOLD OVENS', 'Bakerlux Classic'),
+            self::row('BLC-133', 'CONVECTION | COOK & HOLD OVENS', 'Bakerlux Classic'),
+            self::row('BLS-113', 'CONVECTION | COOK & HOLD OVENS', 'Bakerlux Station'),
         ], []);
 
         $new = $diff['product_cat']['new'];
 
         self::assertCount(1, $new, 'one top-level category');
-        self::assertSame('Convection Ovens', $new[0]['name']);
+        self::assertSame('Convection & Cook-Hold Ovens', $new[0]['name']);
         self::assertCount(2, $new[0]['children']);
         self::assertSame('Bakerlux Classic', $new[0]['children'][0]['name']);
         self::assertSame(2, $new[0]['children'][0]['products'], 'two products land in it');
@@ -36,10 +36,10 @@ final class TermDiffTest extends TestCase
 
     public function test_a_wholly_new_parent_is_marked_parent_is_new(): void
     {
-        // Nothing existing at all, so "Convection Ovens" itself is being
+        // Nothing existing at all, so "Convection & Cook-Hold Ovens" itself is being
         // created, not just gaining a child.
         $diff = \CADCO_Import_Term_Diff::compare([
-            self::row('BLC-113', 'CONVECTION OVENS', 'Bakerlux Classic'),
+            self::row('BLC-113', 'CONVECTION | COOK & HOLD OVENS', 'Bakerlux Classic'),
         ], []);
 
         self::assertTrue($diff['product_cat']['new'][0]['parent_is_new']);
@@ -47,18 +47,18 @@ final class TermDiffTest extends TestCase
 
     public function test_a_new_child_under_an_existing_parent_does_not_mark_the_parent_new(): void
     {
-        // "Convection Ovens" already exists on the site; only its child
+        // "Convection & Cook-Hold Ovens" already exists on the site; only its child
         // "Bakerlux Station" is new. The parent entry that carries that new
         // child must not be counted as a new parent itself — a caller
         // summing "how many terms will this plan create" needs to tell the
         // two situations apart (see CADCO_Import_View::term_diff_totals()).
         $diff = \CADCO_Import_Term_Diff::compare(
             [
-                self::row('BLC-113', 'CONVECTION OVENS', 'Bakerlux Classic'),
-                self::row('BLS-113', 'CONVECTION OVENS', 'Bakerlux Station'),
+                self::row('BLC-113', 'CONVECTION | COOK & HOLD OVENS', 'Bakerlux Classic'),
+                self::row('BLS-113', 'CONVECTION | COOK & HOLD OVENS', 'Bakerlux Station'),
             ],
             [
-                ['taxonomy' => 'product_cat', 'term_id' => 22, 'name' => 'Convection Ovens', 'parent' => 0, 'count' => 0],
+                ['taxonomy' => 'product_cat', 'term_id' => 22, 'name' => 'Convection & Cook-Hold Ovens', 'parent' => 0, 'count' => 0],
                 ['taxonomy' => 'product_cat', 'term_id' => 26, 'name' => 'Bakerlux Classic', 'parent' => 22, 'count' => 0],
             ]
         );
@@ -66,7 +66,7 @@ final class TermDiffTest extends TestCase
         $new = $diff['product_cat']['new'];
 
         self::assertCount(1, $new, 'one parent entry, carrying only the new child');
-        self::assertSame('Convection Ovens', $new[0]['name']);
+        self::assertSame('Convection & Cook-Hold Ovens', $new[0]['name']);
         self::assertFalse($new[0]['parent_is_new'], 'the parent already existed');
         self::assertCount(1, $new[0]['children']);
         self::assertSame('Bakerlux Station', $new[0]['children'][0]['name']);
@@ -75,9 +75,9 @@ final class TermDiffTest extends TestCase
     public function test_an_existing_term_is_not_reported_as_new(): void
     {
         $diff = \CADCO_Import_Term_Diff::compare(
-            [self::row('BLC-113', 'CONVECTION OVENS', 'Bakerlux Classic')],
+            [self::row('BLC-113', 'CONVECTION | COOK & HOLD OVENS', 'Bakerlux Classic')],
             [
-                ['taxonomy' => 'product_cat', 'term_id' => 22, 'name' => 'Convection Ovens', 'parent' => 0, 'count' => 0],
+                ['taxonomy' => 'product_cat', 'term_id' => 22, 'name' => 'Convection & Cook-Hold Ovens', 'parent' => 0, 'count' => 0],
                 ['taxonomy' => 'product_cat', 'term_id' => 26, 'name' => 'Bakerlux Classic', 'parent' => 22, 'count' => 0],
             ]
         );
@@ -88,7 +88,7 @@ final class TermDiffTest extends TestCase
     public function test_a_term_the_workbook_no_longer_implies_and_holding_no_products_is_removed(): void
     {
         $diff = \CADCO_Import_Term_Diff::compare(
-            [self::row('BLC-113', 'CONVECTION OVENS', 'Bakerlux Classic')],
+            [self::row('BLC-113', 'CONVECTION | COOK & HOLD OVENS', 'Bakerlux Classic')],
             [
                 ['taxonomy' => 'product_cat', 'term_id' => 29, 'name' => 'Caldolux Cook & Hold', 'parent' => 0, 'count' => 0],
             ]
@@ -105,7 +105,7 @@ final class TermDiffTest extends TestCase
         // products still reference it — usually a renamed Type that left its old
         // term behind. Only a person can resolve that, so it must be surfaced.
         $diff = \CADCO_Import_Term_Diff::compare(
-            [self::row('BLC-113', 'CONVECTION OVENS', 'Bakerlux Classic')],
+            [self::row('BLC-113', 'CONVECTION | COOK & HOLD OVENS', 'Bakerlux Classic')],
             [
                 ['taxonomy' => 'product_cat', 'term_id' => 46, 'name' => 'Warming Cabinets', 'parent' => 0, 'count' => 4],
             ]
@@ -122,7 +122,7 @@ final class TermDiffTest extends TestCase
         // WooCommerce recreates it as the default term, so reporting it as a
         // removal every single run would be noise the operator learns to ignore.
         $diff = \CADCO_Import_Term_Diff::compare(
-            [self::row('BLC-113', 'CONVECTION OVENS', 'Bakerlux Classic')],
+            [self::row('BLC-113', 'CONVECTION | COOK & HOLD OVENS', 'Bakerlux Classic')],
             [
                 ['taxonomy' => 'product_cat', 'term_id' => 15, 'name' => 'Uncategorized', 'parent' => 0, 'count' => 0],
             ]
@@ -135,7 +135,7 @@ final class TermDiffTest extends TestCase
     public function test_tags_and_brands_are_diffed_too(): void
     {
         $diff = \CADCO_Import_Term_Diff::compare(
-            [self::row('BLC-113', 'CONVECTION OVENS', 'Bakerlux Classic')],
+            [self::row('BLC-113', 'CONVECTION | COOK & HOLD OVENS', 'Bakerlux Classic')],
             []
         );
 
@@ -148,7 +148,7 @@ final class TermDiffTest extends TestCase
         // PHP coerces canonical integer strings to int as array keys, which has
         // caused TypeErrors in this codebase before.
         $diff = \CADCO_Import_Term_Diff::compare(
-            [self::row('X-1', 'CONVECTION OVENS', '2024')],
+            [self::row('X-1', 'CONVECTION | COOK & HOLD OVENS', '2024')],
             []
         );
 

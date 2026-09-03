@@ -53,17 +53,45 @@ final class PlanTest extends TestCase
         self::assertSame('upc', $plan->untrashes()[0]['matched_by']);
     }
 
-    public function test_category_is_derived_from_sheet_name_and_type(): void
+    public function test_category_is_derived_from_the_sheet_map_and_type(): void
     {
         $pairs = \CADCO_Import_Plan::categories_for(self::row([
+            '__sheet' => 'CONVECTION | COOK & HOLD OVENS',
+            'Type'    => 'Bakerlux Classic',
+        ]));
+
+        self::assertSame(
+            [['parent' => 'Convection & Cook-Hold Ovens', 'child' => 'Bakerlux Classic']],
+            $pairs
+        );
+    }
+
+    public function test_the_parent_comes_from_the_map_not_the_tab_label(): void
+    {
+        // Retitling the tab must not retitle the category, which is a live
+        // URL — the old behaviour title-cased the sheet name straight in.
+        $before = \CADCO_Import_Plan::categories_for(self::row([
             '__sheet' => 'CONVECTION OVENS',
             'Type'    => 'Bakerlux Classic',
         ]));
 
-        self::assertSame([['parent' => 'Convection Ovens', 'child' => 'Bakerlux Classic']], $pairs);
+        $after = \CADCO_Import_Plan::categories_for(self::row([
+            '__sheet' => 'CONVECTION | COOK & HOLD OVENS',
+            'Type'    => 'Bakerlux Classic',
+        ]));
+
+        self::assertSame($after, $before);
     }
 
-    public function test_sheet_and_type_are_title_cased(): void
+    public function test_a_sheet_with_no_mapping_yields_no_categories(): void
+    {
+        self::assertSame([], \CADCO_Import_Plan::categories_for(self::row([
+            '__sheet' => 'GRIDDLES',
+            'Type'    => 'Griddle',
+        ])));
+    }
+
+    public function test_type_is_title_cased(): void
     {
         $pairs = \CADCO_Import_Plan::categories_for(self::row([
             '__sheet' => 'FOODSERVICE CARTS',
@@ -121,7 +149,7 @@ final class PlanTest extends TestCase
     private static function row(array $overrides = []): array
     {
         return $overrides + [
-            '__sheet'     => 'CONVECTION OVENS',
+            '__sheet'     => 'CONVECTION | COOK & HOLD OVENS',
             '__row'       => 2,
             'Model #'     => 'BLC-113',
             'Type'        => 'Bakerlux Classic',

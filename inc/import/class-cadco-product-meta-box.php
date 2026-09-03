@@ -86,15 +86,47 @@ final class CADCO_Product_Meta_Box
         }
     }
 
+    /**
+     * A media cell may hold several links, so a value is rendered as a list
+     * whenever more than one is found rather than as a single anchor. A cell
+     * that is exactly one URL keeps its original single-anchor form; anything
+     * with no link at all — 'n/a', or one of the bare filenames the workbook
+     * still carries in these columns — stays plain text, which is what makes
+     * those visible as the gaps they are.
+     */
     private static function format(string $value): string
     {
+        $urls = class_exists('CADCO_Import_Media')
+            ? CADCO_Import_Media::urls($value)
+            : [];
+
+        if (count($urls) === 1 && trim($value) === $urls[0]) {
+            return self::link($urls[0]);
+        }
+
+        if (count($urls) > 1) {
+            $items = '';
+
+            foreach ($urls as $url) {
+                $items .= sprintf('<li>%s</li>', self::link($url));
+            }
+
+            return sprintf('<ol style="margin:0;padding-left:1.4em">%s</ol>', $items);
+        }
+
         if (filter_var($value, FILTER_VALIDATE_URL) !== false) {
-            return sprintf(
-                '<a href="%1$s" target="_blank" rel="noopener noreferrer">%1$s</a>',
-                esc_url($value)
-            );
+            return self::link($value);
         }
 
         return nl2br(esc_html($value));
+    }
+
+    private static function link(string $url): string
+    {
+        return sprintf(
+            '<a href="%1$s" target="_blank" rel="noopener noreferrer">%2$s</a>',
+            esc_url($url),
+            esc_html($url)
+        );
     }
 }

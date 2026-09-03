@@ -186,15 +186,22 @@ final class CADCO_Import_Plan
     /**
      * The parent/child category pairs a row belongs to.
      *
-     * Top level is the sheet name, sub-level is Type. A comma-separated Type
-     * places the product in several sub-categories, all beneath the sheet it
-     * is listed on.
+     * Top level is the category the row's sheet is mapped to, sub-level is
+     * Type. A comma-separated Type places the product in several
+     * sub-categories, all beneath the same parent.
+     *
+     * The parent comes from cadco_import_sheet_categories() rather than from
+     * the sheet name itself: a category name is public — it shows on the shop
+     * and sits in the URL — and must not change because CADCO retitled a tab.
+     * A sheet with no mapping yields no categories at all, which is
+     * unreachable in practice because the Reader rejects an unrecognised
+     * sheet before a row from it exists.
      *
      * @return list<array{parent: string, child: string}>
      */
     public static function categories_for(array $row): array
     {
-        $parent = CADCO_Import_Normaliser::title_case(trim((string) ($row['__sheet'] ?? '')));
+        $parent = cadco_import_sheet_category((string) ($row['__sheet'] ?? ''));
         $type   = trim((string) ($row['Type'] ?? ''));
 
         if ($parent === '' || $type === '') {
