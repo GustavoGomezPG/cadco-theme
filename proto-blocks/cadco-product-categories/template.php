@@ -96,8 +96,16 @@ $markUrl = get_theme_file_uri('assets/img/cadco-mark.svg');
 $wrapper = get_block_wrapper_attributes([
     'class' => 'cadco-product-categories relative isolate w-full bg-[rgba(232,237,244,0.5)] pt-16 md:pt-[92px]',
 ]);
+
+/**
+ * Scroll reveal, front end only. See assets/js/cadco-reveal.js; the runtime
+ * force-reveals the section if the script never runs, so the hidden start
+ * state cannot strand the grid. Omitted in the editor so the canvas never
+ * hides what an author is editing.
+ */
+$reveal = $is_preview ? '' : 'data-proto-animate="manual" data-cadco-reveal-group';
 ?>
-<section <?php echo $wrapper; ?> style="padding-bottom:<?php echo (int) $padBottom; ?>px">
+<section <?php echo $wrapper; ?> <?php echo $reveal; ?> style="padding-bottom:<?php echo (int) $padBottom; ?>px">
 
     <?php // ---------- Overlap band ---------- ?>
     <?php if ($showOverlap && $overlapH > 0) : ?>
@@ -113,17 +121,20 @@ $wrapper = get_block_wrapper_attributes([
 
         <?php // Always rendered, empty or not, so both stay editable. ?>
         <h2 data-proto-field="heading"
+            data-cadco-reveal="lines"
             class="m-0 text-center font-display text-[28px] font-extrabold leading-[1.15] text-true-black md:text-h2">
             <?php echo esc_html($heading); ?>
         </h2>
 
         <p data-proto-field="subheading"
+           data-cadco-reveal="rise"
            class="mx-auto mt-3.5 mb-0 max-w-[1090px] text-center font-display text-[17px] font-bold leading-[1.35] text-true-black md:text-body-lg">
             <?php echo esc_html($subheading); ?>
         </p>
 
         <?php if (! empty($terms)) : ?>
-            <ul class="mt-14 grid list-none grid-cols-1 gap-5 p-0 md:mt-24 <?php echo esc_attr($colClass); ?>">
+            <ul data-cadco-reveal="items"
+                class="mt-14 grid list-none grid-cols-1 gap-5 p-0 md:mt-24 <?php echo esc_attr($colClass); ?>">
                 <?php foreach ($terms as $term) : ?>
                     <?php
                     $link = get_term_link($term);

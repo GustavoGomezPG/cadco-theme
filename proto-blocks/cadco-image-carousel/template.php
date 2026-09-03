@@ -180,8 +180,19 @@ $editorState = $is_preview ? ' is-enhanced is-editor' : '';
 $wrapper = get_block_wrapper_attributes([
     'class' => 'cadco-image-carousel relative w-full overflow-hidden' . $editorState,
 ]);
+
+/**
+ * Scroll reveal, front end only. See assets/js/cadco-reveal.js.
+ *
+ * The band gets `fade` rather than `rise`: view.js rewrites every item's
+ * transform on each frame of the scrub, and the track itself carries the
+ * perspective the 3D depends on -- a second writer putting a translate on
+ * either would be fighting for the same property. Opacity is the one channel
+ * nothing else here touches.
+ */
+$reveal = $is_preview ? '' : 'data-proto-animate="manual" data-cadco-reveal-group';
 ?>
-<section <?php echo $wrapper; ?> style="<?php echo esc_attr($spacing); ?>">
+<section <?php echo $wrapper; ?> <?php echo $reveal; ?> style="<?php echo esc_attr($spacing); ?>">
 
     <?php if ($count > 0) : ?>
         <?php /* NO data-lenis-prevent, for the same reason as the featured
@@ -191,6 +202,7 @@ $wrapper = get_block_wrapper_attributes([
                  gestures reach the fallback row regardless, because Lenis only
                  acts on vertical ones. */ ?>
         <ul class="cadco-image-carousel__track flex list-none items-center gap-[13px] overflow-x-auto p-0"
+            data-cadco-reveal="fade"
             style="<?php echo esc_attr($bandStyle); ?>"
             data-carousel-track
             <?php /* Only a live page scrubs. The canvas gets the same band,

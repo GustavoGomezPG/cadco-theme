@@ -189,3 +189,34 @@ html.proto-intro-active { overflow: hidden; }
 mark.has-inline-color {
 	background-color: transparent;
 }
+
+/* ---------------------------------------------------------------------------
+   Scroll reveals — the pre-animation state
+   ---------------------------------------------------------------------------
+
+   Marked parts start hidden so they can arrive as the section scrolls in (see
+   assets/js/cadco-reveal.js). The hiding is keyed to `data-proto-animate` in
+   the "manual" state, which is Proto-Blocks' reveal-runtime contract, and that
+   is what makes it safe to hide content at all:
+
+     - the runtime force-reveals any `manual` section that has not reached
+       `done` shortly after it enters view, so a script that never runs, throws,
+       or is served stale cannot leave a section blank
+     - it prints a <noscript> rule revealing everything when JS is off
+     - it reveals instantly under prefers-reduced-motion
+     - templates omit the attribute entirely in the editor, so the canvas is
+       never hiding anything an author is trying to edit
+
+   cadco-reveal.js flips the section to `done` the moment GSAP has written its
+   start states inline, so these rules only ever apply in the window before the
+   script takes over.
+
+   `visibility` alongside `opacity` because GSAP animates them together through
+   autoAlpha; opacity alone would leave the text selectable and reachable by
+   find-in-page while invisible.
+   --------------------------------------------------------------------------- */
+[data-proto-animate="manual"] [data-cadco-reveal]:not([data-cadco-reveal="items"]),
+[data-proto-animate="manual"] [data-cadco-reveal="items"] > * {
+	opacity: 0;
+	visibility: hidden;
+}

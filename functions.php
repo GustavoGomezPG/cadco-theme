@@ -128,6 +128,44 @@ add_action('wp_enqueue_scripts', function () {
 });
 
 /**
+ * Section reveal animations, shared by every block that has one.
+ *
+ * A theme-level script rather than a per-block view.js: the sections
+ * deliberately share one motion vocabulary, and four copies of the same
+ * timeline would drift apart the first time one of them was tuned. The blocks
+ * declare what they want in markup (`data-cadco-reveal`); this owns how it
+ * moves.
+ *
+ * Depends on the vendored GSAP trio. Registered after them in this file, so
+ * the handles exist to depend on -- and the script degrades to showing every
+ * section outright if any of them is missing.
+ */
+add_action('wp_enqueue_scripts', function () {
+    $path = get_stylesheet_directory() . '/assets/js/cadco-reveal.js';
+
+    if (! file_exists($path)) {
+        return;
+    }
+
+    // Only depend on what actually exists. A dependency on an unregistered
+    // handle makes WordPress drop the script silently, so a missing vendored
+    // library would take the reveals down with it rather than degrading to
+    // "every section simply shows", which is what the script is written to do.
+    $deps = array_values(array_filter(
+        ['proto-gsap', 'proto-scroll-trigger', 'proto-split-text'],
+        static fn(string $handle): bool => wp_script_is($handle, 'registered')
+    ));
+
+    wp_enqueue_script(
+        'cadco-reveal',
+        get_stylesheet_directory_uri() . '/assets/js/cadco-reveal.js',
+        $deps,
+        filemtime($path),
+        true
+    );
+}, 20);
+
+/**
  * Block view.js files that animate must not run before their libraries exist.
  *
  * Proto-Blocks registers a block's view.js with no dependencies, and both it and

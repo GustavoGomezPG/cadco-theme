@@ -134,8 +134,15 @@ if (! function_exists('cadco_featured_bullets')) {
 $wrapper = get_block_wrapper_attributes([
     'class' => 'cadco-featured-products relative isolate w-full overflow-hidden bg-paper',
 ]);
+
+/**
+ * Scroll reveal, front end only. See assets/js/cadco-reveal.js; the runtime
+ * force-reveals the section if the script never runs. Omitted in the editor so
+ * the canvas never hides what an author is editing.
+ */
+$reveal = $is_preview ? '' : 'data-proto-animate="manual" data-cadco-reveal-group';
 ?>
-<section <?php echo $wrapper; ?>>
+<section <?php echo $wrapper; ?> <?php echo $reveal; ?>>
 
     <?php /* The photograph sits behind the gradient rather than as a CSS
              background so it gets srcset and lazy decoding, the same way the
@@ -179,11 +186,13 @@ $wrapper = get_block_wrapper_attributes([
 
         <?php // Always rendered, empty or not, so both stay editable. ?>
         <p data-proto-field="eyebrow"
+           data-cadco-reveal="rise"
            class="m-0 px-6 text-center font-display text-[18px] font-extrabold leading-tight text-white md:text-[24px]">
             <?php echo esc_html($eyebrow); ?>
         </p>
 
         <h2 data-proto-field="heading"
+            data-cadco-reveal="lines"
             class="mx-auto mt-6 mb-0 max-w-[913px] px-6 text-center font-display text-[32px] font-bold leading-[1.12] text-white md:mt-[36px] md:text-[64px]">
             <?php echo esc_html($heading); ?>
         </h2>
@@ -201,6 +210,7 @@ $wrapper = get_block_wrapper_attributes([
                      It is not needed: Lenis's gestureOrientation defaults to
                      'vertical', so horizontal trackpad and wheel gestures pass
                      through to this track untouched anyway. */ ?>
+            <div data-cadco-reveal="rise">
             <div class="cadco-featured-products__track mt-12 flex snap-x snap-mandatory gap-[42px] overflow-x-auto overscroll-x-contain pb-4 md:mt-[136px]"
                  data-featured-track
                  <?php if ($autoplay && ! $is_preview) : ?>
@@ -262,6 +272,7 @@ $wrapper = get_block_wrapper_attributes([
                     </article>
                 <?php endforeach; ?>
             </div>
+            </div>
 
             <?php if ($usingFallback && $is_preview) : ?>
                 <?php /* The sidebar cannot say this: Proto-Blocks does not render
@@ -285,7 +296,7 @@ $wrapper = get_block_wrapper_attributes([
         <?php endif; ?>
 
         <?php if (! empty($cta['url']) || $is_preview) : ?>
-            <div class="mt-14 flex justify-center pb-24 md:mt-[82px] md:pb-[225px]">
+            <div data-cadco-reveal="rise" class="mt-14 flex justify-center pb-24 md:mt-[82px] md:pb-[225px]">
                 <a data-proto-field="cta"
                    class="inline-flex h-[58px] min-w-[179px] items-center justify-center rounded-[10px] bg-cadco-blue px-6 font-display text-[16px] font-bold leading-none text-white no-underline transition-colors hover:bg-[#00395a]"
                    href="<?php echo esc_url($cta['url'] ?? '#'); ?>"

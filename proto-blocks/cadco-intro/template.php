@@ -55,12 +55,27 @@ $is_preview = ! isset($block) || $block === null;
 $wrapper = get_block_wrapper_attributes([
     'class' => 'cadco-intro w-full bg-paper py-20 md:py-[120px]',
 ]);
+
+/**
+ * Scroll reveal, front end only.
+ *
+ * `manual` hands the section to Proto-Blocks' reveal runtime as one this block
+ * animates itself; assets/js/cadco-reveal.js reads the `data-cadco-reveal`
+ * markers below and builds the timeline. The runtime force-reveals the section
+ * if that never happens, so the hidden start state cannot strand the copy.
+ *
+ * Omitted in the editor: the canvas must never hide what an author is editing,
+ * and a section that animates while being written is worse than one that does
+ * not move.
+ */
+$reveal = $is_preview ? '' : 'data-proto-animate="manual" data-cadco-reveal-group';
 ?>
-<section <?php echo $wrapper; ?>>
+<section <?php echo $wrapper; ?> <?php echo $reveal; ?>>
     <div class="mx-auto w-full max-w-[1106px] px-6">
 
         <?php // Always rendered, empty or not, so all four stay editable. ?>
         <p data-proto-field="eyebrow"
+           data-cadco-reveal="rise"
            class="m-0 font-display text-[16px] font-extrabold leading-tight text-true-black md:text-[20px] <?php echo esc_attr($alignText); ?>">
             <?php echo esc_html($eyebrow); ?>
         </p>
@@ -71,6 +86,7 @@ $wrapper = get_block_wrapper_attributes([
                  editor's own colour tool. esc_html would print those tags as
                  visible text. */ ?>
         <h2 data-proto-field="heading"
+            data-cadco-reveal="lines"
             class="m-0 mt-6 font-display text-[36px] font-bold leading-[1.18] text-true-black md:mt-9 md:text-[64px] <?php echo esc_attr($headingWide . ' ' . $alignText . ' ' . $alignSelf); ?>">
             <?php echo wp_kses_post($heading); ?>
         </h2>
@@ -81,13 +97,14 @@ $wrapper = get_block_wrapper_attributes([
                  contribute its top margin and open a gap under the heading. */ ?>
         <?php if (trim(wp_strip_all_tags((string) $body)) !== '' || $is_preview) : ?>
             <div data-proto-field="body"
+                 data-cadco-reveal="rise"
                  class="cadco-intro__body mt-8 max-w-[745px] font-display text-[16px] font-normal leading-6 text-true-black md:mt-12 <?php echo esc_attr($alignText . ' ' . $alignSelf); ?>">
                 <?php echo wp_kses_post($body); ?>
             </div>
         <?php endif; ?>
 
         <?php if (! empty($cta['url']) || $is_preview) : ?>
-            <div class="mt-10 md:mt-12 <?php echo esc_attr($ctaRow); ?>">
+            <div data-cadco-reveal="rise" class="mt-10 md:mt-12 <?php echo esc_attr($ctaRow); ?>">
                 <a data-proto-field="cta"
                    class="inline-flex h-[58px] min-w-[157px] items-center justify-center rounded-[10px] bg-cadco-blue px-6 font-display text-[16px] font-bold leading-none text-white no-underline transition-colors hover:bg-[#00395a]"
                    href="<?php echo esc_url($cta['url'] ?? '#'); ?>"
