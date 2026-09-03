@@ -1,0 +1,22 @@
+/**
+ * Cadco product categories.
+ *
+ * Everything visual is Tailwind in template.php. What is left here is the one
+ * thing utilities cannot express: the rounded card clips a child that is being
+ * transformed, and WebKit drops that clip mid-animation, so the photograph's
+ * square corners flash outside the 15px radius on hover. Promoting the card to
+ * its own layer keeps the clip and the transform on the same surface, which is
+ * what actually fixes it — `overflow: hidden` alone does not.
+ */
+.cadco-product-categories a.group {
+	transform: translateZ(0);
+}
+
+/* The zoom is decorative; without it the card still reads as hoverable from the
+   name and arrow turning brand blue. Tailwind's motion-reduce: variant covers
+   the image itself — this covers the layer promotion it needs. */
+@media (prefers-reduced-motion: reduce) {
+	.cadco-product-categories a.group {
+		transform: none;
+	}
+}

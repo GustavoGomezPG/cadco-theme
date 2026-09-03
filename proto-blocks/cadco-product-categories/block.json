@@ -1,0 +1,129 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/block.json",
+  "apiVersion": 3,
+  "name": "proto-blocks/cadco-product-categories",
+  "title": "Cadco Product Categories",
+  "category": "proto",
+  "icon": "grid-view",
+  "description": "A tinted band introducing the catalogue: centred heading and standfirst above a grid of WooCommerce product category cards, each a photograph over a white bar carrying the category name and an arrow. Sits over a coloured band so the last row overlaps the section beneath.",
+  "keywords": ["products", "categories", "cards", "grid", "catalogue", "woocommerce"],
+  "supports": {
+    "html": false,
+    "anchor": true,
+    "customClassName": true,
+    "align": ["full"]
+  },
+  "protoBlocks": {
+    "version": "1.0",
+    "template": "template.php",
+    "useTailwind": true,
+    "fields": {
+      "heading": {
+        "type": "text",
+        "tagName": "h2",
+        "label": "Heading",
+        "default": "Our Products"
+      },
+      "subheading": {
+        "type": "text",
+        "tagName": "p",
+        "label": "Standfirst",
+        "default": "Your kitchen deserves equipment that will work all day and beyond."
+      }
+    },
+    "controls": {
+      "scope": {
+        "type": "select",
+        "label": "Show",
+        "default": "top",
+        "options": [
+          { "key": "top", "label": "Top-level categories" },
+          { "key": "children", "label": "Children of a category" }
+        ],
+        "help": "Top level lists the catalogue's main categories. Children lists the sub-categories of the one you pick below."
+      },
+      "parentCategory": {
+        "type": "select",
+        "label": "Parent category",
+        "optionsSource": "wp:terms",
+        "sourceArgs": { "taxonomy": "product_cat", "per_page": 200 },
+        "conditions": { "visible": { "scope": "children" } },
+        "help": "Whose sub-categories to list."
+      },
+      "limit": {
+        "type": "number",
+        "label": "Maximum cards",
+        "default": 4,
+        "min": 1,
+        "max": 12,
+        "step": 1
+      },
+      "columns": {
+        "type": "select",
+        "label": "Columns",
+        "default": "2",
+        "options": [
+          { "key": "2", "label": "Two (design)" },
+          { "key": "3", "label": "Three" }
+        ],
+        "help": "Always one column on phones."
+      },
+      "orderBy": {
+        "type": "select",
+        "label": "Order by",
+        "default": "menu_order",
+        "options": [
+          { "key": "menu_order", "label": "Category order" },
+          { "key": "name", "label": "Name" },
+          { "key": "count", "label": "Number of products" }
+        ]
+      },
+      "order": {
+        "type": "select",
+        "label": "Direction",
+        "default": "ASC",
+        "options": [
+          { "key": "ASC", "label": "Ascending" },
+          { "key": "DESC", "label": "Descending" }
+        ]
+      },
+      "hideEmpty": {
+        "type": "toggle",
+        "label": "Hide categories with no products",
+        "default": false
+      },
+      "showOverlap": {
+        "type": "toggle",
+        "label": "Overlap band",
+        "default": true,
+        "help": "A coloured band across the foot of the section that the last row of cards hangs over, so this section meets the next one the way the design draws it."
+      },
+      "overlapColor": {
+        "type": "color",
+        "label": "Band colour",
+        "default": "#000000",
+        "conditions": { "visible": { "showOverlap": true } },
+        "help": "Match the background of the section directly below."
+      },
+      "overlapHeight": {
+        "type": "range",
+        "label": "Band height (px)",
+        "default": 111,
+        "min": 0,
+        "max": 300,
+        "step": 1,
+        "conditions": { "visible": { "showOverlap": true } }
+      },
+      "overlapOverhang": {
+        "type": "range",
+        "label": "Card overhang (px)",
+        "default": 80,
+        "min": 0,
+        "max": 200,
+        "step": 1,
+        "conditions": { "visible": { "showOverlap": true } },
+        "help": "How far the last row hangs over the band. The design overhangs 80 of the band's 111px."
+      }
+    }
+  }
+}

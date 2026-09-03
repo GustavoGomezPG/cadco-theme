@@ -1,0 +1,46 @@
+/**
+ * Cadco intro.
+ *
+ * Layout is Tailwind in template.php. What lives here is the wysiwyg body,
+ * whose markup the author writes -- Tailwind utilities on the wrapper cannot
+ * reach paragraphs the editor generates, so its children are styled here.
+ */
+
+/* A single paragraph is the common case and needs no leading gap; only
+   subsequent ones do. Written as "every paragraph after the first" rather than
+   a bottom margin so the block never ends with trailing space the author
+   cannot see or remove. */
+.cadco-intro__body > p + p {
+	margin-top: 1.5rem;
+}
+
+.cadco-intro__body > p {
+	margin-bottom: 0;
+}
+
+.cadco-intro__body a {
+	color: #00476e;
+	text-underline-offset: 3px;
+}
+
+.cadco-intro__body a:hover {
+	text-decoration-thickness: 2px;
+}
+
+.cadco-intro__body ul,
+.cadco-intro__body ol {
+	margin: 1.5rem 0 0;
+	padding-left: 1.25rem;
+}
+
+.cadco-intro__body li + li {
+	margin-top: 0.25rem;
+}
+
+.cadco-intro__body ul {
+	list-style: disc;
+}
+
+.cadco-intro__body ol {
+	list-style: decimal;
+}

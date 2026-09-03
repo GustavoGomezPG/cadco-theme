@@ -1,0 +1,184 @@
+/**
+ * Cadco image carousel.
+ *
+ * Two layouts live here, and which one applies is decided by `is-enhanced`,
+ * a class view.js adds only once GSAP and ScrollTrigger are both present and
+ * the visitor has not asked for reduced motion.
+ *
+ *   without it  a plain horizontally scrollable row -- the no-JS, no-GSAP and
+ *               reduced-motion experience, and what the editor canvas shows
+ *   with it     an absolutely positioned diagonal band, every item's transform
+ *               written by view.js each frame
+ *
+ * The base layout is the one in the markup, so it is also what renders before
+ * the script runs: no flash of a broken absolute layout waiting for JS.
+ */
+
+.cadco-image-carousel__track {
+	/* Matches the design's step: 443px card + 13px gap. Read back by view.js
+	   so the number lives in exactly one place. */
+	--card-w: 443px;
+	--card-h: 413px;
+	--gap: 13px;
+
+	scroll-snap-type: x mandatory;
+	padding-inline: max(1.5rem, calc(50% - var(--card-w) / 2));
+	scroll-padding-inline: max(1.5rem, calc(50% - var(--card-w) / 2));
+	scrollbar-width: none;
+	-ms-overflow-style: none;
+}
+
+.cadco-image-carousel__track::-webkit-scrollbar {
+	display: none;
+}
+
+.cadco-image-carousel__item {
+	width: min(var(--card-w), 78vw);
+	height: min(var(--card-h), 72vw);
+	scroll-snap-align: center;
+}
+
+.cadco-image-carousel__track:focus-visible {
+	outline: 2px solid #00476e;
+	outline-offset: 4px;
+}
+
+/* ---------------------------------------------------------------------------
+   Enhanced: the diagonal band
+   --------------------------------------------------------------------------- */
+
+.cadco-image-carousel.is-enhanced .cadco-image-carousel__track {
+	position: relative;
+	display: block;
+	overflow: hidden;
+	padding-inline: 0;
+
+	/* Height is set INLINE by template.php, not here. It has to be tall enough
+	   for the DIAGONAL, which is a good deal more than one image -- an item 2.6
+	   steps out sits ~225px off centre and still has ~135px of its own
+	   half-height -- and its ceiling is author-controlled, so it cannot be a
+	   constant. It reached this file as a custom property until the editor's
+	   inline-style sanitiser was found to drop those, taking the Band height
+	   control's effect on the canvas with it. */
+
+	/* The row no longer scrolls once view.js drives it, so its snap and
+	   keyboard scrolling would only fight the page. */
+	scroll-snap-type: none;
+
+	/* Clip sideways but NOT vertically.
+	   The band has to be clipped horizontally or items two steps out push the
+	   page wide enough to scroll. It must NOT be clipped vertically, because
+	   the diagonal lifts items well past the track's own box -- and the amount
+	   is not a number worth chasing, since the perspective projection enlarges
+	   items the further they are translated, so the true extent changes with
+	   the viewport and with every frame of the scrub.
+
+	   `overflow-x: hidden` cannot express this: CSS promotes the other axis to
+	   `auto` the moment one axis is hidden, so it would clip vertically too --
+	   which is what was slicing the tops and bottoms off. A clip-path with
+	   negative vertical insets clips only the sides and lets the diagonal
+	   through. */
+	overflow: visible;
+	clip-path: inset(-100vh 0 -100vh 0);
+
+	/* Perspective belongs on the parent, not on each item. Declared per item
+	   (via transformPerspective) every card gets its OWN vanishing point and
+	   the band reads as a row of independently tilted pictures; declared once
+	   here they share one, and the row reads as a single receding plane --
+	   which is the whole point of the effect. */
+	perspective: 1400px;
+	perspective-origin: 50% 50%;
+	transform-style: preserve-3d;
+}
+
+.cadco-image-carousel.is-enhanced .cadco-image-carousel__item {
+	position: absolute;
+	top: 50%;
+	left: 50%;
+
+	/* view.js writes translate/scale into these; declaring them here keeps the
+	   first painted frame identical to the first animated one. */
+	margin-left: calc(min(var(--card-w), 78vw) / -2);
+	margin-top: calc(min(var(--card-h), 72vw) / -2);
+
+	/* Composited up front rather than promoted mid-scroll, which is where the
+	   stutter on the first frame of a scrub otherwise comes from. */
+	will-change: transform, opacity, filter;
+	backface-visibility: hidden;
+}
+
+.cadco-image-carousel.is-enhanced .cadco-image-carousel__item img {
+	/* The rounded corner has to be on the clipped element, not the scaled
+	   parent, or the radius scales with it and reads wrong at 0.65. */
+	border-radius: 15px;
+}
+
+/* ---------------------------------------------------------------------------
+   Fallback row: shed the server-rendered frame.
+
+   template.php writes each item's first-frame transform, opacity, blur and
+   visibility straight into the markup, so the band is correct from HTML alone
+   -- that is what lets the editor canvas show the real geometry without
+   running any script. Those same inline styles are wrong for the fallback:
+   the row is a flex layout, and items translated 750px sideways, rotated and
+   faded to 15% inside it would read as a broken page rather than a carousel.
+
+   `!important` because they are inline styles, which no ordinary selector can
+   outrank. Scoped to the un-enhanced state, so it only ever applies where the
+   band is NOT being drawn: without JS on the front end, or under reduced
+   motion. The editor carries `is-enhanced` from the server and the front end
+   gains it from view.js, so neither is touched here.
+   --------------------------------------------------------------------------- */
+/* The band height is inline, so the fallback row has to shed it too, or the
+   row would stand 840px tall around ~413px images. */
+.cadco-image-carousel:not(.is-enhanced) .cadco-image-carousel__track {
+	height: auto !important;
+}
+
+.cadco-image-carousel:not(.is-enhanced) .cadco-image-carousel__item {
+	transform: none !important;
+	opacity: 1 !important;
+	filter: none !important;
+	visibility: visible !important;
+}
+
+/* ---------------------------------------------------------------------------
+   Reduced motion: never enhance.
+   view.js checks the same query and returns before adding `is-enhanced`, so
+   this is belt to its braces -- if the class ever arrives some other way, the
+   scrollable row still wins.
+   --------------------------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+	.cadco-image-carousel.is-enhanced:not(.is-editor) .cadco-image-carousel__track {
+		display: flex;
+		height: auto;
+		overflow-x: auto;
+		padding-inline: max(1.5rem, calc(50% - var(--card-w) / 2));
+	}
+
+	.cadco-image-carousel.is-enhanced:not(.is-editor) .cadco-image-carousel__item {
+		position: static;
+		margin: 0;
+		transform: none !important;
+		opacity: 1 !important;
+		filter: none !important;
+		will-change: auto;
+	}
+}
+
+/* ---------------------------------------------------------------------------
+   Enhanced: the band is decorative and must not catch the pointer.
+
+   There is nothing to click -- no links, no captions -- and once view.js drives
+   the band the track no longer scrolls on its own. Left interactive it only
+   gives the pointer something to snag on: a drag that starts an image
+   selection, or a wheel event the track swallows instead of passing to the
+   page, which is exactly the scroll interference this avoids.
+
+   Scoped to `is-enhanced`, never the base state: the fallback row IS a real
+   scrollable element and has to stay swipeable. And `is-enhanced` is only ever
+   added on the front end, so the editor canvas keeps the block selectable.
+   --------------------------------------------------------------------------- */
+.cadco-image-carousel.is-live {
+	pointer-events: none;
+}
