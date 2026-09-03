@@ -1,0 +1,71 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/block.json",
+  "apiVersion": 3,
+  "name": "proto-blocks/cadco-intro",
+  "title": "Cadco Intro",
+  "category": "proto",
+  "icon": "text",
+  "description": "A statement block: a small eyebrow line, a display heading that can carry a coloured phrase, an optional paragraph of prose, and a call-to-action button. Left-aligned or centred.",
+  "keywords": [
+    "intro",
+    "statement",
+    "eyebrow",
+    "heading",
+    "text"
+  ],
+  "supports": {
+    "html": false,
+    "anchor": true,
+    "customClassName": true,
+    "align": [
+      "full"
+    ]
+  },
+  "protoBlocks": {
+    "version": "1.0",
+    "template": "template.php",
+    "useTailwind": true,
+    "fields": {
+      "eyebrow": {
+        "type": "text",
+        "tagName": "p",
+        "label": "Eyebrow",
+        "default": "The Cadco Difference"
+      },
+      "heading": {
+        "type": "text",
+        "tagName": "h2",
+        "format": "full",
+        "label": "Heading",
+        "default": "Built on 30 years of quality, reliability, and foodservice expertise."
+      },
+      "body": {
+        "type": "wysiwyg",
+        "label": "Body",
+        "default": "<p>Cadco doesn't overcomplicate things. We believe in simplicity, durability, and availability for the chefs and culinary pros who want to do more cooking and less troubleshooting. Made in Windstead, Connecticut, Cadco products and equipment are quickly becoming the secret weapon for kitchens around the country.</p>"
+      },
+      "cta": {
+        "type": "link",
+        "label": "Call to action"
+      }
+    },
+    "controls": {
+      "alignment": {
+        "type": "select",
+        "label": "Alignment",
+        "default": "left",
+        "options": [
+          {
+            "key": "left",
+            "label": "Left"
+          },
+          {
+            "key": "center",
+            "label": "Centred"
+          }
+        ],
+        "help": "Centred also widens the heading's measure, matching the closing statement in the design."
+      }
+    }
+  }
+}
