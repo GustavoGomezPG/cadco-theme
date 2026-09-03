@@ -1,0 +1,117 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/block.json",
+  "apiVersion": 3,
+  "name": "proto-blocks/cadco-image-carousel",
+  "title": "Cadco Image Carousel",
+  "category": "proto",
+  "icon": "images-alt2",
+  "description": "An endlessly repeating diagonal band of photographs that advances as the section passes through the viewport. Images near the centre are sharp and full size; those further out recede, blur and fade.",
+  "keywords": [
+    "carousel",
+    "gallery",
+    "images",
+    "scroll",
+    "marquee"
+  ],
+  "supports": {
+    "html": false,
+    "anchor": true,
+    "customClassName": true,
+    "align": [
+      "full"
+    ]
+  },
+  "protoBlocks": {
+    "version": "1.0",
+    "template": "template.php",
+    "useTailwind": true,
+    "controls": {
+      "images": {
+        "type": "gallery",
+        "label": "Images",
+        "help": "Three or more works best. The band repeats endlessly, so the last image is followed by the first."
+      },
+      "travel": {
+        "type": "range",
+        "label": "Images advanced per screen",
+        "default": 3,
+        "min": 1,
+        "max": 8,
+        "step": 1,
+        "help": "How far the band travels while the section crosses the viewport. Higher moves faster against the page."
+      },
+      "tilt": {
+        "type": "range",
+        "label": "Perspective tilt (degrees)",
+        "default": 14,
+        "min": 0,
+        "max": 30,
+        "step": 1,
+        "help": "How far images turn away as they leave the centre. 0 keeps the band flat."
+      },
+      "bandHeight": {
+        "type": "range",
+        "label": "Band height (px)",
+        "default": 840,
+        "min": 400,
+        "max": 1000,
+        "step": 20,
+        "help": "The band needs room for the diagonal, not just for one image: outer images sit ~225px off centre AND are enlarged by the perspective projection, so measured clearance at full size is ~820px. Below that the tops and bottoms clip."
+      },
+      "zIndex": {
+        "type": "range",
+        "label": "Stacking order",
+        "default": 0,
+        "min": -2,
+        "max": 10,
+        "step": 1,
+        "help": "Negative sends the band behind neighbouring sections, which is what you want when a negative margin pulls it up under the one above."
+      },
+      "smoothing": {
+        "type": "range",
+        "label": "Catch-up (tenths of a second)",
+        "default": 10,
+        "min": 0,
+        "max": 25,
+        "step": 1,
+        "help": "How long the band takes to settle after the page stops moving. 0 pins it rigidly to the scrollbar; higher glides."
+      },
+      "paddingTop": {
+        "type": "range",
+        "label": "Padding top (px)",
+        "default": 64,
+        "min": 0,
+        "max": 240,
+        "step": 4,
+        "help": "Space inside the section, above the band."
+      },
+      "paddingBottom": {
+        "type": "range",
+        "label": "Padding bottom (px)",
+        "default": 96,
+        "min": 0,
+        "max": 240,
+        "step": 4,
+        "help": "Space inside the section, below the band."
+      },
+      "marginTop": {
+        "type": "range",
+        "label": "Margin top (px)",
+        "default": 0,
+        "min": -240,
+        "max": 240,
+        "step": 4,
+        "help": "Space outside the section. Negative pulls it up over whatever sits above, which is how sections overlap."
+      },
+      "marginBottom": {
+        "type": "range",
+        "label": "Margin bottom (px)",
+        "default": 0,
+        "min": -240,
+        "max": 240,
+        "step": 4,
+        "help": "Space outside the section. Negative pulls the next section up over this one."
+      }
+    }
+  }
+}

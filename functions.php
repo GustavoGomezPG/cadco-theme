@@ -143,8 +143,9 @@ add_action('wp_enqueue_scripts', function () {
     global $wp_scripts;
 
     $needs = [
-        'proto-blocks-cadco-header' => ['proto-gsap'],
-        'proto-blocks-cadco-hero'   => ['proto-gsap', 'proto-split-text'],
+        'proto-blocks-cadco-header'         => ['proto-gsap'],
+        'proto-blocks-cadco-hero'           => ['proto-gsap', 'proto-split-text'],
+        'proto-blocks-cadco-image-carousel' => ['proto-gsap', 'proto-scroll-trigger'],
     ];
 
     foreach ($needs as $handle => $deps) {
@@ -182,3 +183,23 @@ add_action('wp_body_open', function () {
     </div>
     <?php
 });
+
+/**
+ * Name the block inserter's category after the client, not the tool.
+ *
+ * Proto-Blocks labels its inserter panel "Proto Blocks". Editors here are
+ * Cadco's staff, to whom the plugin's name means nothing.
+ *
+ * Done through the plugin's filter rather than its Settings → Block Category
+ * Name field so the label lives in the theme, under version control, and
+ * arrives with a deploy instead of having to be re-typed into the database of
+ * every environment. Priority 20 puts it after the plugin's own handler, which
+ * runs at 10 and would otherwise overwrite this with that stored option.
+ *
+ * Only the title changes. The category SLUG is deliberately left alone: every
+ * block.json in this theme declares `"category": "proto"`, and renaming the
+ * slug would orphan all of them out of the panel.
+ */
+add_filter('proto_blocks_category_title', function () {
+    return __('Cadco Blocks', 'cadco-theme');
+}, 20);
