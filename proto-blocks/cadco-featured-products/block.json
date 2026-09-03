@@ -1,0 +1,116 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/block.json",
+  "apiVersion": 3,
+  "name": "proto-blocks/cadco-featured-products",
+  "title": "Cadco Featured Products",
+  "category": "proto",
+  "icon": "slides",
+  "description": "A dark-to-light gradient band introducing the catalogue's headline products: an eyebrow, a display heading, then a centre-snapped carousel of product cards carrying the product's own specification bullets, and a closing call to action.",
+  "keywords": [
+    "products",
+    "carousel",
+    "featured",
+    "slider",
+    "woocommerce"
+  ],
+  "supports": {
+    "html": false,
+    "anchor": true,
+    "customClassName": true,
+    "align": [
+      "full"
+    ]
+  },
+  "protoBlocks": {
+    "version": "1.0",
+    "template": "template.php",
+    "useTailwind": true,
+    "fields": {
+      "eyebrow": {
+        "type": "text",
+        "tagName": "p",
+        "label": "Eyebrow",
+        "default": "Most Popular Products"
+      },
+      "heading": {
+        "type": "text",
+        "tagName": "h2",
+        "label": "Heading",
+        "default": "Maximize Your Space Without Compromising Performance"
+      },
+      "cta": {
+        "type": "link",
+        "label": "Call to action"
+      }
+    },
+    "controls": {
+      "backgroundImage": {
+        "type": "image",
+        "label": "Background image",
+        "help": "Optional. Sits behind the gradient, which fades from solid black at the top to transparent at the foot \u2014 so the photograph reads through the lower half, under the cards."
+      },
+      "backgroundPosition": {
+        "type": "select",
+        "label": "Background focal point",
+        "default": "center",
+        "options": [
+          {
+            "key": "top",
+            "label": "Top"
+          },
+          {
+            "key": "center",
+            "label": "Centre"
+          },
+          {
+            "key": "bottom",
+            "label": "Bottom"
+          }
+        ]
+      },
+      "products": {
+        "type": "multiselect",
+        "label": "Products",
+        "optionsSource": "wp:posts",
+        "sourceArgs": {
+          "post_type": "product",
+          "per_page": 200
+        },
+        "help": "Search by name, then drag to set the order the cards appear in. Leave empty to fall back to every product flagged Featured."
+      },
+      "bulletLimit": {
+        "type": "range",
+        "label": "Bullets per card",
+        "default": 4,
+        "min": 1,
+        "max": 6,
+        "step": 1,
+        "help": "Taken from the product description's first bullet list \u2014 the importer's Supplier Specifications column."
+      },
+      "linkLabel": {
+        "type": "text",
+        "label": "Card link text",
+        "default": "See all Features"
+      },
+      "autoplay": {
+        "type": "toggle",
+        "label": "Advance automatically",
+        "default": true,
+        "help": "Pauses while the pointer is over the carousel, while a card link has keyboard focus, and while the section is off screen. Stops for good once a visitor scrolls or drags it themselves, and never runs for visitors who ask for reduced motion."
+      },
+      "autoplayDelay": {
+        "type": "range",
+        "label": "Seconds per card",
+        "default": 5,
+        "min": 2,
+        "max": 15,
+        "step": 1,
+        "conditions": {
+          "visible": {
+            "autoplay": true
+          }
+        }
+      }
+    }
+  }
+}

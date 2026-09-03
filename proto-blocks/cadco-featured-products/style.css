@@ -1,0 +1,61 @@
+/**
+ * Cadco featured products — the carousel track.
+ *
+ * Everything static is Tailwind in template.php. What lives here is the part
+ * utilities cannot express: the centre-snap geometry, which needs the track's
+ * own padding to be half the viewport minus half a card so the first and last
+ * cards can reach the middle, and the active/inactive card treatment, which is
+ * driven by an attribute view.js moves as you scroll.
+ */
+
+.cadco-featured-products__track {
+	/* Half a card. Repeated in the padding and the scroll-padding because the
+	   first value lets an edge card physically reach the centre and the second
+	   tells the snap engine where "centred" is; with only one of them the outer
+	   cards snap to the track edge instead. */
+	--card-w: min(645px, 86vw);
+
+	padding-inline: max(1.5rem, calc(50% - var(--card-w) / 2));
+	scroll-padding-inline: max(1.5rem, calc(50% - var(--card-w) / 2));
+
+	/* The scrollbar would sit across the gradient; the track stays reachable by
+	   wheel, touch, drag and keyboard, so nothing is lost by hiding it. */
+	scrollbar-width: none;
+	-ms-overflow-style: none;
+}
+
+.cadco-featured-products__track::-webkit-scrollbar {
+	display: none;
+}
+
+.cadco-featured-products__card {
+	width: var(--card-w, min(645px, 86vw));
+
+	/* The design's neighbour treatment: a translucent panel over the gradient,
+	   so the cards either side of centre read as backgrounded rather than
+	   greyed out. The centred one goes opaque. */
+	background-color: rgba(244, 244, 244, 0.73);
+	transition: background-color 400ms ease;
+}
+
+.cadco-featured-products__card[data-featured-active] {
+	background-color: #f4f4f4;
+}
+
+/* The track is focusable so it can be scrolled with the arrow keys; give that
+   focus a visible ring rather than relying on the browser's default, which the
+   gradient swallows. */
+.cadco-featured-products__track:focus-visible {
+	outline: 2px solid #fff;
+	outline-offset: 4px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.cadco-featured-products__card {
+		transition: none;
+	}
+
+	.cadco-featured-products__track {
+		scroll-behavior: auto;
+	}
+}
