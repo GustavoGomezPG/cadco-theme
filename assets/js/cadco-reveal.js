@@ -367,6 +367,60 @@
 		});
 	}
 
+	/**
+	 * Drop the plugin's no-JS fallback when it leaks into the live document.
+	 *
+	 * Proto-Blocks prints that fallback inside <noscript>, where it is inert for
+	 * anyone running JS. But Taxi parses the incoming page with scripting
+	 * disabled, and in that mode <noscript> contents parse as real elements — so
+	 * merging the new head promotes the fallback to a live <style> carrying
+	 * `[data-proto-animate]:not([data-proto-animate="done"]) { opacity:1
+	 * !important }`.
+	 *
+	 * That forces every not-yet-revealed section visible, beating both the
+	 * theme's start state and GSAP's inline styles, until the section flips to
+	 * "done". Which is precisely the reported flash: a navigated-to section
+	 * showing at full opacity, then being hidden, then animating in.
+	 *
+	 * Real no-JS visitors are unaffected: this only ever runs with JS on, and the
+	 * <noscript> they get is untouched.
+	 */
+	function isLeakedFallback(node) {
+		if (!node || node.tagName !== 'STYLE') { return false; }
+
+		var css = node.textContent || '';
+
+		return css.indexOf('[data-proto-animate]:not([data-proto-animate="done"])') !== -1
+			&& css.indexOf('!important') !== -1;
+	}
+
+	function dropLeakedFallback(root) {
+		if (isLeakedFallback(root)) { root.remove(); return; }
+
+		if (!root || !root.querySelectorAll) { return; }
+
+		Array.prototype.forEach.call(root.querySelectorAll('style'), function (style) {
+			if (isLeakedFallback(style)) { style.remove(); }
+		});
+	}
+
+	/* Watched across the whole document, not just the head. Taxi promotes the
+	   fallback out of its <noscript> and inserts it into the BODY, so a head-only
+	   observer never sees it. And it has to be an observer rather than a cleanup
+	   on page-ready: the merge happens during NAVIGATE_IN, well before
+	   NAVIGATE_END, so page-ready arrives half a second after the leaked rule has
+	   already forced the section visible. This removes it in the same microtask
+	   it is inserted, before a frame can paint with it. */
+	new MutationObserver(function (records) {
+		for (var i = 0; i < records.length; i++) {
+			var added = records[i].addedNodes;
+
+			for (var j = 0; j < added.length; j++) { dropLeakedFallback(added[j]); }
+		}
+	}).observe(document.documentElement, { childList: true, subtree: true });
+
+	dropLeakedFallback(document);
+
 	document.addEventListener('proto:page-ready', function (e) {
 		setUpAll((e.detail && e.detail.container) || document);
 	});

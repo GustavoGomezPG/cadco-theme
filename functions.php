@@ -189,63 +189,6 @@ add_action('wp_enqueue_scripts', function () {
     ]);
 }, 20);
 
-/**
- * The reveal's pending state, in CSS instead of JS.
- *
- * cadco-reveal.js is a footer script, so the browser had already painted every
- * section by the time it ran; gsap.set() then hid them and animated them back
- * in, which reads as a flash of the finished page. A start state only prevents
- * that if it exists before first paint, which means CSS, inline, in the head.
- *
- * Three things keep it safe:
- *
- *   - It is gated on a class this same inline script adds, so with JS off the
- *     class never lands and nothing is ever hidden. If JS is on but
- *     cadco-reveal.js never arrives, the same script drops the class after 3s
- *     and every unbound section is released.
- *   - It keys on cadco-reveal.js's own data-cadco-reveal-bound, NOT on the
- *     plugin's data-proto-animate. Both systems write that attribute: the
- *     plugin's reveal-runtime.js force-reveals a "manual" section 1500ms after
- *     it enters view, whether or not this theme's reveal has run. Keyed on it,
- *     a slow cadco-reveal.js -- an uncached load, a cold GSAP fetch -- let the
- *     watchdog mark the section done, which lifted the rule and showed the
- *     content, and only then did GSAP hide it to animate: shown, hidden,
- *     animated. The bound attribute is set in the same tick as GSAP's own
- *     hiding, so only this script can lift the rule, and nothing else can
- *     interleave.
- *   - visibility, not display or opacity: the box keeps its space, so hiding
- *     costs no layout shift, and it is what GSAP's autoAlpha sets anyway, so
- *     the handover to the animation is seamless.
- *   - It is scoped to data-proto-animate="manual". cadco-reveal.js marks the
- *     section "done" in the same tick it applies its own hiding (right after
- *     the gsap.set calls, not when the animation ends), so the rule lifts at
- *     exactly the moment JS takes ownership -- never a frame where both are off.
- *
- * The selectors mirror what the script hides: the reveal element itself, except
- * for "items", where it is the element's children that animate.
- */
-add_action('wp_head', function (): void {
-    ?>
-<style id="cadco-reveal-pending">
-@media (prefers-reduced-motion: no-preference) {
-	.cadco-reveal-js [data-cadco-reveal-group]:not([data-cadco-reveal-bound]) [data-cadco-reveal]:not([data-cadco-reveal="items"]),
-	.cadco-reveal-js [data-cadco-reveal-group]:not([data-cadco-reveal-bound]) [data-cadco-reveal="items"] > * {
-		visibility: hidden;
-	}
-}
-</style>
-<script id="cadco-reveal-flag">
-(function (h) {
-	h.classList.add('cadco-reveal-js');
-	/* If cadco-reveal.js never arrives, nothing would ever mark a section bound
-	   and the page would stay hidden. Dropping the flag releases every unbound
-	   section; bound ones are held by GSAP's own inline styles, so they are
-	   unaffected. */
-	window.setTimeout(function () { h.classList.remove('cadco-reveal-js'); }, 3000);
-}(document.documentElement));
-</script>
-	<?php
-}, 1);
 
 /**
  * Block view.js files that animate must not run before their libraries exist.
