@@ -496,11 +496,24 @@
       closeMenu();
     });
 
-    document.addEventListener('click', function (event) {
+    /* Taxi re-runs this file per navigation, so this outside-click handler is
+       taken off when its header leaves or it would pile up for the visit. */
+    var onDocumentClick = function (event) {
       if (root.contains(event.target)) return;
       closeAll();
       closeSearch();
       closeMenu();
+    };
+
+    document.addEventListener('click', onDocumentClick);
+
+    document.addEventListener('proto:page-leave', function off(e) {
+      var container = e && e.detail && e.detail.container;
+
+      if (container && !container.contains(root)) { return; }
+
+      document.removeEventListener('click', onDocumentClick);
+      document.removeEventListener('proto:page-leave', off);
     });
   }
 
@@ -514,6 +527,16 @@
     initAll();
   }
 
-  // Dispatched by the theme on first load and after every Taxi navigation.
-  document.addEventListener('proto:page-ready', initAll);
+  /*
+   * Dispatched by the theme on first load and after every Taxi navigation.
+   *
+   * Registered once per document, not once per execution. Proto-Blocks stamps
+   * block view scripts with data-taxi-reload, so Taxi re-runs this whole file
+   * on every navigation -- an unguarded addEventListener here added another
+   * listener each time, and initAll then ran once per navigation ever made.
+   */
+  if (!window.__cadcoHeaderPageReadyBound) {
+    window.__cadcoHeaderPageReadyBound = true;
+    document.addEventListener('proto:page-ready', initAll);
+  }
 })();

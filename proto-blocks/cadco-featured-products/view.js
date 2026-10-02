@@ -206,9 +206,27 @@
 		}
 
 		track.addEventListener('scroll', onScroll, { passive: true });
-		window.addEventListener('resize', function () {
+		/*
+		 * Taxi re-runs this file on every navigation (Proto-Blocks stamps block
+		 * view scripts with data-taxi-reload), so a resize listener added here
+		 * outlives the section it was set up for: the old one keeps firing
+		 * against detached nodes and they accumulate for the whole visit.
+		 * Named so it can be taken off when this view leaves.
+		 */
+		var onResize = function () {
 			measureLoop();
 			schedule();
+		};
+
+		window.addEventListener('resize', onResize);
+
+		document.addEventListener('proto:page-leave', function off(e) {
+			var container = e && e.detail && e.detail.container;
+
+			if (container && !container.contains(track)) { return; }
+
+			window.removeEventListener('resize', onResize);
+			document.removeEventListener('proto:page-leave', off);
 		});
 
 		measureLoop();
@@ -355,12 +373,26 @@
 			play();
 		});
 
-		document.addEventListener('visibilitychange', function () {
+		/* Named and removed with the view: this is a document-level listener on
+		   a per-track closure, so re-execution would otherwise accumulate one
+		   for every navigation made. */
+		var onVisibility = function () {
 			if (document.hidden) {
 				pause();
 			} else {
 				play();
 			}
+		};
+
+		document.addEventListener('visibilitychange', onVisibility);
+
+		document.addEventListener('proto:page-leave', function off(e) {
+			var container = e && e.detail && e.detail.container;
+
+			if (container && !container.contains(track)) { return; }
+
+			document.removeEventListener('visibilitychange', onVisibility);
+			document.removeEventListener('proto:page-leave', off);
 		});
 
 		/**
