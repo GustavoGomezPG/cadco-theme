@@ -641,6 +641,74 @@
       },
       "notes": {
         "pageQa": "accepted by developer: Accepted by developer: 23.46% page mismatch and 3.92% height delta are the aggregate of the section differences already accepted individually - the theme's 40px container versus the design's 1190px column on the hero, the WooCommerce category thumbnails being lifestyle photographs where the design shows product cut-outs, and cadco-intro's fixed vertical padding. Accessibility is clean: the one serious finding, the footer logo link having no accessible name, was fixed by giving the logo alt text rather than accepted. No page errors."
+      },
+      "seo": {
+        "focusKeyword": {
+          "value": "cadco products",
+          "inferred": true,
+          "why": "Matches the page h1 \"Explore Cadco Products.\" and the /products/ slug; it is the catalogue landing page rather than a single product."
+        },
+        "title": {
+          "value": "Explore Cadco Products",
+          "inferred": true,
+          "why": "The page's own h1; renders as \"Explore Cadco Products – Cadco, Ltd.\" at 36 characters."
+        },
+        "description": {
+          "value": "Explore Cadco products for professional kitchens: convection and cook & hold ovens, fast cooking ovens, countertop equipment and food service carts.",
+          "inferred": true,
+          "why": "148 characters, leads with the keyword and names the four categories the page actually lists."
+        },
+        "ogTitle": {
+          "value": "Explore Cadco Products",
+          "inferred": true,
+          "why": "Mirrors the SEO title."
+        },
+        "ogDescription": {
+          "value": "Explore Cadco products for professional kitchens: convection and cook & hold ovens, fast cooking ovens, countertop equipment and food service carts.",
+          "inferred": true,
+          "why": "Equals the meta description, which is how these are derived."
+        },
+        "twitterTitle": {
+          "value": "Explore Cadco Products",
+          "inferred": true,
+          "why": "Mirrors the OG title."
+        },
+        "twitterDescription": {
+          "value": "Explore Cadco products for professional kitchens: convection and cook & hold ovens, fast cooking ovens, countertop equipment and food service carts.",
+          "inferred": true,
+          "why": "Equals the meta description, which is how these are derived."
+        },
+        "ogImage": {
+          "value": {
+            "file": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/products/og.png"
+          },
+          "inferred": true,
+          "why": "Generated 1200x630 from the hero section; the headline is legible and uncropped."
+        },
+        "schemaPageType": {
+          "value": "CollectionPage",
+          "inferred": true,
+          "why": "The page lists product categories and featured products rather than describing one item."
+        },
+        "applied": "2026-10-02T22:37:10.712Z",
+        "ogImageId": 18322,
+        "appliedValues": {
+          "focuskw": "cadco products",
+          "title": "Explore Cadco Products",
+          "metadesc": "Explore Cadco products for professional kitchens: convection and cook & hold ovens, fast cooking ovens, countertop equipment and food service carts.",
+          "opengraph-title": "Explore Cadco Products",
+          "opengraph-description": "Explore Cadco products for professional kitchens: convection and cook & hold ovens, fast cooking ovens, countertop equipment and food service carts.",
+          "twitter-title": "Explore Cadco Products",
+          "twitter-description": "Explore Cadco products for professional kitchens: convection and cook & hold ovens, fast cooking ovens, countertop equipment and food service carts.",
+          "schema_page_type": "CollectionPage",
+          "opengraph-image-id": "18322",
+          "twitter-image-id": "18322"
+        },
+        "audit": {
+          "pass": false,
+          "file": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/products/seo-audit.json",
+          "at": "2026-10-02T22:37:20.206Z"
+        }
       }
     }
   ]

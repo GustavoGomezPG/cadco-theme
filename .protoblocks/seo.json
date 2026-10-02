@@ -1,0 +1,49 @@
+{
+  "focusKeyword": {
+    "value": "cadco products",
+    "inferred": true,
+    "why": "Matches the page h1 \"Explore Cadco Products.\" and the /products/ slug; it is the catalogue landing page rather than a single product."
+  },
+  "title": {
+    "value": "Explore Cadco Products",
+    "inferred": true,
+    "why": "The page's own h1; renders as \"Explore Cadco Products – Cadco, Ltd.\" at 36 characters."
+  },
+  "description": {
+    "value": "Explore Cadco products for professional kitchens: convection and cook & hold ovens, fast cooking ovens, countertop equipment and food service carts.",
+    "inferred": true,
+    "why": "148 characters, leads with the keyword and names the four categories the page actually lists."
+  },
+  "ogTitle": {
+    "value": "Explore Cadco Products",
+    "inferred": true,
+    "why": "Mirrors the SEO title."
+  },
+  "ogDescription": {
+    "value": "Explore Cadco products for professional kitchens: convection and cook & hold ovens, fast cooking ovens, countertop equipment and food service carts.",
+    "inferred": true,
+    "why": "Equals the meta description, which is how these are derived."
+  },
+  "twitterTitle": {
+    "value": "Explore Cadco Products",
+    "inferred": true,
+    "why": "Mirrors the OG title."
+  },
+  "twitterDescription": {
+    "value": "Explore Cadco products for professional kitchens: convection and cook & hold ovens, fast cooking ovens, countertop equipment and food service carts.",
+    "inferred": true,
+    "why": "Equals the meta description, which is how these are derived."
+  },
+  "ogImage": {
+    "value": {
+      "file": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/products/og.png"
+    },
+    "inferred": true,
+    "why": "Generated 1200x630 from the hero section; the headline is legible and uncropped."
+  },
+  "schemaPageType": {
+    "value": "CollectionPage",
+    "inferred": true,
+    "why": "The page lists product categories and featured products rather than describing one item."
+  }
+}
