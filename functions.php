@@ -153,6 +153,37 @@ add_action('wp_enqueue_scripts', function () {
 }, 20);
 
 /**
+ * Page-transition curtain.
+ *
+ * Only with Taxi on: without it every navigation is a full document load, the
+ * browser holds the old page until the new one is ready, and there is no gap to
+ * cover. GSAP is a soft dependency -- the script falls back to an instant
+ * cover without it, so a missing library degrades to a plain curtain rather
+ * than to no curtain at all.
+ */
+add_action('wp_enqueue_scripts', function () {
+    if (! function_exists('proto_taxi_is_enabled') || ! proto_taxi_is_enabled()) {
+        return;
+    }
+
+    $path = get_stylesheet_directory() . '/assets/js/cadco-curtain.js';
+
+    if (! file_exists($path)) {
+        return;
+    }
+
+    $deps = wp_script_is('proto-gsap', 'registered') ? ['proto-gsap'] : [];
+
+    wp_enqueue_script(
+        'cadco-curtain',
+        get_stylesheet_directory_uri() . '/assets/js/cadco-curtain.js',
+        $deps,
+        filemtime($path),
+        true
+    );
+}, 20);
+
+/**
  * The reveal's pending state, in CSS instead of JS.
  *
  * cadco-reveal.js is a footer script, so the browser had already painted every
