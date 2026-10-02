@@ -153,6 +153,47 @@ add_action('wp_enqueue_scripts', function () {
 }, 20);
 
 /**
+ * The reveal's pending state, in CSS instead of JS.
+ *
+ * cadco-reveal.js is a footer script, so the browser had already painted every
+ * section by the time it ran; gsap.set() then hid them and animated them back
+ * in, which reads as a flash of the finished page. A start state only prevents
+ * that if it exists before first paint, which means CSS, inline, in the head.
+ *
+ * Three things keep it safe:
+ *
+ *   - It is gated on a class this same inline script adds, so with JS off the
+ *     class never lands and nothing is ever hidden. If JS is on but
+ *     cadco-reveal.js never loads, the plugin's own reveal-runtime.js is the
+ *     backstop: it gives a "manual" section 1500ms after it enters view and
+ *     then forces it to "done" (and reveals everything outright when there is
+ *     no IntersectionObserver), so content cannot be stranded hidden.
+ *   - visibility, not display or opacity: the box keeps its space, so hiding
+ *     costs no layout shift, and it is what GSAP's autoAlpha sets anyway, so
+ *     the handover to the animation is seamless.
+ *   - It is scoped to data-proto-animate="manual". cadco-reveal.js marks the
+ *     section "done" in the same tick it applies its own hiding (right after
+ *     the gsap.set calls, not when the animation ends), so the rule lifts at
+ *     exactly the moment JS takes ownership -- never a frame where both are off.
+ *
+ * The selectors mirror what the script hides: the reveal element itself, except
+ * for "items", where it is the element's children that animate.
+ */
+add_action('wp_head', function (): void {
+    ?>
+<style id="cadco-reveal-pending">
+@media (prefers-reduced-motion: no-preference) {
+	.cadco-reveal-js [data-proto-animate="manual"] [data-cadco-reveal]:not([data-cadco-reveal="items"]),
+	.cadco-reveal-js [data-proto-animate="manual"] [data-cadco-reveal="items"] > * {
+		visibility: hidden;
+	}
+}
+</style>
+<script id="cadco-reveal-flag">document.documentElement.classList.add('cadco-reveal-js');</script>
+	<?php
+}, 1);
+
+/**
  * Block view.js files that animate must not run before their libraries exist.
  *
  * Proto-Blocks registers a block's view.js with no dependencies, and both it and
