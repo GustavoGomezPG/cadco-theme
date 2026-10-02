@@ -690,7 +690,44 @@
           "inferred": true,
           "why": "The page lists product categories and featured products rather than describing one item."
         },
-        "applied": "2026-10-02T22:37:10.712Z",
+        "schema": {
+          "value": {
+            "@type": "ItemList",
+            "@id": "#products-categories",
+            "name": "Cadco product categories",
+            "numberOfItems": 4,
+            "itemListOrder": "https://schema.org/ItemListOrderAscending",
+            "itemListElement": [
+              {
+                "@type": "ListItem",
+                "position": 1,
+                "name": "Convection Ovens",
+                "url": "https://cadco.local/products/convection-cook-hold-ovens/"
+              },
+              {
+                "@type": "ListItem",
+                "position": 2,
+                "name": "Fast Cooking Ovens",
+                "url": "https://cadco.local/products/fast-cooking-ovens/"
+              },
+              {
+                "@type": "ListItem",
+                "position": 3,
+                "name": "Countertop Equipment",
+                "url": "https://cadco.local/products/countertop-equipment/"
+              },
+              {
+                "@type": "ListItem",
+                "position": 4,
+                "name": "Food Service Carts",
+                "url": "https://cadco.local/products/food-service-carts/"
+              }
+            ]
+          },
+          "inferred": true,
+          "why": "The four top-level product categories the page links to, in the order it lists them. Nothing else is asserted: the page shows no prices, ratings or reviews."
+        },
+        "applied": "2026-10-02T23:29:18.625Z",
         "ogImageId": 18322,
         "appliedValues": {
           "focuskw": "cadco products",
@@ -702,12 +739,13 @@
           "twitter-description": "Explore Cadco products for professional kitchens: convection and cook & hold ovens, fast cooking ovens, countertop equipment and food service carts.",
           "schema_page_type": "CollectionPage",
           "opengraph-image-id": "18322",
-          "twitter-image-id": "18322"
+          "twitter-image-id": "18322",
+          "jsonld": "[\n    {\n        \"@type\": \"ItemList\",\n        \"@id\": \"#products-categories\",\n        \"name\": \"Cadco product categories\",\n        \"numberOfItems\": 4,\n        \"itemListOrder\": \"https://schema.org/ItemListOrderAscending\",\n        \"itemListElement\": [\n            {\n                \"@type\": \"ListItem\",\n                \"position\": 1,\n                \"name\": \"Convection Ovens\",\n                \"url\": \"https://cadco.local/products/convection-cook-hold-ovens/\"\n            },\n            {\n                \"@type\": \"ListItem\",\n                \"position\": 2,\n                \"name\": \"Fast Cooking Ovens\",\n                \"url\": \"https://cadco.local/products/fast-cooking-ovens/\"\n            },\n            {\n                \"@type\": \"ListItem\",\n                \"position\": 3,\n                \"name\": \"Countertop Equipment\",\n                \"url\": \"https://cadco.local/products/countertop-equipment/\"\n            },\n            {\n                \"@type\": \"ListItem\",\n                \"position\": 4,\n                \"name\": \"Food Service Carts\",\n                \"url\": \"https://cadco.local/products/food-service-carts/\"\n            }\n        ]\n    }\n]"
         },
         "audit": {
           "pass": false,
           "file": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/products/seo-audit.json",
-          "at": "2026-10-02T22:37:20.206Z"
+          "at": "2026-10-02T23:29:38.898Z"
         }
       }
     }
