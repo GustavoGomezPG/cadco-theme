@@ -126,7 +126,7 @@
     {
       "slug": "products",
       "title": "Products",
-      "status": "building",
+      "status": "seo",
       "postId": 18312,
       "contentHash": "c37f96be6d665a623c6e62f4b522d4ad75adaf1cf2792f6cf5caef440a275269",
       "design": {
@@ -314,7 +314,7 @@
         {
           "n": 4,
           "anchor": "pb-s4",
-          "status": "animating",
+          "status": "done",
           "crops": {
             "desktop": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/products/crops/desktop/pb-s4.png"
           },
@@ -416,12 +416,17 @@
               "pass": true,
               "verdict": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/products/pb-s4/iter-9/verdict.json"
             }
-          ]
+          ],
+          "motion": {
+            "presets": [],
+            "check": "pass",
+            "result": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/products/pb-s4/motion/motion-check.json"
+          }
         },
         {
           "n": 5,
           "anchor": "pb-s5",
-          "status": "building",
+          "status": "done",
           "crops": {
             "desktop": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/products/crops/desktop/pb-s5.png"
           },
@@ -434,7 +439,7 @@
           "label": "Product spotlight - photo",
           "decision": "reuse",
           "block": "cadco-product-spotlight",
-          "notes": "VariKwik+. Second variant of the block built in section 4: layout=photo-text-right, backgroundImage, scrimOpacity. No body or bullets.",
+          "notes": "accepted by developer at 12.12% (best of 9 iterations; 8% threshold). Heights match to 0.16%. The residual is a ~2px vertical offset of the background photograph across the full-bleed band, which is a large enough area to hold the mismatch above threshold on its own, plus ~2px on the copy column. Everything else matches: heading size, weight and three-line wrap, eyebrow, button size and colour, and the scrim reaching solid black where the design does. Two of the nine iterations were regressions of my own making (removing the inner min-height broke the vertical centring; a full-bleed photo scaled it 1.24x past the design, which anchors it at 1159px wide and 105px off the left edge).",
           "attrs": {
             "layout": "photo",
             "eyebrow": "Featured Product",
@@ -519,7 +524,12 @@
               "pass": false,
               "verdict": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/products/pb-s5/iter-9/verdict.json"
             }
-          ]
+          ],
+          "motion": {
+            "presets": [],
+            "check": "pass",
+            "result": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/products/pb-s5/motion/motion-check.json"
+          }
         },
         {
           "n": 6,
@@ -620,6 +630,17 @@
         "title": "Products",
         "slug": "products",
         "postStatus": "publish"
+      },
+      "pageQa": {
+        "pass": false,
+        "accepted": true,
+        "note": "Accepted by developer: 23.46% page mismatch and 3.92% height delta are the aggregate of the section differences already accepted individually - the theme's 40px container versus the design's 1190px column on the hero, the WooCommerce category thumbnails being lifestyle photographs where the design shows product cut-outs, and cadco-intro's fixed vertical padding. Accessibility is clean: the one serious finding, the footer logo link having no accessible name, was fixed by giving the logo alt text rather than accepted. No page errors.",
+        "by": "developer",
+        "file": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/products/page-qa/page-qa.json",
+        "at": "2026-10-02T22:34:51.232Z"
+      },
+      "notes": {
+        "pageQa": "accepted by developer: Accepted by developer: 23.46% page mismatch and 3.92% height delta are the aggregate of the section differences already accepted individually - the theme's 40px container versus the design's 1190px column on the hero, the WooCommerce category thumbnails being lifestyle photographs where the design shows product cut-outs, and cadco-intro's fixed vertical padding. Accessibility is clean: the one serious finding, the footer logo link having no accessible name, was fixed by giving the logo alt text rather than accepted. No page errors."
       }
     }
   ]
