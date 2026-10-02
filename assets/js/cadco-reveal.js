@@ -335,9 +335,47 @@
 		});
 	}
 
-	ready(function () {
-		var sections = document.querySelectorAll('[data-cadco-reveal-group]');
+	/*
+	 * Taxi swaps the page container without reloading the document, so
+	 * DOMContentLoaded fires once per visit and never again: sections on a
+	 * navigated-to page were never set up, and the plugin's watchdog forced
+	 * them visible unanimated 1.5s later.
+	 *
+	 * proto-taxi.js dispatches proto:page-ready for the first load *and* every
+	 * NAVIGATE_END precisely so block code has one contract to bind to -- its
+	 * own comment says as much, and pb-motion.js and the header block already
+	 * use it. Binding here puts this script on the same contract.
+	 */
+	var BOUND = 'data-cadco-reveal-bound';
 
-		Array.prototype.forEach.call(sections, setUp);
+	function setUpAll(root) {
+		var scope    = (root && root.querySelectorAll) ? root : document;
+		var sections = scope.querySelectorAll('[data-cadco-reveal-group]');
+
+		/* The event carries the incoming container. If it ever hands us one the
+		   sections are not inside, fall back to the document rather than
+		   silently revealing nothing. */
+		if (!sections.length && scope !== document) {
+			sections = document.querySelectorAll('[data-cadco-reveal-group]');
+		}
+
+		Array.prototype.forEach.call(sections, function (section) {
+			if (section.hasAttribute(BOUND)) { return; }
+
+			section.setAttribute(BOUND, '');
+			setUp(section);
+		});
+	}
+
+	document.addEventListener('proto:page-ready', function (e) {
+		setUpAll((e.detail && e.detail.container) || document);
+	});
+
+	/* Taxi is optional -- functions.php drops its scripts when the transition is
+	   switched off, and then nothing dispatches proto:page-ready. The original
+	   DOMContentLoaded path stays as the fallback; the guard above makes both
+	   firing harmless. */
+	ready(function () {
+		setUpAll(document);
 	});
 })();
