@@ -218,6 +218,37 @@
 			   arrived on screen was the tail of an animation nobody saw begin. */
 			var tl = gsap.timeline({ defaults: { ease: 'power3.out' }, paused: true });
 
+			/*
+			 * Dispose it with the view that owns it.
+			 *
+			 * Taxi removes this section on navigation and proto-taxi.js kills
+			 * the ScrollTriggers inside it, which is why the live trigger count
+			 * stays flat. This timeline is not one of them: it is built
+			 * standalone and paused, and the trigger is attached to it
+			 * afterwards, so nothing disposes the timeline itself. It stays on
+			 * gsap's global timeline holding its targets, and the resize
+			 * listener ScrollTrigger registered alongside it is never released.
+			 *
+			 * Measured over six navigations between two pages before this:
+			 * paused timelines 2 -> 8 and ScrollTrigger resize listeners
+			 * 7 -> 37, both still climbing, while live ScrollTriggers stayed
+			 * at 4-6 throughout.
+			 *
+			 * kill(false) on the trigger for the same reason proto-taxi.js uses
+			 * it: a bare kill() reverts, stripping the inline opacity the
+			 * pre-reveal state depends on.
+			 */
+			document.addEventListener('proto:page-leave', function off(e) {
+				var container = e && e.detail && e.detail.container;
+
+				if (container && !container.contains(section)) { return; }
+
+				if (tl.scrollTrigger) { tl.scrollTrigger.kill(false); }
+
+				tl.kill();
+				document.removeEventListener('proto:page-leave', off);
+			});
+
 			pieces.forEach(function (el, index) {
 				var kind = el.getAttribute('data-cadco-reveal');
 				var at = index === 0 ? 0 : OVERLAP;
