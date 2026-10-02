@@ -1,0 +1,18 @@
+.DS_Store
+.phpunit.cache/
+node_modules/
+test-results/
+playwright-report/
+
+# ── Proto-Blocks site-builder ────────────────────────────────────────────────
+#
+# .protoblocks/ holds both the build state and its working files. The state is
+# worth keeping: build.json is the resumable plan for every page, and
+# tokens.json is the input that regenerates tailwind-theme.css and the
+# theme.json palette, so losing it means re-deriving the brand by hand.
+#
+# artifacts/ is the opposite — design frames, section crops, per-iteration
+# renders and QA composites. All of it regenerates from the design and the
+# build, and it reached 25 MB on the Products page alone.
+.protoblocks/artifacts/
+.protoblocks/*.bak

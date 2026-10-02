@@ -12,21 +12,24 @@ License: GNU General Public License v2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 Text Domain: cadco-theme
 Tags: block-theme, full-site-editing, proto-blocks
+Proto Fork: GustavoGomez092/proto-blocks-theme
 */
 
-/* Web fonts are enqueued from functions.php ('cadco-fonts'), not @imported.
-   An @import here would force the browser to fetch and parse style.css before
-   it could even discover the font stylesheet, serialising three round trips on
-   the critical path. Inter = body/UI, Barlow = display (Tailwind
-   `font-display`, see tailwind-theme.css). */
+/* Web fonts are self-hosted: woff2 in assets/fonts/, declared as theme.json
+   fontFace entries, so WordPress prints the @font-face rules. Nothing is
+   @imported or fetched from Google — either would force the browser to parse
+   this file before it could even discover the font stylesheet, serialising
+   round trips on the critical path. Inter = body/UI, Barlow = display
+   (Tailwind `font-display`, see tailwind-theme.css). */
 
 /* ------------------------------------------------------------------------
    Base typography — sans-serif everywhere by default (headings inherit).
    ------------------------------------------------------------------- */
+/* >>> protoblocks: body font (managed by tokens.mjs apply; change the tokens instead) */
 body {
-  font-family: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI",
-    Roboto, Helvetica, Arial, sans-serif;
+  font-family: "Inter", ui-sans-serif, system-ui, sans-serif;
 }
+/* <<< protoblocks: body font */
 
 /* ------------------------------------------------------------------------
    Page shell — full-height column so content fills the viewport (footer
