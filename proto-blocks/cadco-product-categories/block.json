@@ -6,12 +6,21 @@
   "category": "proto",
   "icon": "grid-view",
   "description": "A tinted band introducing the catalogue: centred heading and standfirst above a grid of WooCommerce product category cards, each a photograph over a white bar carrying the category name and an arrow. Sits over a coloured band so the last row overlaps the section beneath.",
-  "keywords": ["products", "categories", "cards", "grid", "catalogue", "woocommerce"],
+  "keywords": [
+    "products",
+    "categories",
+    "cards",
+    "grid",
+    "catalogue",
+    "woocommerce"
+  ],
   "supports": {
     "html": false,
     "anchor": true,
     "customClassName": true,
-    "align": ["full"]
+    "align": [
+      "full"
+    ]
   },
   "protoBlocks": {
     "version": "1.0",
@@ -37,8 +46,14 @@
         "label": "Show",
         "default": "top",
         "options": [
-          { "key": "top", "label": "Top-level categories" },
-          { "key": "children", "label": "Children of a category" }
+          {
+            "key": "top",
+            "label": "Top-level categories"
+          },
+          {
+            "key": "children",
+            "label": "Children of a category"
+          }
         ],
         "help": "Top level lists the catalogue's main categories. Children lists the sub-categories of the one you pick below."
       },
@@ -46,8 +61,15 @@
         "type": "select",
         "label": "Parent category",
         "optionsSource": "wp:terms",
-        "sourceArgs": { "taxonomy": "product_cat", "per_page": 200 },
-        "conditions": { "visible": { "scope": "children" } },
+        "sourceArgs": {
+          "taxonomy": "product_cat",
+          "per_page": 200
+        },
+        "conditions": {
+          "visible": {
+            "scope": "children"
+          }
+        },
         "help": "Whose sub-categories to list."
       },
       "limit": {
@@ -63,19 +85,54 @@
         "label": "Columns",
         "default": "2",
         "options": [
-          { "key": "2", "label": "Two (design)" },
-          { "key": "3", "label": "Three" }
+          {
+            "key": "2",
+            "label": "Two (design)"
+          },
+          {
+            "key": "3",
+            "label": "Three"
+          },
+          {
+            "key": "4",
+            "label": "Four"
+          }
         ],
         "help": "Always one column on phones."
+      },
+      "surface": {
+        "type": "select",
+        "label": "Section background",
+        "default": "tint",
+        "options": [
+          {
+            "key": "tint",
+            "label": "Pale blue (design)"
+          },
+          {
+            "key": "white",
+            "label": "White"
+          }
+        ],
+        "help": "White is for pages where the cards sit on the page ground rather than in their own band."
       },
       "orderBy": {
         "type": "select",
         "label": "Order by",
         "default": "menu_order",
         "options": [
-          { "key": "menu_order", "label": "Category order" },
-          { "key": "name", "label": "Name" },
-          { "key": "count", "label": "Number of products" }
+          {
+            "key": "menu_order",
+            "label": "Category order"
+          },
+          {
+            "key": "name",
+            "label": "Name"
+          },
+          {
+            "key": "count",
+            "label": "Number of products"
+          }
         ]
       },
       "order": {
@@ -83,8 +140,14 @@
         "label": "Direction",
         "default": "ASC",
         "options": [
-          { "key": "ASC", "label": "Ascending" },
-          { "key": "DESC", "label": "Descending" }
+          {
+            "key": "ASC",
+            "label": "Ascending"
+          },
+          {
+            "key": "DESC",
+            "label": "Descending"
+          }
         ]
       },
       "hideEmpty": {
@@ -102,7 +165,11 @@
         "type": "color",
         "label": "Band colour",
         "default": "#000000",
-        "conditions": { "visible": { "showOverlap": true } },
+        "conditions": {
+          "visible": {
+            "showOverlap": true
+          }
+        },
         "help": "Match the background of the section directly below."
       },
       "overlapHeight": {
@@ -112,7 +179,11 @@
         "min": 0,
         "max": 300,
         "step": 1,
-        "conditions": { "visible": { "showOverlap": true } }
+        "conditions": {
+          "visible": {
+            "showOverlap": true
+          }
+        }
       },
       "overlapOverhang": {
         "type": "range",
@@ -121,8 +192,21 @@
         "min": 0,
         "max": 200,
         "step": 1,
-        "conditions": { "visible": { "showOverlap": true } },
+        "conditions": {
+          "visible": {
+            "showOverlap": true
+          }
+        },
         "help": "How far the last row hangs over the band. The design overhangs 80 of the band's 111px."
+      },
+      "overlapTop": {
+        "type": "range",
+        "label": "Pull up over section above (px)",
+        "default": 0,
+        "min": 0,
+        "max": 300,
+        "step": 1,
+        "help": "Lifts the card grid over the section above it, the way the Products page floats the cards over the hero photo. 0 keeps the cards inside this section."
       }
     }
   }

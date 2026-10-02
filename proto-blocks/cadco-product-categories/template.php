@@ -33,6 +33,7 @@ $hideEmpty = (bool) ($attributes['hideEmpty'] ?? false);
 $showOverlap = (bool) ($attributes['showOverlap'] ?? true);
 $overlapH    = max(0, min(300, (int) ($attributes['overlapHeight'] ?? 111)));
 $overhang    = max(0, min(200, (int) ($attributes['overlapOverhang'] ?? 80)));
+$overlapTop  = max(0, min(300, (int) ($attributes['overlapTop'] ?? 0)));
 
 // $block is null in the editor preview.
 $is_preview = ! isset($block) || $block === null;
@@ -53,6 +54,13 @@ if (! preg_match('/^(#[0-9a-f]{3,8}|(rgb|hsl)a?\([0-9a-z%.,\/\s]+\))$/i', trim($
  * the cards reach the section's edge and there is no padding left to give.
  */
 $padBottom = $showOverlap ? max(0, $overlapH - $overhang) : 92;
+
+/*
+ * The lift is a negative margin, so it already shortens the section by the
+ * distance it raises the cards. The bottom padding is the clear space the
+ * design leaves under the last row and is independent of the lift — taking the
+ * lift off it as well shortened the band twice.
+ */
 
 /* -------------------------------------------------------------------------
    The categories.
@@ -87,14 +95,28 @@ if (taxonomy_exists('product_cat')) {
 }
 
 // Both literal, so the Tailwind compiler sees them when it scans this file.
-$colClass = $columns === '3' ? 'md:grid-cols-2 lg:grid-cols-3' : 'md:grid-cols-2';
+$colClass = $columns === '4'
+    ? 'md:grid-cols-2 lg:grid-cols-4'
+    : ($columns === '3' ? 'md:grid-cols-2 lg:grid-cols-3' : 'md:grid-cols-2');
+
+/*
+ * A four-up card is about half the width of a two-up one, so the wide image
+ * frame would flatten to ~150px and the 24px label would wrap. Four-up cards
+ * get the design's near-square frame and a label that stays on one line.
+ * Every class is a literal so the Tailwind scanner sees it.
+ */
+$isQuad      = $columns === '4';
+$frameAspect = $isQuad ? 'aspect-[286/250]' : 'aspect-[536/312]';
+$labelHeight = $isQuad ? 'h-[85px]' : 'h-[74px]';
+$labelType   = $isQuad ? 'text-[19px] leading-6' : 'text-[20px] leading-8 md:text-[24px]';
+$surface     = ($attributes['surface'] ?? 'tint') === 'white' ? 'bg-paper' : 'bg-[rgba(232,237,244,0.5)]';
 
 // Black marks on a white oval, transparent everywhere else — derived from the
 // site logo, so a category with no thumbnail still reads as Cadco's.
 $markUrl = get_theme_file_uri('assets/img/cadco-mark.svg');
 
 $wrapper = get_block_wrapper_attributes([
-    'class' => 'cadco-product-categories relative isolate w-full bg-[rgba(232,237,244,0.5)] pt-16 md:pt-[92px]',
+    'class' => 'cadco-product-categories relative isolate w-full ' . $surface . ' pt-16 md:pt-[92px]',
 ]);
 
 /**
@@ -134,7 +156,8 @@ $reveal = $is_preview ? '' : 'data-proto-animate="manual" data-cadco-reveal-grou
 
         <?php if (! empty($terms)) : ?>
             <ul data-cadco-reveal="items"
-                class="mt-14 grid list-none grid-cols-1 gap-5 p-0 md:mt-24 <?php echo esc_attr($colClass); ?>">
+                class="mt-14 grid list-none grid-cols-1 gap-5 p-0 md:mt-24 <?php echo esc_attr($colClass); ?>"
+                <?php if ($overlapTop > 0) : ?>style="margin-top:-<?php echo (int) $overlapTop; ?>px"<?php endif; ?>>
                 <?php foreach ($terms as $term) : ?>
                     <?php
                     $link = get_term_link($term);
@@ -151,7 +174,7 @@ $reveal = $is_preview ? '' : 'data-proto-animate="manual" data-cadco-reveal-grou
                             <?php /* The zoom is on the image inside this box, not on
                                      the card, so the photograph grows behind a fixed
                                      frame instead of the whole card swelling. */ ?>
-                            <div class="relative aspect-[536/312] overflow-hidden bg-light-grey/40">
+                            <div class="relative <?php echo esc_attr($frameAspect); ?> overflow-hidden bg-light-grey/40">
                                 <?php if ($thumbId > 0) : ?>
                                     <?php echo wp_get_attachment_image($thumbId, 'large', false, [
                                         'class'    => 'absolute inset-0 h-full w-full object-cover transition-transform duration-500 ease-out will-change-transform group-hover:scale-105 motion-reduce:transition-none motion-reduce:group-hover:scale-100',
@@ -168,8 +191,8 @@ $reveal = $is_preview ? '' : 'data-proto-animate="manual" data-cadco-reveal-grou
                                 <?php endif; ?>
                             </div>
 
-                            <div class="flex h-[74px] items-center justify-between gap-4 px-6">
-                                <h3 class="m-0 font-display text-[20px] font-bold leading-8 text-true-black transition-colors duration-300 group-hover:text-cadco-blue md:text-[24px]">
+                            <div class="flex <?php echo esc_attr($labelHeight); ?> items-center justify-between gap-4 px-6">
+                                <h3 class="m-0 font-display <?php echo esc_attr($labelType); ?> font-bold text-true-black transition-colors duration-300 group-hover:text-cadco-blue">
                                     <?php echo esc_html($term->name); ?>
                                 </h3>
 

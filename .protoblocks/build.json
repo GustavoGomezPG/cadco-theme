@@ -1,0 +1,626 @@
+{
+  "schemaVersion": 1,
+  "site": {
+    "url": "https://cadco.local",
+    "path": "/Users/gustavogomez/Local Sites/cadco/app/public",
+    "wp": {
+      "mode": "local-wrapper",
+      "wrapper": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/.protoblocks/wp"
+    },
+    "theme": {
+      "slug": "cadco-theme",
+      "forkedFrom": "GustavoGomez092/proto-blocks-theme"
+    },
+    "localSiteId": "9oFUrLzkC",
+    "qa": {
+      "mismatchMax": 0.08,
+      "pageMismatchMax": 0.12,
+      "heightDeltaMax": 0.03,
+      "maxIterations": 5,
+      "motionMaxAttempts": 3
+    },
+    "motionProfile": {
+      "name": "subtle",
+      "duration": 0.7,
+      "ease": "power2.out",
+      "stagger": 0.08,
+      "distance": 24
+    },
+    "tokens": {
+      "colors": {
+        "cadco-blue": "#00476e",
+        "true-black": "#000000",
+        "light-grey": "#d1d1cf",
+        "header": "#111111",
+        "panel": "#efefef",
+        "ink": "#111111",
+        "gray-900": "#1a1a1a",
+        "gray-700": "#3b3b3b",
+        "gray-500": "#6b6b6b",
+        "gray-300": "#c9c9c9",
+        "gray-100": "#ededed",
+        "paper": "#ffffff",
+        "accent": "#00476e"
+      },
+      "fonts": {
+        "sans": {
+          "family": "Inter",
+          "fallback": "ui-sans-serif, system-ui, sans-serif",
+          "google": [
+            400,
+            500,
+            600,
+            700
+          ]
+        },
+        "display": {
+          "family": "Barlow",
+          "fallback": "Inter, ui-sans-serif, system-ui, sans-serif",
+          "google": [
+            400,
+            500,
+            600,
+            700,
+            800
+          ]
+        }
+      },
+      "type": {
+        "h1": "48px",
+        "h2": "36px",
+        "h3": "28px",
+        "body-lg": "20px",
+        "body-md": "16px",
+        "body-sm": "14px"
+      },
+      "shadows": {
+        "soft": "0 6px 16px rgba(0,0,0,0.08)"
+      }
+    },
+    "navigation": {
+      "menus": {
+        "primary": {
+          "id": 4,
+          "spec": {
+            "title": "Main Navigation",
+            "items": []
+          },
+          "pending": []
+        }
+      }
+    },
+    "parts": {
+      "header": {
+        "block": "cadco-header",
+        "writtenAt": "2026-10-02T21:29:53Z"
+      },
+      "footer": {
+        "block": "cadco-footer",
+        "writtenAt": "2026-10-02T21:29:53Z"
+      }
+    }
+  },
+  "library": {
+    "cadco-product-spotlight": {
+      "usedOn": [
+        "products"
+      ],
+      "purpose": "One product given the full width: eyebrow, heading, body and CTA, set either beside a pair of product photographs or over a full-bleed one.",
+      "variants": [
+        "images",
+        "photo"
+      ],
+      "baselines": [
+        {
+          "page": "products",
+          "anchor": "pb-s4",
+          "breakpoint": "desktop",
+          "file": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/baselines/products/pb-s4-desktop.png",
+          "width": 1440,
+          "scale": 1
+        }
+      ]
+    }
+  },
+  "pages": [
+    {
+      "slug": "products",
+      "title": "Products",
+      "status": "building",
+      "postId": 18312,
+      "contentHash": "c37f96be6d665a623c6e62f4b522d4ad75adaf1cf2792f6cf5caef440a275269",
+      "design": {
+        "frames": [
+          {
+            "breakpoint": "desktop",
+            "width": 1440,
+            "scale": 1,
+            "image": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/products/design/desktop.png",
+            "pixelWidth": 1440
+          }
+        ]
+      },
+      "sections": [
+        {
+          "n": 1,
+          "anchor": "pb-header",
+          "status": "skipped",
+          "crops": {
+            "desktop": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/products/crops/desktop/pb-header.png"
+          },
+          "ranges": {
+            "desktop": {
+              "y0": 0,
+              "y1": 75
+            }
+          },
+          "label": "Header",
+          "decision": "reuse",
+          "block": "cadco-header",
+          "notes": "Pre-existing cadco-header, rendered by parts/header.html (logo 68, navMenu 4). Not built or rebuilt by this page; inPart. Covered by full-page QA rather than section QA, since the block has supports.anchor:false so there is no #pb-header element to screenshot.",
+          "inPart": true
+        },
+        {
+          "n": 2,
+          "anchor": "pb-s2",
+          "status": "done",
+          "crops": {
+            "desktop": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/products/crops/desktop/pb-s2.png"
+          },
+          "ranges": {
+            "desktop": {
+              "y0": 75,
+              "y1": 598
+            }
+          },
+          "masks": {
+            "desktop": [
+              {
+                "x": 138,
+                "y": 472,
+                "w": 1190,
+                "h": 51
+              }
+            ]
+          },
+          "label": "Hero",
+          "decision": "reuse",
+          "block": "cadco-hero",
+          "notes": "accepted by developer: the theme shared container (max-w-[1440px] px-10) is the source of truth, not the Figma 1190px column. Accepted: content left edge 40px vs design 126px (~86px offset, the site-wide convention shared with header/footer per the hero template comment), and the heading therefore setting on one line instead of the design two. Residual differences NOT caused by the container and not addressed: eyebrow sits ~64px lower (hero content is vertically centred; design anchors it higher), background photo offset ~20px (low severity). QA iter-1 recorded pass:false mismatch 0.3179; the no-product-cards discrepancy was expected since section 3 was unbuilt.",
+          "attrs": {
+            "eyebrow": "Products",
+            "heading": "Explore Cadco Products.",
+            "backgroundImage": {
+              "id": 18311,
+              "url": "https://cadco.local/wp-content/uploads/2026/10/products-hero-kitchen-scaled.jpg",
+              "alt": "Two chefs preparing food at a stainless steel counter in a commercial kitchen",
+              "caption": "",
+              "size": "full"
+            },
+            "scrimOpacity": 74,
+            "minHeight": 523,
+            "align": "full"
+          },
+          "prevStatus": "building",
+          "preparedIteration": 1,
+          "qa": [
+            {
+              "iteration": 1,
+              "breakpoint": "desktop",
+              "mode": "diff",
+              "mismatch": 0.3179,
+              "heightDelta": 0,
+              "widthDelta": 0,
+              "numericPass": false,
+              "pass": false,
+              "verdict": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/products/pb-s2/iter-1/verdict.json"
+            },
+            {
+              "iteration": 1,
+              "breakpoint": "tablet",
+              "mode": "sanity",
+              "widthDelta": 0,
+              "numericPass": true,
+              "pass": false,
+              "verdict": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/products/pb-s2/iter-1/verdict.json"
+            },
+            {
+              "iteration": 1,
+              "breakpoint": "mobile",
+              "mode": "sanity",
+              "widthDelta": 0,
+              "numericPass": true,
+              "pass": false,
+              "verdict": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/products/pb-s2/iter-1/verdict.json"
+            }
+          ],
+          "motion": {
+            "presets": [],
+            "check": "pass",
+            "result": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/products/pb-s2/motion/motion-check.json"
+          }
+        },
+        {
+          "n": 3,
+          "anchor": "pb-s3",
+          "status": "done",
+          "crops": {
+            "desktop": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/products/crops/desktop/pb-s3.png"
+          },
+          "ranges": {
+            "desktop": {
+              "y0": 547,
+              "y1": 996
+            }
+          },
+          "label": "Product categories",
+          "decision": "extend",
+          "block": "cadco-product-categories",
+          "notes": "accepted by developer after 3 QA iterations (best 36.35%, recorded 43.93%). Block extended additively: columns gained a 4 option, plus new surface and overlapTop controls - all default to the previous behaviour so the homepage instance is unchanged. Four-up cards also get a near-square image frame and a one-line label, conditional on columns=4. Remaining differences, none fixable in the block: (1) CONTENT - the WooCommerce category thumbnails are lifestyle photographs, the design shows white product cut-outs; replacing them is a client content task and would also change the homepage. (2) Container 1140px vs the design 1190px - the accepted theme convention. (3) Crop boundary - the crop runs 547-996 from the card tops, but the section element starts at 598 where the hero ends, because the cards overhang it; about 51px of the height delta is that boundary, not the build. Verified by pixel sampling that the hero photo is visible between the cards in the design, so the overhang is real.",
+          "attrs": {
+            "heading": "",
+            "subheading": "",
+            "scope": "top",
+            "limit": 4,
+            "columns": "4",
+            "surface": "white",
+            "hideEmpty": true,
+            "showOverlap": true,
+            "overlapColor": "#ffffff",
+            "overlapHeight": 113,
+            "overlapOverhang": 0,
+            "overlapTop": 157,
+            "align": "full"
+          },
+          "prevStatus": "building",
+          "preparedIteration": 3,
+          "qa": [
+            {
+              "iteration": 3,
+              "breakpoint": "desktop",
+              "mode": "diff",
+              "mismatch": 0.4393,
+              "heightDelta": 0.1693,
+              "widthDelta": 0,
+              "numericPass": false,
+              "pass": false,
+              "verdict": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/products/pb-s3/iter-3/verdict.json"
+            },
+            {
+              "iteration": 3,
+              "breakpoint": "tablet",
+              "mode": "sanity",
+              "widthDelta": 0,
+              "numericPass": true,
+              "pass": false,
+              "verdict": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/products/pb-s3/iter-3/verdict.json"
+            },
+            {
+              "iteration": 3,
+              "breakpoint": "mobile",
+              "mode": "sanity",
+              "widthDelta": 0,
+              "numericPass": true,
+              "pass": false,
+              "verdict": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/products/pb-s3/iter-3/verdict.json"
+            }
+          ],
+          "motion": {
+            "presets": [],
+            "check": "pass",
+            "result": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/products/pb-s3/motion/motion-check.json"
+          }
+        },
+        {
+          "n": 4,
+          "anchor": "pb-s4",
+          "status": "animating",
+          "crops": {
+            "desktop": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/products/crops/desktop/pb-s4.png"
+          },
+          "ranges": {
+            "desktop": {
+              "y0": 996,
+              "y1": 1781
+            }
+          },
+          "label": "Product spotlight - light",
+          "decision": "new",
+          "block": "cadco-product-spotlight",
+          "notes": "Bakerlux Half Size Proofer. Text left, two overlapping images right on white. Fields eyebrow/heading/body(wysiwyg)/cta; controls layout, imagePrimary, imageSecondary, backgroundImage, scrimOpacity. Body copy is placeholder text in the design.",
+          "attrs": {
+            "layout": "images",
+            "eyebrow": "Featured Product",
+            "heading": "Bakerlux Half Size Proofer",
+            "body": "<p>Placeholder - The Bakerlux Half Size Proofer is perfect for hotels, bakeries, and restaurants that serve warm breakfasts.</p><ul><li>for LED and TOUCH Panel Ovens</li><li>Handles 8 sheet pans (not included)</li><li>Temperatures to 122&deg;F</li><li>Adjustable legs or optional casters</li></ul>",
+            "cta": {
+              "url": "/products/convection-cook-hold-ovens/",
+              "text": "See All Features",
+              "target": "",
+              "rel": "",
+              "title": ""
+            },
+            "imagePrimary": {
+              "id": 18318,
+              "url": "https://cadco.local/wp-content/uploads/2026/10/bakerlux-proofer-chef.png",
+              "alt": "Chef loading trays into a Bakerlux oven in a commercial kitchen",
+              "caption": "",
+              "size": "full"
+            },
+            "imageSecondary": {
+              "id": 18319,
+              "url": "https://cadco.local/wp-content/uploads/2026/10/bakerlux-proofer-cart.png",
+              "alt": "A Bakerlux half size proofer on castors, stacked with baking trays",
+              "caption": "",
+              "size": "full"
+            },
+            "align": "full"
+          },
+          "preparedIteration": 9,
+          "qa": [
+            {
+              "iteration": 5,
+              "breakpoint": "desktop",
+              "mode": "diff",
+              "mismatch": 0.0863,
+              "heightDelta": 0.0013,
+              "widthDelta": 0,
+              "numericPass": false,
+              "pass": false,
+              "verdict": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/products/pb-s4/iter-5/verdict.json"
+            },
+            {
+              "iteration": 5,
+              "breakpoint": "tablet",
+              "mode": "sanity",
+              "widthDelta": 0,
+              "numericPass": true,
+              "pass": false,
+              "verdict": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/products/pb-s4/iter-5/verdict.json"
+            },
+            {
+              "iteration": 5,
+              "breakpoint": "mobile",
+              "mode": "sanity",
+              "widthDelta": 0,
+              "numericPass": true,
+              "pass": false,
+              "verdict": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/products/pb-s4/iter-5/verdict.json"
+            },
+            {
+              "iteration": 9,
+              "breakpoint": "desktop",
+              "mode": "diff",
+              "mismatch": 0.0426,
+              "heightDelta": 0.0013,
+              "widthDelta": 0,
+              "numericPass": true,
+              "pass": true,
+              "verdict": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/products/pb-s4/iter-9/verdict.json"
+            },
+            {
+              "iteration": 9,
+              "breakpoint": "tablet",
+              "mode": "sanity",
+              "widthDelta": 0,
+              "numericPass": true,
+              "pass": true,
+              "verdict": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/products/pb-s4/iter-9/verdict.json"
+            },
+            {
+              "iteration": 9,
+              "breakpoint": "mobile",
+              "mode": "sanity",
+              "widthDelta": 0,
+              "numericPass": true,
+              "pass": true,
+              "verdict": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/products/pb-s4/iter-9/verdict.json"
+            }
+          ]
+        },
+        {
+          "n": 5,
+          "anchor": "pb-s5",
+          "status": "building",
+          "crops": {
+            "desktop": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/products/crops/desktop/pb-s5.png"
+          },
+          "ranges": {
+            "desktop": {
+              "y0": 1781,
+              "y1": 2401
+            }
+          },
+          "label": "Product spotlight - photo",
+          "decision": "reuse",
+          "block": "cadco-product-spotlight",
+          "notes": "VariKwik+. Second variant of the block built in section 4: layout=photo-text-right, backgroundImage, scrimOpacity. No body or bullets.",
+          "attrs": {
+            "layout": "photo",
+            "eyebrow": "Featured Product",
+            "heading": "VariKwik + Ovens deliver freshly prepared food without relying on microwave cooking.",
+            "body": "",
+            "cta": {
+              "url": "/varikwik-speed-oven/",
+              "text": "See All Features",
+              "target": "",
+              "rel": "",
+              "title": ""
+            },
+            "backgroundImage": {
+              "id": 18320,
+              "url": "https://cadco.local/wp-content/uploads/2026/10/varikwik-chef-prep.png",
+              "alt": "Chef slicing herbs at a prep counter beside a VariKwik oven",
+              "caption": "",
+              "size": "full"
+            },
+            "scrimOpacity": 55,
+            "minHeight": 620,
+            "align": "full"
+          },
+          "prevStatus": "building",
+          "preparedIteration": 9,
+          "qa": [
+            {
+              "iteration": 5,
+              "breakpoint": "desktop",
+              "mode": "diff",
+              "mismatch": 0.1701,
+              "heightDelta": 0.0016,
+              "widthDelta": 0,
+              "numericPass": false,
+              "pass": false,
+              "verdict": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/products/pb-s5/iter-5/verdict.json"
+            },
+            {
+              "iteration": 5,
+              "breakpoint": "tablet",
+              "mode": "sanity",
+              "widthDelta": 0,
+              "numericPass": true,
+              "pass": false,
+              "verdict": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/products/pb-s5/iter-5/verdict.json"
+            },
+            {
+              "iteration": 5,
+              "breakpoint": "mobile",
+              "mode": "sanity",
+              "widthDelta": 0,
+              "numericPass": true,
+              "pass": false,
+              "verdict": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/products/pb-s5/iter-5/verdict.json"
+            },
+            {
+              "iteration": 9,
+              "breakpoint": "desktop",
+              "mode": "diff",
+              "mismatch": 0.1212,
+              "heightDelta": 0.0016,
+              "widthDelta": 0,
+              "numericPass": false,
+              "pass": false,
+              "verdict": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/products/pb-s5/iter-9/verdict.json"
+            },
+            {
+              "iteration": 9,
+              "breakpoint": "tablet",
+              "mode": "sanity",
+              "widthDelta": 0,
+              "numericPass": true,
+              "pass": false,
+              "verdict": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/products/pb-s5/iter-9/verdict.json"
+            },
+            {
+              "iteration": 9,
+              "breakpoint": "mobile",
+              "mode": "sanity",
+              "widthDelta": 0,
+              "numericPass": true,
+              "pass": false,
+              "verdict": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/products/pb-s5/iter-9/verdict.json"
+            }
+          ]
+        },
+        {
+          "n": 6,
+          "anchor": "pb-s6",
+          "status": "done",
+          "crops": {
+            "desktop": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/products/crops/desktop/pb-s6.png"
+          },
+          "ranges": {
+            "desktop": {
+              "y0": 2401,
+              "y1": 3039
+            }
+          },
+          "label": "Help CTA",
+          "decision": "reuse",
+          "block": "cadco-intro",
+          "notes": "accepted by developer. Closest section on the page at 7.87% mismatch; type, weight, wrapping and button all match. The one real difference is height: 534px rendered vs 638px in the design, because cadco-intro ships fixed vertical padding and no padding control. It is reused on the home page twice, so adding one would have to default to the current spacing; raising it outright would relayout the home page. Design also draws a hairline rule along the section foot that the block does not render.",
+          "attrs": {
+            "heading": "We can help you find the right equipment for your kitchen.",
+            "eyebrow": "",
+            "body": "",
+            "cta": {
+              "url": "/contact/",
+              "text": "Contact Cadco",
+              "target": "",
+              "rel": "",
+              "title": ""
+            },
+            "alignment": "center",
+            "align": "full"
+          },
+          "prevStatus": "building",
+          "preparedIteration": 1,
+          "qa": [
+            {
+              "iteration": 1,
+              "breakpoint": "desktop",
+              "mode": "diff",
+              "mismatch": 0.0787,
+              "heightDelta": 0.163,
+              "widthDelta": 0,
+              "numericPass": false,
+              "pass": false,
+              "verdict": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/products/pb-s6/iter-1/verdict.json"
+            },
+            {
+              "iteration": 1,
+              "breakpoint": "tablet",
+              "mode": "sanity",
+              "widthDelta": 0,
+              "numericPass": true,
+              "pass": false,
+              "verdict": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/products/pb-s6/iter-1/verdict.json"
+            },
+            {
+              "iteration": 1,
+              "breakpoint": "mobile",
+              "mode": "sanity",
+              "widthDelta": 0,
+              "numericPass": true,
+              "pass": false,
+              "verdict": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/products/pb-s6/iter-1/verdict.json"
+            }
+          ],
+          "motion": {
+            "presets": [],
+            "check": "pass",
+            "result": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/products/pb-s6/motion/motion-check.json"
+          }
+        },
+        {
+          "n": 7,
+          "anchor": "pb-footer",
+          "status": "skipped",
+          "crops": {
+            "desktop": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/products/crops/desktop/pb-footer.png"
+          },
+          "ranges": {
+            "desktop": {
+              "y0": 3039,
+              "y1": 3644
+            }
+          },
+          "label": "Footer",
+          "decision": "reuse",
+          "block": "cadco-footer",
+          "notes": "Pre-existing cadco-footer, rendered by parts/footer.html (logo 68, three link columns, CTA, legal). Not built or rebuilt by this page; inPart. Covered by full-page QA rather than section QA.",
+          "inPart": true
+        }
+      ],
+      "plan": {
+        "approvedAt": "2026-10-02T21:40:05.869Z",
+        "by": "developer"
+      },
+      "url": "https://cadco.local/products/",
+      "written": {
+        "title": "Products",
+        "slug": "products",
+        "postStatus": "publish"
+      }
+    }
+  ]
+}
