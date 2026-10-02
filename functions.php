@@ -181,6 +181,12 @@ add_action('wp_enqueue_scripts', function () {
         filemtime($path),
         true
     );
+
+    // The mark is a theme asset rather than a media-library attachment, so the
+    // curtain does not depend on a particular upload existing in the database.
+    wp_localize_script('cadco-curtain', 'cadcoCurtain', [
+        'mark' => get_theme_file_uri('assets/img/cadco-mark.svg'),
+    ]);
 }, 20);
 
 /**
