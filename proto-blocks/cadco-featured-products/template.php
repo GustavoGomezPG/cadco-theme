@@ -156,7 +156,7 @@ $reveal = $is_preview ? '' : 'data-proto-animate="manual" data-cadco-reveal-grou
                  photograph, so serving a phone the desktop file is the single
                  most expensive mistake available here. */ ?>
         <?php echo wp_get_attachment_image($bgId, 'full', false, [
-            'class'         => 'pointer-events-none absolute inset-0 -z-20 h-full w-full object-cover ' . $bgPosClass,
+            'class'         => 'pointer-events-none absolute -inset-px -z-20 h-full w-full object-cover ' . $bgPosClass,
             'alt'           => '',
             'aria-hidden'   => 'true',
             'loading'       => 'lazy',
@@ -165,7 +165,7 @@ $reveal = $is_preview ? '' : 'data-proto-animate="manual" data-cadco-reveal-grou
     <?php elseif ($bgUrl !== '') : ?>
         <?php // No id (a url pasted straight into the attribute): no srcset available. ?>
         <img
-            class="pointer-events-none absolute inset-0 -z-20 h-full w-full object-cover <?php echo esc_attr($bgPosClass); ?>"
+            class="pointer-events-none absolute -inset-px -z-20 h-full w-full object-cover <?php echo esc_attr($bgPosClass); ?>"
             src="<?php echo esc_url($bgUrl); ?>"
             alt=""
             aria-hidden="true"
@@ -178,7 +178,7 @@ $reveal = $is_preview ? '' : 'data-proto-animate="manual" data-cadco-reveal-grou
              black under the section above it and fade out over whatever sits
              below -- the photograph when there is one, the white page when
              there is not. */ ?>
-    <div class="pointer-events-none absolute inset-0 -z-10"
+    <div class="pointer-events-none absolute -inset-px -z-10"
          style="background-image:linear-gradient(to bottom,#000 21.538%,rgba(0,0,0,0.79) 41.799%,rgba(0,0,0,0) 91.415%)"
          aria-hidden="true"></div>
 

@@ -144,9 +144,17 @@
 			   layout: closing grows each panel down from the top, opening
 			   shrinks it away to the bottom, so the two halves read as one
 			   continuous movement rather than a bounce. */
+			/* The 1px shadows either side cover the seams between panels.
+			   flex:1 1 0% gives each a fractional width, and those edges round
+			   independently per device pixel, so on a phone the page showed
+			   through as hairlines between them. The rail behind cannot simply
+			   be filled black: it has to stay transparent or there is nothing
+			   for the wipe to reveal. The shadows scale with the panel, so a
+			   panel still closed stays fully invisible. */
 			panel.style.cssText = [
 				'flex:1 1 0%',
 				'background:#000000',
+				'box-shadow:1px 0 0 0 #000000,-1px 0 0 0 #000000',
 				'transform:scaleY(0)',
 				'transform-origin:top',
 				'will-change:transform'

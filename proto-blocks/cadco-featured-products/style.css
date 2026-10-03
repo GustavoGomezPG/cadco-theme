@@ -63,20 +63,35 @@
 /*
  * Sub-pixel seam cover.
  *
- * Where two full-bleed sections meet, a fractional device pixel ratio can round
- * their edges apart and leave a hairline of the page behind showing through --
- * visible on mobile as a pale line across the join. This section paints one
- * pixel of its own colour past its edges to cover it. A shadow rather than
- * extra height, so nothing in the layout moves.
+ * The section's own background is light; its dark appearance comes from a
+ * photograph and a scrim laid over it. At a fractional device pixel ratio those
+ * inset layers round to just inside the section box and a line of the light
+ * background shows through at the join with the section above -- visible on a
+ * phone as a pale hairline.
+ *
+ * Fixed where it starts: the layers overshoot their box by a pixel and the
+ * section's own overflow clips them back, so there is nothing left to round
+ * apart. A shadow in a fixed colour was the wrong fix, since it would paint
+ * black past the edge of an instance that has no dark photograph behind it.
  */
-.cadco-featured-products {
+:root .cadco-featured-products {
     /*
-     * Raised, or the cover is painted underneath. The section above it is
-     * `relative isolate`, so it makes its own stacking context and paints over
-     * a shadow cast up from here -- which left the hairline still showing at
-     * 2.5x even with the shadow set.
+     * :root on the front of the selector only to outrank WordPress's own
+     * ":root :where(.is-layout-flow) > *", which sets margin-block-start:0 at
+     * the same specificity as a bare class and wins on source order because
+     * global styles load after block styles. One step up settles it without
+     * reaching for !important.
+     *
+     * Overlap the section above by a pixel, rather than trying to cover the
+     * join from either side. The two section boxes round apart independently
+     * at a fractional device pixel ratio, so no shadow or inset tweak inside
+     * either one can close a gap that opens between them -- an overlap can,
+     * because there is no longer an edge to fall between.
+     *
+     * Raised too: the section above is `relative isolate`, so it makes its own
+     * stacking context and would otherwise paint over the overlap.
      */
     position: relative;
     z-index: 1;
-    box-shadow: 0 -1px 0 0 #000, 0 1px 0 0 #000;
+    margin-top: -1px;
 }
