@@ -136,7 +136,7 @@ $wrapper = get_block_wrapper_attributes([
                 <?php $img = $item['image'] ?? []; ?>
                 <div data-proto-repeater-item
                      class="flex gap-5 rounded-[10px] border border-light-grey/60 bg-white p-4">
-                    <div class="h-[96px] w-[150px] shrink-0 overflow-hidden rounded-[6px] bg-light-grey/40">
+                    <div data-proto-field="image" class="h-[96px] w-[150px] shrink-0 overflow-hidden rounded-[6px] bg-light-grey/40">
                         <?php if (! empty($img['url'])) : ?>
                             <img src="<?php echo esc_url($img['url']); ?>"
                                  alt="<?php echo esc_attr($img['alt'] ?? ''); ?>"
@@ -211,7 +211,7 @@ $wrapper = get_block_wrapper_attributes([
                          style="grid-row:<?php echo $above ? 1 : 3; ?>;grid-column:<?php echo $col; ?>">
 
                         <?php if ($above) : ?>
-                            <div class="h-[163px] w-[353px] shrink-0 overflow-hidden rounded-[10px] bg-light-grey/40">
+                            <div data-proto-field="image" class="h-[163px] w-[353px] shrink-0 overflow-hidden rounded-[10px] bg-light-grey/40">
                                 <?php if (! empty($img['url'])) : ?>
                                     <img src="<?php echo esc_url($img['url']); ?>"
                                          alt="<?php echo esc_attr($img['alt'] ?? ''); ?>"
@@ -221,7 +221,7 @@ $wrapper = get_block_wrapper_attributes([
                             <div class="w-[300px] shrink-0 pb-1"><?php $copy($item); ?></div>
                         <?php else : ?>
                             <div class="w-[353px] shrink-0 pt-1"><?php $copy($item); ?></div>
-                            <div class="h-[163px] w-[353px] shrink-0 overflow-hidden rounded-[10px] bg-light-grey/40">
+                            <div data-proto-field="image" class="h-[163px] w-[353px] shrink-0 overflow-hidden rounded-[10px] bg-light-grey/40">
                                 <?php if (! empty($img['url'])) : ?>
                                     <img src="<?php echo esc_url($img['url']); ?>"
                                          alt="<?php echo esc_attr($img['alt'] ?? ''); ?>"

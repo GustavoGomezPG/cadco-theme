@@ -1,5 +1,12 @@
 /**
  * Exercises the pinned timeline at several milestone counts.
+ *
+ * IMPORTANT: this rewrites the About page's own milestones to do it, which is
+ * destructive to whatever is in the page at the time. Anyone with the editor
+ * open sees the test's content and can save over the real content with it.
+ * It therefore snapshots the milestones first and puts them back afterwards,
+ * including when an assertion throws, and it refuses to start if it cannot
+ * read that snapshot.
  * For each count it rebuilds the page, then drives the real page scroll and
  * asserts the pin length is derived from the content and the rail finishes
  * exactly as the pin releases.
@@ -29,6 +36,21 @@ const run = (args) => execFileSync('node', args, { encoding: 'utf8', stdio: ['ig
 
 const counts = process.argv[2] ? process.argv[2].split(',').map(Number) : [4, 8, 20];
 const results = [];
+
+/* Snapshot the real content before touching it. */
+const snapshot = run([`${PB}/lib/state.mjs`, 'get', T, 'pages.1.sections.3.attrs.milestones']).trim();
+
+if (!snapshot || snapshot === 'null') {
+  throw new Error('refusing to run: could not read the current milestones to restore afterwards');
+}
+
+const restore = () => {
+  run([`${PB}/lib/state.mjs`, 'set', T, 'pages.1.sections.3.attrs.milestones', snapshot]);
+  run([`${PB}/lib/page.mjs`, 'build', T, 'about']);
+};
+
+process.on('exit', restore);
+process.on('SIGINT', () => { restore(); process.exit(130); });
 
 const browser = await chromium.launch();
 
@@ -100,4 +122,8 @@ for (const n of counts) {
 }
 
 await browser.close();
+
+/* Put the page back exactly as it was found. */
+restore();
+
 console.log(JSON.stringify(results, null, 1));
