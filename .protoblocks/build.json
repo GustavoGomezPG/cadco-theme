@@ -128,7 +128,7 @@
       "title": "Products",
       "status": "seo",
       "postId": 18312,
-      "contentHash": "5238f3f3c358923caea161a5ef16aca5e747e67ce075ea8c7cf2fb0858d0a3fc",
+      "contentHash": "b18d0da995fea78e0bd31a34256143dd9405ff311e82f86ff7c8d7dce48ebf40",
       "design": {
         "frames": [
           {
@@ -549,7 +549,7 @@
           "block": "cadco-intro",
           "notes": "accepted by developer at 7.87% (cadco-intro ships fixed vertical padding and no padding control; it is reused twice on the home page, so raising it would relayout that page). Copy revised 2 Oct after design review: Alex Penn asked for the line to be solution-led rather than about finding equipment, so \"help you find the right equipment\" became \"help you build the right solution\", matching the footers existing \"Discover which solution is right for your business\". The Figma frame still carries the old line, so this section now differs from its crop by design and its recorded QA predates the change.",
           "attrs": {
-            "heading": "We can help you build the right solution for your kitchen.",
+            "heading": "Tell us what your kitchen needs to do. We'll build the solution.",
             "eyebrow": "",
             "body": "",
             "cta": {
