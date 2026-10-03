@@ -69,7 +69,7 @@ $heightStyle = sprintf('min-height:clamp(520px, 58.4vw, %dpx)', $minH);
 
 $glowColor = preg_match('/^#[0-9a-f]{3,8}$/i', trim((string) ($attributes['highlightColor'] ?? '')))
     ? trim((string) $attributes['highlightColor'])
-    : '#1f7fd4';
+    : '#2087d0';
 
 $wrapper = get_block_wrapper_attributes([
     'class' => 'cadco-hero relative isolate w-full overflow-hidden bg-true-black',

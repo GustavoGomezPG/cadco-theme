@@ -48,28 +48,43 @@
 /*
  * Headline backlight.
  *
- * The design sets a soft blue glow behind one word of the hero headline. It is
- * drawn with layered text-shadows rather than a background, so it follows the
- * glyphs instead of boxing the word, and it sits under the text because
- * text-shadow always paints behind its own glyphs.
+ * The design draws this as a vector, not as a glow on the text: a 12px stroke
+ * in Secondary Blue, 504px long, blurred by 13.1px, lying under the
+ * highlighted word. So it is built the same way here -- a bar behind the word,
+ * blurred -- rather than as a text-shadow, which hugs the glyphs and reads as
+ * a halo instead of a light under the line.
  *
- * Kept deliberately tight. The reveal splits the headline into lines and each
- * line sits in a wrapper with overflow:clip for its rise, so a halo wider than
- * the line box is sliced off and the cut shows as a rectangle around the word.
- * These radii stay inside the line box, which also matches the design, where
- * the glow is a haze around the word rather than a lamp behind it.
+ * The bar spans the word because it is inset to the span's own box, so it
+ * follows whatever word is highlighted at whatever size, instead of carrying
+ * the frame's 504px.
  *
- * The colour comes from the block's own custom property, so an instance can
- * change it without another class.
+ * z-index on the span makes a stacking context, so the bar sits behind the
+ * text but still in front of the section's background.
  */
 .cadco-hero-glow {
+    position: relative;
+    z-index: 0;
     color: inherit;
-    text-shadow:
-        0 0 10px color-mix(in srgb, var(--cadco-glow, #1f7fd4) 55%, transparent),
-        0 2px 26px color-mix(in srgb, var(--cadco-glow, #1f7fd4) 45%, transparent);
 }
 
-/* The reveal re-wraps the split text; keep the glow on whatever it produces. */
-.cadco-hero-glow * {
-    text-shadow: inherit;
+.cadco-hero-glow::after {
+    content: "";
+    position: absolute;
+    z-index: -1;
+    left: 0;
+    right: 0;
+    /*
+     * Sat on the baseline, crossing the foot of the glyphs, as the frame
+     * draws it. Lower than this and the reveal's line wrapper -- which clips
+     * exactly at the span's bottom edge -- cuts the underside of the blur off.
+     */
+    bottom: 0.26em;
+    height: 0.125em;                 /* 12px against the design's 96px headline */
+    background: var(--cadco-glow, #2087d0);
+    filter: blur(0.136em);           /* 13.1px at 96px */
+    pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .cadco-hero-glow::after { filter: blur(0.136em); }
 }

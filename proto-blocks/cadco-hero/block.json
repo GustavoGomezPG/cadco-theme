@@ -120,7 +120,7 @@
       "highlightColor": {
         "type": "color",
         "label": "Highlight colour",
-        "default": "#1f7fd4"
+        "default": "#2087d0"
       }
     }
   }
