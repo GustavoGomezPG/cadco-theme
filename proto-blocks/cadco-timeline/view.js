@@ -1,21 +1,29 @@
 /**
  * Cadco Timeline.
  *
- * Moves the rail sideways. Two inputs drive one position:
+ * The section pins and the rail travels sideways while it is pinned, which is
+ * what the Helio reference does: the page stops, the timeline scrolls
+ * horizontally through its whole length, and the page resumes.
  *
- *   scroll  GSAP ScrollTrigger scrubs the track as the section crosses the
- *           viewport, the technique the Helio reference uses.
- *   arrows  step to the previous or next milestone.
+ * Everything is derived from the content, never hard-coded. The distance the
+ * track must travel is measured from the DOM, and ScrollTrigger's `end` is that
+ * same distance, so the pinned region grows as milestones are added and the
+ * rail always finishes exactly as the pin releases. `invalidateOnRefresh` makes
+ * ScrollTrigger re-measure on resize and on refresh, so a font load, a
+ * breakpoint change or an edit in the block editor re-derives the length rather
+ * than keeping a stale one.
  *
- * They share a single `offset` rather than animating the element separately,
- * so an arrow press mid-scroll cannot leave the two fighting over transform.
+ * The arrows do not animate the track themselves. Under a pin the track's
+ * position IS the scroll position, so a second animation would fight the
+ * scrub; instead they scroll the window to the point in the pinned range where
+ * the wanted slide is showing, and the scrub moves the track as it always does.
  *
  * Lifecycle (docs/reveal-animations.md in proto-blocks-theme):
  * Proto-Blocks stamps block view scripts with data-taxi-reload, so Taxi re-runs
- * this file on every navigation. The readyState guard below is therefore
- * correct, and anything attached to window or document is removed when the view
- * that owns it leaves — otherwise each navigation would leave another resize
- * listener and another ScrollTrigger behind.
+ * this file on every navigation. The readyState guard is therefore correct, and
+ * everything attached to window, document or ScrollTrigger is torn down when
+ * the view that owns it leaves -- a pin that outlives its page would leave the
+ * next one with a stray spacer.
  */
 (function () {
 	'use strict';
@@ -34,79 +42,104 @@
 
 		var gsap          = window.gsap;
 		var ScrollTrigger = window.ScrollTrigger;
-		var index         = 0;
-		var offset        = 0;
-		var scrubbed      = 0;
-		var trigger       = null;
 
-		/** How far the track can travel before its tail reaches the viewport. */
-		function maxOffset() {
+		/**
+		 * How far the track must move for its last milestone to reach the right
+		 * edge. Measured, not assumed, so it holds for any number of
+		 * milestones; `scrollWidth` includes the track's own trailing padding.
+		 */
+		function distance() {
 			return Math.max(0, track.scrollWidth - section.clientWidth);
 		}
 
-		/** The arrows step by one milestone; the step is the item's own width. */
-		function step() {
-			return items[0] ? items[0].getBoundingClientRect().width : 706;
+		/* No GSAP, or the viewer asked for less motion: leave the rail as an
+		   ordinary horizontal scroll. No pin, no hijacked page scroll. */
+		if (!gsap || !ScrollTrigger || prefersReducedMotion() || section.dataset.scrub !== '1') {
+			track.parentElement.classList.add('overflow-x-auto');
+			if (prev) { prev.disabled = true; }
+			if (next) { next.disabled = true; }
+			return;
 		}
 
-		function apply() {
-			var total = Math.min(maxOffset(), offset + scrubbed);
+		var index = 0;
 
-			if (gsap) {
-				gsap.to(track, { x: -total, duration: 0.6, ease: 'power3.out', overwrite: true });
-			} else {
-				track.style.transform = 'translateX(' + (-total) + 'px)';
+		var tween = gsap.to(track, {
+			x: function () { return -distance(); },
+			ease: 'none',
+			scrollTrigger: {
+				trigger: section,
+				/* A section taller than the viewport cannot sit flush with the
+				   top without its foot being cut off, so it pins against the
+				   bottom instead. Resolved as a function, and re-resolved by
+				   invalidateOnRefresh, so a window resize across that boundary
+				   picks the right one. */
+				start: function () {
+					return section.offsetHeight > window.innerHeight ? 'bottom bottom' : 'top top';
+				},
+				/* The pinned length IS the travel distance, so one pixel of
+				   scrolling moves the rail one pixel and adding milestones
+				   lengthens the pinned region by exactly their width. */
+				end: function () { return '+=' + distance(); },
+				pin: true,
+				pinSpacing: true,
+				anticipatePin: 1,
+				scrub: 1,
+				invalidateOnRefresh: true,
+				onRefresh: syncButtons,
+				onUpdate: function (self) {
+					var span = Math.max(1, items.length - 1);
+					index = Math.round(self.progress * span);
+					syncButtons();
+				}
 			}
+		});
 
-			if (prev) { prev.disabled = total <= 0; }
-			if (next) { next.disabled = total >= maxOffset() - 1; }
+		var st = tween.scrollTrigger;
+
+		function syncButtons() {
+			if (prev) { prev.disabled = index <= 0; }
+			if (next) { next.disabled = index >= items.length - 1; }
 		}
 
+		/**
+		 * Scroll to the page position at which `i` is the current slide. The
+		 * pinned range is linear, so the slide's progress maps straight onto it.
+		 */
 		function go(delta) {
-			index  = Math.max(0, Math.min(items.length - 1, index + delta));
-			offset = Math.min(maxOffset(), index * step());
-			apply();
+			if (!st) { return; }
+
+			var span = Math.max(1, items.length - 1);
+
+			index = Math.max(0, Math.min(items.length - 1, index + delta));
+
+			var target = st.start + (st.end - st.start) * (index / span);
+
+			/* Native smooth scrolling rather than GSAP's ScrollToPlugin, which
+			   the theme does not bundle. The scrub follows the scroll either
+			   way, so the rail moves with it. */
+			window.scrollTo({ top: target, behavior: 'smooth' });
+
+			syncButtons();
 		}
 
 		if (prev) { prev.addEventListener('click', function () { go(-1); }); }
 		if (next) { next.addEventListener('click', function () { go(1); }); }
 
-		/*
-		 * The scrub is additive: it contributes its own share of the travel on
-		 * top of wherever the arrows have taken the rail, so neither input
-		 * resets the other.
-		 */
-		if (gsap && ScrollTrigger && section.dataset.scrub === '1' && !prefersReducedMotion()) {
-			trigger = ScrollTrigger.create({
-				trigger: section,
-				start: 'top bottom',
-				end: 'bottom top',
-				scrub: true,
-				onUpdate: function (self) {
-					scrubbed = self.progress * maxOffset() * 0.6;
-					apply();
-				}
-			});
-		}
+		syncButtons();
 
-		var onResize = function () { offset = Math.min(maxOffset(), index * step()); apply(); };
-
-		window.addEventListener('resize', onResize);
-
-		/* Dispose with the view that owns it. */
+		/* Dispose with the view that owns it: a live pin would leave its spacer
+		   behind on the next page. */
 		document.addEventListener('proto:page-leave', function off(e) {
 			var container = e && e.detail && e.detail.container;
 
 			if (container && !container.contains(section)) { return; }
 
-			window.removeEventListener('resize', onResize);
 			document.removeEventListener('proto:page-leave', off);
 
-			if (trigger) { trigger.kill(false); trigger = null; }
-			if (gsap) { gsap.killTweensOf(track); }
+			if (st) { st.kill(true); }
+			tween.kill();
+			gsap.set(track, { clearProps: 'transform' });
 		});
-
-		apply();
 	}
 
 	function init() {

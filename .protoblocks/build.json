@@ -136,6 +136,25 @@
         }
       ],
       "purpose": "A heading over a row of association or partner logos, each fitted inside a shared box rather than set to a common height"
+    },
+    "cadco-intro": {
+      "usedOn": [
+        "about"
+      ],
+      "baselines": [
+        {
+          "page": "about",
+          "anchor": "pb-s6",
+          "breakpoint": "desktop",
+          "file": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/baselines/about/pb-s6-desktop.png",
+          "width": 1440,
+          "scale": 1
+        }
+      ],
+      "purpose": "Centred eyebrow, heading, body and call to action; paper or dark tone",
+      "variants": [
+        "dark"
+      ]
     }
   },
   "pages": [
@@ -770,7 +789,7 @@
       "title": "About",
       "status": "building",
       "postId": 126,
-      "contentHash": "bf74df14d71452aaee1e839cccb73498b806f483700366f6b12555e2eecd8875",
+      "contentHash": "ff4f7dec60d83b9224fe5a781e78e8407718e1d6bef78778cc86b52caab07144",
       "design": {
         "frames": [
           {
@@ -952,7 +971,7 @@
         {
           "n": 4,
           "anchor": "pb-s4",
-          "status": "building",
+          "status": "verifying",
           "crops": {
             "desktop": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/about/crops/desktop/pb-s4.png"
           },
@@ -965,7 +984,7 @@
           "label": "The History of Cadco timeline",
           "decision": "new",
           "block": "cadco-timeline",
-          "notes": "Repeater of milestones (year, title, body, image). Horizontal track scrubbed by ScrollTrigger as the Helio reference does, progress rail with dots, items alternating above and below, plus prev/next buttons which the reference does not have. Content in the design is placeholder: two milestones repeated, one image reused four times.",
+          "notes": "PLACEHOLDER CONTENT, MUST BE REPLACED BEFORE LAUNCH: the milestone list is the frame's two entries (1996 Cadco is Founded, 2001 Expansion) duplicated to four so the slide count matches the frame, on the developer's instruction. The second pair repeats the first verbatim and one of them still reads \"Placeholder copy.\"; every milestone reuses the facility photograph. Replace with the real milestone list and archive images, then re-verify. Structure matches the frame: paired slides, earlier milestone below the rail and later above, one dot per segment, height 981px against the frame's 981.",
           "attrs": {
             "eyebrow": "The History of Cadco",
             "heading": "Throughout the years of <span style=\"color:#00476e\">leading</span> the food equipment industry.",
@@ -981,7 +1000,7 @@
                 "image": {
                   "id": 18331,
                   "url": "https://cadco.local/wp-content/uploads/2026/10/about-facility-scaled.jpg",
-                  "alt": "Cadco facility in Winsted, Connecticut",
+                  "alt": "Cadco's headquarters and manufacturing facility in Winsted, Connecticut, with the United States flag flying outside",
                   "caption": "",
                   "size": "full"
                 }
@@ -994,7 +1013,33 @@
                 "image": {
                   "id": 18331,
                   "url": "https://cadco.local/wp-content/uploads/2026/10/about-facility-scaled.jpg",
-                  "alt": "Cadco facility in Winsted, Connecticut",
+                  "alt": "Cadco's headquarters and manufacturing facility in Winsted, Connecticut, with the United States flag flying outside",
+                  "caption": "",
+                  "size": "full"
+                }
+              },
+              {
+                "id": "m3",
+                "year": "1996",
+                "title": "Cadco is Founded",
+                "body": "In May, 1996 Cadco is founded and becomes a leader in the food service industry.",
+                "image": {
+                  "id": 18331,
+                  "url": "https://cadco.local/wp-content/uploads/2026/10/about-facility-scaled.jpg",
+                  "alt": "Cadco's headquarters and manufacturing facility in Winsted, Connecticut, with the United States flag flying outside",
+                  "caption": "",
+                  "size": "full"
+                }
+              },
+              {
+                "id": "m4",
+                "year": "2001",
+                "title": "Expansion",
+                "body": "Cadco expands manufacturing within the food industry. Placeholder copy.",
+                "image": {
+                  "id": 18331,
+                  "url": "https://cadco.local/wp-content/uploads/2026/10/about-facility-scaled.jpg",
+                  "alt": "Cadco's headquarters and manufacturing facility in Winsted, Connecticut, with the United States flag flying outside",
                   "caption": "",
                   "size": "full"
                 }
@@ -1003,7 +1048,7 @@
             "align": "full"
           },
           "prevStatus": "building",
-          "preparedIteration": 6,
+          "preparedIteration": 8,
           "qa": [
             {
               "iteration": 3,
@@ -1149,7 +1194,7 @@
         {
           "n": 6,
           "anchor": "pb-s6",
-          "status": "verifying",
+          "status": "done",
           "crops": {
             "desktop": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/about/crops/desktop/pb-s6.png"
           },
@@ -1162,7 +1207,7 @@
           "label": "Closing CTA",
           "decision": "extend",
           "block": "cadco-intro",
-          "notes": "Same block as the products CTA but dark. Additive tone control, light default, so home and products are untouched. Copy takes the revision agreed after design review rather than the superseded line in the frame.",
+          "notes": "Headline keeps the solution-led copy from the design review (\"Tell us what your kitchen needs to do. We'll build the solution.\") rather than the frame's superseded line about finding equipment, so the QA copy difference is intended. Dark tone added to cadco-intro as an additive control; the products CTA was verified unchanged at 533px, 64px and black.",
           "attrs": {
             "eyebrow": "",
             "heading": "Tell us what your kitchen needs to do. We'll build the solution.",
@@ -1178,8 +1223,43 @@
             "tone": "dark",
             "align": "full"
           },
-          "prevStatus": "building",
-          "preparedIteration": 2
+          "preparedIteration": 2,
+          "qa": [
+            {
+              "iteration": 2,
+              "breakpoint": "desktop",
+              "mode": "diff",
+              "mismatch": 0.0542,
+              "heightDelta": 0.0033,
+              "widthDelta": 0,
+              "numericPass": true,
+              "pass": true,
+              "verdict": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/about/pb-s6/iter-2/verdict.json"
+            },
+            {
+              "iteration": 2,
+              "breakpoint": "tablet",
+              "mode": "sanity",
+              "widthDelta": 0,
+              "numericPass": true,
+              "pass": true,
+              "verdict": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/about/pb-s6/iter-2/verdict.json"
+            },
+            {
+              "iteration": 2,
+              "breakpoint": "mobile",
+              "mode": "sanity",
+              "widthDelta": 0,
+              "numericPass": true,
+              "pass": true,
+              "verdict": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/about/pb-s6/iter-2/verdict.json"
+            }
+          ],
+          "motion": {
+            "presets": [],
+            "check": "pass",
+            "result": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/about/pb-s6/motion/motion-check.json"
+          }
         },
         {
           "n": 7,

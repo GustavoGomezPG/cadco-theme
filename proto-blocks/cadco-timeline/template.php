@@ -112,18 +112,6 @@ $wrapper = get_block_wrapper_attributes([
 
     <?php // ---------- Rail ---------- ?>
     <div class="relative mt-8 w-full" data-timeline-viewport>
-        <?php /* One continuous line across the viewport. It sits outside the
-                 track so it neither travels with the dots nor stops short when
-                 there are few milestones; the dots below ride along it. Its
-                 offset is the height of the above-rail row plus that row's
-                 margin, so it meets the dots exactly. */ ?>
-        <span class="pointer-events-none absolute left-0 z-0 h-px w-full"
-              style="top:<?php echo 232 + 29 + 7; ?>px;background:<?php echo esc_attr($railColor); ?>"
-              aria-hidden="true"></span>
-
-        <?php /* Padded to the heading's column so the first milestone starts on
-                 the same line as the copy above it, then free to run past the
-                 right edge — that overflow is the point. */ ?>
         <div class="relative z-10 flex w-max items-stretch pl-[calc((100vw-1140px)/2+24px)] pr-24 will-change-transform"
              data-timeline-track>
 
@@ -169,6 +157,12 @@ $wrapper = get_block_wrapper_attributes([
 
                         <?php // ----- The rail ----- ?>
                         <div class="relative z-10 my-[29px] h-[14px] w-full">
+                            <?php /* One segment per slide. Together they read as a
+                                     single line that starts at the first dot and ends
+                                     with the last milestone, rather than bleeding off
+                                     the left edge as a viewport-wide rule would. */ ?>
+                            <span class="absolute left-0 top-1/2 h-px w-full -translate-y-1/2"
+                                  style="background:<?php echo esc_attr($railColor); ?>" aria-hidden="true"></span>
                             <span class="absolute left-0 top-0 h-[14px] w-[14px] rounded-full"
                                   style="background:<?php echo esc_attr($dotColor); ?>" aria-hidden="true"></span>
                         </div>
