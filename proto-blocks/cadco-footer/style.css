@@ -57,3 +57,16 @@
 .cadco-footer img[hidden] {
     display: none;
 }
+
+/*
+ * Sub-pixel seam cover.
+ *
+ * Where two full-bleed sections meet, a fractional device pixel ratio can round
+ * their edges apart and leave a hairline of the page behind showing through --
+ * visible on mobile as a pale line across the join. This section paints one
+ * pixel of its own colour past its edges to cover it. A shadow rather than
+ * extra height, so nothing in the layout moves.
+ */
+.cadco-footer {
+    box-shadow: 0 -1px 0 0 #000;
+}

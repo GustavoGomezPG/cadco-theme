@@ -59,3 +59,24 @@
 		scroll-behavior: auto;
 	}
 }
+
+/*
+ * Sub-pixel seam cover.
+ *
+ * Where two full-bleed sections meet, a fractional device pixel ratio can round
+ * their edges apart and leave a hairline of the page behind showing through --
+ * visible on mobile as a pale line across the join. This section paints one
+ * pixel of its own colour past its edges to cover it. A shadow rather than
+ * extra height, so nothing in the layout moves.
+ */
+.cadco-featured-products {
+    /*
+     * Raised, or the cover is painted underneath. The section above it is
+     * `relative isolate`, so it makes its own stacking context and paints over
+     * a shadow cast up from here -- which left the hairline still showing at
+     * 2.5x even with the shadow set.
+     */
+    position: relative;
+    z-index: 1;
+    box-shadow: 0 -1px 0 0 #000, 0 1px 0 0 #000;
+}

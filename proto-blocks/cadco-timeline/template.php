@@ -84,7 +84,21 @@ $copy = static function (array $item): void {
 $reveal = $is_preview ? '' : 'data-proto-animate="manual" data-cadco-reveal-group';
 
 $wrapper = get_block_wrapper_attributes([
-    'class' => 'cadco-timeline relative w-full ' . ($is_preview ? 'overflow-x-auto' : 'overflow-hidden') . ' bg-gradient-to-b from-paper via-paper to-[#f2f5f9] pt-[68px] pb-[174px]',
+    /*
+ * Height, for a section that gets pinned.
+ *
+ * A fixed height taller than the viewport cannot work here: the pin centres
+ * the section, so the overflow is split top and bottom and eats the padding,
+ * which is what pushed the heading against the top of the screen on a laptop
+ * and on mobile. Instead the section fills the viewport but never grows past
+ * the height the frame draws, and its content is centred inside whatever that
+ * comes to. Padding scales with the viewport so short screens give their room
+ * to the content rather than to margins.
+ */
+'class' => 'cadco-timeline relative flex w-full flex-col justify-center '
+    . ($is_preview ? 'overflow-x-auto' : 'min-h-[min(100svh,982px)] overflow-hidden')
+    . ' bg-gradient-to-b from-paper via-paper to-[#f2f5f9]'
+    . ' pt-[clamp(28px,5vh,120px)] pb-[clamp(28px,5vh,122px)]',
 ]);
 ?>
 <section <?php echo $wrapper; ?> <?php echo $reveal; ?>
@@ -157,7 +171,7 @@ $wrapper = get_block_wrapper_attributes([
         <div <?php /* No trailing padding: the track's travel has to equal the rail's
                  growth, or the line's right end drifts inward as it moves. The
                  last column carries its own slack, so nothing is cramped. */ ?>
-             class="relative z-10 flex w-max items-stretch will-change-transform <?php echo $is_preview ? 'pl-0' : 'pl-[calc((100vw-1140px)/2+24px)]'; ?>"
+             class="relative z-10 flex w-max items-stretch will-change-transform <?php echo $is_preview ? 'pl-0' : 'pl-[max(24px,calc((100vw-1140px)/2+24px))]'; ?>"
              data-timeline-track>
 
             <?php if (empty($milestones)) : ?>

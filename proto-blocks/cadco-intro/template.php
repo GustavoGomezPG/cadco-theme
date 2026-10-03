@@ -71,7 +71,7 @@ $headSize  = $isDark ? 'md:text-[56px]' : 'md:text-[64px]';
 $textMain  = $isDark ? 'text-white' : 'text-true-black';
 
 $wrapper = get_block_wrapper_attributes([
-    'class' => 'cadco-intro w-full ' . $pad . ' ' . $surface,
+    'class' => 'cadco-intro ' . ($isDark ? 'cadco-intro--dark ' : '') . 'w-full ' . $pad . ' ' . $surface,
 ]);
 
 /**
