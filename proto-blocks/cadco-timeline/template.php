@@ -84,7 +84,7 @@ $copy = static function (array $item): void {
 $reveal = $is_preview ? '' : 'data-proto-animate="manual" data-cadco-reveal-group';
 
 $wrapper = get_block_wrapper_attributes([
-    'class' => 'cadco-timeline relative w-full overflow-hidden bg-gradient-to-b from-paper via-paper to-[#f2f5f9] pt-[68px] pb-[174px]',
+    'class' => 'cadco-timeline relative w-full ' . ($is_preview ? 'overflow-x-auto' : 'overflow-hidden') . ' bg-gradient-to-b from-paper via-paper to-[#f2f5f9] pt-[68px] pb-[174px]',
 ]);
 ?>
 <section <?php echo $wrapper; ?> <?php echo $reveal; ?>
@@ -112,7 +112,10 @@ $wrapper = get_block_wrapper_attributes([
 
     <?php // ---------- Rail ---------- ?>
     <div class="relative mt-[11px] w-full" data-timeline-viewport>
-        <div class="relative z-10 flex w-max items-stretch pl-[calc((100vw-1140px)/2+24px)] pr-24 will-change-transform"
+        <?php /* In the editor the rail is scrolled by hand rather than by the
+                 pin, so it starts at the block's own left edge instead of being
+                 inset to the front end's container. */ ?>
+        <div class="relative z-10 flex w-max items-stretch pr-24 will-change-transform <?php echo $is_preview ? 'pl-0' : 'pl-[calc((100vw-1140px)/2+24px)]'; ?>"
              data-timeline-track>
 
             <?php if (empty($milestones)) : ?>

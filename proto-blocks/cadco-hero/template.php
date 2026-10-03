@@ -140,7 +140,20 @@ $wrapper = get_block_wrapper_attributes([
                  number, and defaulted to the full 1240px column so both
                  existing heroes are untouched. */ ?>
         <h1 data-proto-field="heading" data-hero-heading
-            style="max-width:<?php echo (int) max(600, min(1240, (int) ($attributes['headingWidth'] ?? 1240))); ?>px"
+            <?php
+            /*
+             * Expressed in em, not px, deliberately. The heading size is
+             * viewport-relative -- clamp(38px, 6.67vw, 96px) -- so the same
+             * pixel width holds a different number of words at different
+             * canvas widths: in the editor's iframe the font renders around
+             * 78px and a fixed 1060px let one more word onto the first line
+             * than the front end did. An em width scales with the font, so the
+             * line breaks in the same place everywhere. The control is still
+             * authored in pixels, against the 96px desktop size.
+             */
+            $headingWidth = max(600, min(1240, (int) ($attributes['headingWidth'] ?? 1240)));
+            ?>
+            style="max-width:<?php echo esc_attr(round($headingWidth / 96, 3)); ?>em"
             class="m-0 font-display text-[clamp(38px,6.67vw,96px)] font-extrabold leading-[1.198] text-white">
             <?php echo esc_html($heading); ?>
         </h1>
