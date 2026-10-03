@@ -789,7 +789,7 @@
       "title": "About",
       "status": "building",
       "postId": 126,
-      "contentHash": "9912510fc43f9f2bffbc066fcf3cc602aec6014e453e80bde533944fee51f733",
+      "contentHash": "4bfdf8ffe0f266cb122789434553a4f082818c67188ea812ae7772980063e59b",
       "design": {
         "frames": [
           {
@@ -849,7 +849,9 @@
             "minHeight": 705,
             "align": "full",
             "headingWidth": null,
-            "headingLine2": "Trusted in Foodservice."
+            "headingLine2": "Trusted in Foodservice.",
+            "highlight": "Experience.",
+            "highlightColor": "#1f7fd4"
           },
           "prevStatus": "building",
           "preparedIteration": 2,

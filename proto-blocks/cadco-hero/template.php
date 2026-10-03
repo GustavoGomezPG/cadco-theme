@@ -67,11 +67,15 @@ $scrimStyle = sprintf(
  */
 $heightStyle = sprintf('min-height:clamp(520px, 58.4vw, %dpx)', $minH);
 
+$glowColor = preg_match('/^#[0-9a-f]{3,8}$/i', trim((string) ($attributes['highlightColor'] ?? '')))
+    ? trim((string) $attributes['highlightColor'])
+    : '#1f7fd4';
+
 $wrapper = get_block_wrapper_attributes([
     'class' => 'cadco-hero relative isolate w-full overflow-hidden bg-true-black',
 ]);
 ?>
-<section <?php echo $wrapper; ?> style="<?php echo esc_attr($heightStyle); ?>"<?php echo $is_preview ? '' : ' data-cadco-hero'; ?>>
+<section <?php echo $wrapper; ?> style="<?php echo esc_attr($heightStyle . ';--cadco-glow:' . $glowColor); ?>"<?php echo $is_preview ? '' : ' data-cadco-hero'; ?>>
 
     <?php if (! $is_preview) : ?>
         <?php /* Marks the pre-animation state while the section is still being
@@ -132,15 +136,18 @@ $wrapper = get_block_wrapper_attributes([
             <?php echo esc_html($eyebrow); ?>
         </p>
 
-        <?php /* Capped at the design's 1239.89px so it wraps to three lines as
-                 drawn. px-10 leaves 1360px inside the 1440 column, so this cap —
-                 not the padding — is what sets the measure. */ ?>
-        <?php /* The wrap point is a content decision: a two-sentence headline
-                 reads badly broken mid-sentence. Inline because the value is a
-                 number, and defaulted to the full 1240px column so both
-                 existing heroes are untouched. */ ?>
+        <?php /* Capped at the design's 1239.89px so a single-field headline
+                 still wraps as drawn. px-10 leaves 1360px inside the 1440
+                 column, so this cap — not the padding — sets the measure.
+
+                 [&>*]:m-0 is for the editor: it swaps each bound field for its
+                 own rich-text element, which brings default block margins with
+                 it, and those opened a gap between the two headline lines and
+                 under the eyebrow that the front end never had. Zeroing the
+                 margin of whatever element it injects keeps the editor looking
+                 like the page. */ ?>
         <h1 data-hero-heading
-            class="m-0 max-w-[1240px] font-display text-[clamp(38px,6.67vw,96px)] font-extrabold leading-[1.198] text-white">
+            class="m-0 max-w-[1240px] font-display text-[clamp(38px,6.67vw,96px)] font-extrabold leading-[1.198] text-white [&>*]:m-0">
             <?php
             /*
              * Two fields rather than one, so a two-sentence headline breaks
@@ -151,10 +158,42 @@ $wrapper = get_block_wrapper_attributes([
              * Each line is its own block, so there is no wrap to get wrong.
              */
             $line2 = (string) ($attributes['headingLine2'] ?? '');
+
+            /*
+             * The design backlights one word of the headline. Rather than
+             * hard-coding it, the author names the word and it is wrapped
+             * where it falls -- across either line, matched once, ignoring
+             * case. The match runs over the ALREADY ESCAPED string and the
+             * wrapper is the only markup added, so nothing from the field can
+             * become markup.
+             */
+            $highlight = trim((string) ($attributes['highlight'] ?? ''));
+            $glowDone  = false;
+
+            $glow = static function (string $text) use ($highlight, &$glowDone): string {
+                $safe = esc_html($text);
+
+                if ($glowDone || $highlight === '') {
+                    return $safe;
+                }
+
+                $needle = esc_html($highlight);
+                $at     = stripos($safe, $needle);
+
+                if ($at === false) {
+                    return $safe;
+                }
+
+                $glowDone = true;
+
+                return substr($safe, 0, $at)
+                    . '<span class="cadco-hero-glow">' . substr($safe, $at, strlen($needle)) . '</span>'
+                    . substr($safe, $at + strlen($needle));
+            };
             ?>
-            <span data-proto-field="heading" class="block"><?php echo esc_html($heading); ?></span>
+            <span data-proto-field="heading" class="m-0 block leading-[inherit]"><?php echo $glow($heading); ?></span>
             <?php if ($line2 !== '' || $is_preview) : ?>
-                <span data-proto-field="headingLine2" class="block"><?php echo esc_html($line2); ?></span>
+                <span data-proto-field="headingLine2" class="m-0 block leading-[inherit]"><?php echo $glow($line2); ?></span>
             <?php endif; ?>
         </h1>
 

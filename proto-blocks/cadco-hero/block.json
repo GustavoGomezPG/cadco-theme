@@ -32,7 +32,7 @@
       },
       "heading": {
         "type": "text",
-        "tagName": "h1",
+        "tagName": "span",
         "label": "Heading",
         "default": "America's Leader in Innovative Foodservice Equipment"
       },
@@ -111,6 +111,16 @@
         "min": 400,
         "max": 1100,
         "step": 1
+      },
+      "highlight": {
+        "type": "text",
+        "label": "Highlighted word",
+        "help": "A word or phrase from the headline to backlight, as the design does with \"Experience.\". Matched once, ignoring case, across both headline lines. Leave empty for no highlight."
+      },
+      "highlightColor": {
+        "type": "color",
+        "label": "Highlight colour",
+        "default": "#1f7fd4"
       }
     }
   }
