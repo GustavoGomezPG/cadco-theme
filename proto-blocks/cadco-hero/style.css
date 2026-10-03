@@ -74,11 +74,12 @@
     left: 0;
     right: 0;
     /*
-     * Sat on the baseline, crossing the foot of the glyphs, as the frame
-     * draws it. Lower than this and the reveal's line wrapper -- which clips
-     * exactly at the span's bottom edge -- cuts the underside of the blur off.
+     * Just under the baseline, crossing the foot of the glyphs. There is not
+     * much room below this: the reveal's line wrapper clips exactly at the
+     * span's bottom edge, so dropping the bar much further starts cutting the
+     * underside of the blur away.
      */
-    bottom: 0.26em;
+    bottom: 0.177em;                 /* baseline, less the 8px the design sits lower */
     height: 0.125em;                 /* 12px against the design's 96px headline */
     background: var(--cadco-glow, #2087d0);
     filter: blur(0.136em);           /* 13.1px at 96px */
