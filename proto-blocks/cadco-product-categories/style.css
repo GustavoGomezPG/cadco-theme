@@ -20,3 +20,21 @@
 		transform: none;
 	}
 }
+
+/*
+ * Black below the bottom edge, to meet the dark section that follows.
+ *
+ * This section's background is light and the next one's is black, and the
+ * boundary between them falls on a fractional CSS pixel, so the device row
+ * straddling it blends the two and reads as a grey hairline. Darkening the
+ * next section's own backdrop took that blend from rgb(63,63,62) to
+ * rgb(31,31,31) -- the white underneath was half of it -- and this covers the
+ * other half, so both sides of the straddling row are black and there is
+ * nothing left to average. Two pixels, to cover the row whichever way it
+ * rounds at any device ratio or browser zoom.
+ *
+ * It paints over nothing: the section below starts there and is black.
+ */
+:root .cadco-product-categories {
+    box-shadow: 0 2px 0 0 #000;
+}

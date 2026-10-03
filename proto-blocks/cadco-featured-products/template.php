@@ -131,8 +131,22 @@ if (! function_exists('cadco_featured_bullets')) {
     }
 }
 
+/*
+ * The section's own background sits under the scrim, so it has to match what
+ * the scrim is darkening -- not the page.
+ *
+ * With a photograph behind it the section read black, but its own background
+ * was paper. Wherever the photograph's edge rounded inward by a fraction of a
+ * device pixel -- which it does at any fractional ratio, including a browser
+ * zoom or a scaled display -- one row of that paper showed through the scrim
+ * instead of the photograph. Measured, it came out rgb(63,63,62): white at 255
+ * seen through a scrim about 75% opaque. That was the grey hairline, and no
+ * amount of covering the join from either side could fix it, because the line
+ * was never the join -- it was this section's own backdrop.
+ */
 $wrapper = get_block_wrapper_attributes([
-    'class' => 'cadco-featured-products relative isolate w-full overflow-hidden bg-paper',
+    'class' => 'cadco-featured-products relative isolate w-full overflow-hidden '
+        . (! empty($bg['url']) ? 'bg-black' : 'bg-paper'),
 ]);
 
 /**

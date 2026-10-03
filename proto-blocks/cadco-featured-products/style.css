@@ -94,4 +94,17 @@
     position: relative;
     z-index: 1;
     margin-top: -1px;
+
+    /*
+     * Paint black past the top edge as well.
+     *
+     * The section starts on a fractional CSS pixel (measured 1995.313), so the
+     * device row straddling that edge is part black and part the light section
+     * above, and blends to grey -- rgb(63,63,62) when sampled. A 1px overlap
+     * cannot help, because the problem is not a gap between the two boxes but
+     * the fractional position where this one's own black begins. Two pixels of
+     * black above the edge covers the straddling row whichever way it rounds,
+     * at any device ratio or browser zoom.
+     */
+    box-shadow: 0 -2px 0 0 #000;
 }
