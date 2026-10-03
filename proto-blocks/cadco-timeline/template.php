@@ -12,11 +12,13 @@
  * copy right; a below-rail one mirrors that. Images are 353x163, copy columns
  * about 283px, and the rail carries a 15px dot at each milestone.
  *
- * One deliberate difference from the frame: it draws an above item and a below
- * item overlapping in the same horizontal span, sharing a single dot. Its
- * content is the same two milestones duplicated, so that reads as placeholder
- * density rather than intent, and a dot that marks two different years would be
- * hard to explain. Milestones here alternate without overlapping, one dot each.
+ * Milestones are laid out in pairs. Each slide is one rail segment with a
+ * single dot and holds two milestones: the earlier one below the rail, the
+ * later one above it. That is what the frame draws, and it is what makes the
+ * rail read as continuous -- alternating one milestone per slide instead
+ * leaves the opposite row of every slide empty, which both diverges from the
+ * frame and strands a band of dead space the full width of the track.
+ *
  *
  * @var array         $attributes
  * @var WP_Block|null $block  Null in the editor preview.
@@ -45,13 +47,44 @@ $railColor = $colour((string) ($attributes['railColor'] ?? ''), 'rgba(0,71,110,0
 $dotColor  = $colour((string) ($attributes['dotColor'] ?? ''), '#00476e');
 
 /**
+ * One milestone's copy, as a closure rather than a partial in parts/.
+ *
+ * The plugin's Tailwind scanner (includes/Tailwind/Scanner.php) reads only
+ * <block>/template.php and <block>/<block-name>.php. It does not walk
+ * subdirectories, so classes written in a parts/ include are never compiled and
+ * the element silently falls back to the browser's own size. A closure keeps
+ * the markup in one place AND keeps every class where the scanner can see it.
+ *
+ * A closure, not a named function: two instances of the block on one page would
+ * redeclare a named one.
+ */
+$copy = static function (array $item): void {
+    ?>
+    <p data-proto-field="year"
+       class="m-0 font-display text-[26px] font-bold leading-[1.2] text-cadco-blue">
+        <?php echo esc_html((string) ($item['year'] ?? '')); ?>
+    </p>
+
+    <h3 data-proto-field="title"
+        class="m-0 mt-2 font-display text-[24px] font-bold leading-[1.25] text-true-black">
+        <?php echo esc_html((string) ($item['title'] ?? '')); ?>
+    </h3>
+
+    <p data-proto-field="body"
+       class="m-0 mt-3 font-display text-[16px] font-normal leading-6 text-true-black">
+        <?php echo esc_html((string) ($item['body'] ?? '')); ?>
+    </p>
+    <?php
+};
+
+/**
  * Scroll reveal, front end only — the contract the other Cadco blocks use. The
  * track's own motion is handled by view.js, not by the reveal.
  */
 $reveal = $is_preview ? '' : 'data-proto-animate="manual" data-cadco-reveal-group';
 
 $wrapper = get_block_wrapper_attributes([
-    'class' => 'cadco-timeline relative w-full overflow-hidden bg-gradient-to-b from-paper via-paper to-[#f2f5f9] pt-[92px] pb-[70px]',
+    'class' => 'cadco-timeline relative w-full overflow-hidden bg-gradient-to-b from-paper via-paper to-[#f2f5f9] pt-[68px] pb-[124px]',
 ]);
 ?>
 <section <?php echo $wrapper; ?> <?php echo $reveal; ?>
@@ -63,7 +96,7 @@ $wrapper = get_block_wrapper_attributes([
         <p class="m-0 flex items-center gap-2 font-display text-[20px] font-bold leading-[1.2] text-true-black">
             <?php /* The flag the frame draws beside the eyebrow. Inline so it
                      inherits the text colour and needs no extra asset. */ ?>
-            <svg class="h-[18px] w-[15px] shrink-0" viewBox="0 0 15 18" fill="none" aria-hidden="true">
+            <svg class="h-[22px] w-[19px] shrink-0" viewBox="0 0 15 18" fill="none" aria-hidden="true">
                 <path d="M1 1v16" stroke="<?php echo esc_attr($dotColor); ?>" stroke-width="2" stroke-linecap="round" />
                 <path d="M2 2h11l-3 4 3 4H2V2z" fill="<?php echo esc_attr($dotColor); ?>" />
             </svg>
@@ -72,17 +105,26 @@ $wrapper = get_block_wrapper_attributes([
 
         <h2 data-proto-field="heading"
             data-cadco-reveal="lines"
-            class="m-0 mt-4 max-w-[560px] font-display text-[26px] font-bold leading-[1.25] text-true-black md:text-[34px]">
+            class="m-0 mt-6 max-w-[560px] font-display text-[26px] font-bold leading-[1.25] text-true-black md:text-[38px]">
             <?php echo wp_kses_post($heading); ?>
         </h2>
     </div>
 
     <?php // ---------- Rail ---------- ?>
-    <div class="relative mt-14 w-full" data-timeline-viewport>
+    <div class="relative mt-8 w-full" data-timeline-viewport>
+        <?php /* One continuous line across the viewport. It sits outside the
+                 track so it neither travels with the dots nor stops short when
+                 there are few milestones; the dots below ride along it. Its
+                 offset is the height of the above-rail row plus that row's
+                 margin, so it meets the dots exactly. */ ?>
+        <span class="pointer-events-none absolute left-0 z-0 h-px w-full"
+              style="top:<?php echo 232 + 29 + 7; ?>px;background:<?php echo esc_attr($railColor); ?>"
+              aria-hidden="true"></span>
+
         <?php /* Padded to the heading's column so the first milestone starts on
                  the same line as the copy above it, then free to run past the
                  right edge — that overflow is the point. */ ?>
-        <div class="flex w-max items-stretch pl-[calc((100vw-1140px)/2+24px)] pr-24 will-change-transform"
+        <div class="relative z-10 flex w-max items-stretch pl-[calc((100vw-1140px)/2+24px)] pr-24 will-change-transform"
              data-timeline-track>
 
             <?php if (empty($milestones)) : ?>
@@ -92,18 +134,26 @@ $wrapper = get_block_wrapper_attributes([
             <?php endif; ?>
 
             <div data-proto-repeater="milestones" class="flex items-stretch">
-                <?php foreach ((array) $milestones as $i => $item) : ?>
-                    <?php
-                    $above = ($i % 2) === 0;
-                    $img   = $item['image'] ?? [];
+                <?php
+                /*
+                 * Two milestones per slide: the frame fills both rows of every
+                 * rail segment. array_chunk leaves a trailing odd milestone in
+                 * a pair of one, which renders below the rail with the row
+                 * above it empty -- the only case where a half-empty slide is
+                 * correct.
+                 */
+                foreach (array_chunk((array) $milestones, 2) as $pair) :
+                    $below = $pair[0] ?? null;   // earlier milestone, below the rail
+                    $above = $pair[1] ?? null;   // later milestone, above it
                     ?>
                     <div data-proto-repeater-item
                          data-timeline-item
-                         class="relative flex w-[706px] shrink-0 flex-col">
+                         class="relative flex w-[752px] shrink-0 flex-col">
 
-                        <?php // ----- Above the rail ----- ?>
-                        <div class="flex h-[232px] items-end gap-[58px] <?php echo $above ? '' : 'invisible'; ?>">
+                        <?php // ----- Above the rail: image left, copy right ----- ?>
+                        <div class="flex h-[232px] items-end gap-[58px]">
                             <?php if ($above) : ?>
+                                <?php $img = $above['image'] ?? []; ?>
                                 <div class="h-[163px] w-[353px] shrink-0 overflow-hidden rounded-[10px] bg-light-grey/40">
                                     <?php if (! empty($img['url'])) : ?>
                                         <img src="<?php echo esc_url($img['url']); ?>"
@@ -111,25 +161,24 @@ $wrapper = get_block_wrapper_attributes([
                                              class="h-full w-full object-cover" loading="lazy" decoding="async" />
                                     <?php endif; ?>
                                 </div>
-                                <div class="w-[283px] shrink-0 pb-1">
-                                    <?php include __DIR__ . '/parts/copy.php'; ?>
+                                <div class="w-[300px] shrink-0 pb-1">
+                                    <?php $copy($above); ?>
                                 </div>
                             <?php endif; ?>
                         </div>
 
-                        <?php // ----- The rail itself ----- ?>
-                        <div class="relative my-[29px] h-[15px] w-full">
-                            <span class="absolute left-0 top-1/2 h-px w-full -translate-y-1/2"
-                                  style="background:<?php echo esc_attr($railColor); ?>" aria-hidden="true"></span>
-                            <span class="absolute left-0 top-0 h-[15px] w-[15px] rounded-full"
+                        <?php // ----- The rail ----- ?>
+                        <div class="relative z-10 my-[29px] h-[14px] w-full">
+                            <span class="absolute left-0 top-0 h-[14px] w-[14px] rounded-full"
                                   style="background:<?php echo esc_attr($dotColor); ?>" aria-hidden="true"></span>
                         </div>
 
-                        <?php // ----- Below the rail ----- ?>
-                        <div class="flex h-[232px] items-start gap-[0px] <?php echo $above ? 'invisible' : ''; ?>">
-                            <?php if (! $above) : ?>
+                        <?php // ----- Below the rail: copy left, image right ----- ?>
+                        <div class="flex h-[232px] items-start">
+                            <?php if ($below) : ?>
+                                <?php $img = $below['image'] ?? []; ?>
                                 <div class="w-[353px] shrink-0 pt-1">
-                                    <?php include __DIR__ . '/parts/copy.php'; ?>
+                                    <?php $copy($below); ?>
                                 </div>
                                 <div class="h-[163px] w-[353px] shrink-0 overflow-hidden rounded-[10px] bg-light-grey/40">
                                     <?php if (! empty($img['url'])) : ?>
@@ -147,16 +196,16 @@ $wrapper = get_block_wrapper_attributes([
     </div>
 
     <?php // ---------- Controls ---------- ?>
-    <div class="relative mx-auto mt-[75px] flex w-full max-w-[1140px] gap-3 px-6">
+    <div class="relative mx-auto mt-[30px] flex w-full max-w-[1140px] gap-3 px-6">
         <button type="button" data-timeline-prev
-                class="flex h-[48px] w-[48px] items-center justify-center rounded-full border border-cadco-blue/40 text-cadco-blue transition-colors hover:border-cadco-blue disabled:opacity-40"
+                class="flex h-[48px] w-[48px] items-center justify-center rounded-full border border-cadco-blue/40 text-cadco-blue transition-colors hover:border-cadco-blue disabled:opacity-60"
                 aria-label="<?php esc_attr_e('Previous milestone', 'cadco-theme'); ?>">
             <svg viewBox="0 0 24 24" class="h-5 w-5" fill="none" aria-hidden="true">
                 <path d="M19 12H5M5 12l6-6M5 12l6 6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
             </svg>
         </button>
         <button type="button" data-timeline-next
-                class="flex h-[48px] w-[48px] items-center justify-center rounded-full bg-cadco-blue text-white transition-colors hover:bg-[#00395a] disabled:opacity-40"
+                class="flex h-[48px] w-[48px] items-center justify-center rounded-full bg-[#4a6a8a] text-white transition-colors hover:bg-[#3c5873] disabled:opacity-40"
                 aria-label="<?php esc_attr_e('Next milestone', 'cadco-theme'); ?>">
             <svg viewBox="0 0 24 24" class="h-5 w-5" fill="none" aria-hidden="true">
                 <path d="M5 12h14M19 12l-6-6M19 12l-6 6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />

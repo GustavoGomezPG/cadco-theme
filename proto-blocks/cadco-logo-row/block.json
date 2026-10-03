@@ -1,42 +1,88 @@
 {
-    "$schema": "https://schemas.wp.org/trunk/block.json",
-    "apiVersion": 3,
-    "name": "proto-blocks/cadco-logo-row",
-    "title": "Cadco Logo Row",
-    "description": "A heading above a row of association or partner logos, sized to a common optical height.",
-    "category": "proto-blocks",
-    "icon": "block-default",
-    "keywords": [
-        "cadco-logo-row"
-    ],
-    "supports": {
-        "html": false,
-        "anchor": true,
-        "customClassName": true,
-        "align": [
-            "wide",
-            "full"
-        ],
-        "color": {
-            "background": true,
-            "text": true
-        },
-        "spacing": {
-            "padding": true,
-            "margin": true
-        }
+  "$schema": "https://schemas.wp.org/trunk/block.json",
+  "apiVersion": 3,
+  "name": "proto-blocks/cadco-logo-row",
+  "title": "Cadco Logo Row",
+  "category": "proto",
+  "icon": "awards",
+  "description": "A heading above a row of association or partner logos, each sized to a common optical height.",
+  "supports": {
+    "html": false,
+    "anchor": true,
+    "customClassName": true,
+    "align": [
+      "full"
+    ]
+  },
+  "protoBlocks": {
+    "version": "1.0",
+    "template": "template.php",
+    "useTailwind": true,
+    "fields": {
+      "heading": {
+        "type": "text",
+        "tagName": "h2",
+        "label": "Heading",
+        "default": "We're proud members of..."
+      }
     },
-    "protoBlocks": {
-        "version": "1.0",
-        "template": "template.php",
-        "fields": {
-            "title": {
-                "type": "text",
-                "tagName": "h2"
-            },
-            "content": {
-                "type": "wysiwyg"
-            }
-        }
+    "controls": {
+      "logos": {
+        "type": "gallery",
+        "label": "Logos",
+        "help": "Drag to reorder. Each logo is scaled to a common height, so supply them on transparent backgrounds with their own padding trimmed."
+      },
+      "boxWidth": {
+        "type": "range",
+        "label": "Logo box width (px)",
+        "default": 230,
+        "min": 80,
+        "max": 420,
+        "step": 10
+      },
+      "boxHeight": {
+        "type": "range",
+        "label": "Logo box height (px)",
+        "default": 105,
+        "min": 32,
+        "max": 200,
+        "step": 5,
+        "help": "Each logo is fitted inside a box of this size rather than set to a fixed height. Logos are not a common shape -- a square badge beside a wide wordmark -- and matching their heights makes the badge tower over the wordmarks. Fitting them to one box balances them by area, which is how the design reads."
+      },
+      "align": {
+        "type": "select",
+        "label": "Alignment",
+        "default": "center",
+        "options": [
+          {
+            "key": "center",
+            "label": "Centred"
+          },
+          {
+            "key": "between",
+            "label": "Spread across the width"
+          },
+          {
+            "key": "start",
+            "label": "Left"
+          }
+        ]
+      },
+      "tone": {
+        "type": "select",
+        "label": "Background",
+        "default": "paper",
+        "options": [
+          {
+            "key": "paper",
+            "label": "Paper"
+          },
+          {
+            "key": "tint",
+            "label": "Tint"
+          }
+        ]
+      }
     }
+  }
 }

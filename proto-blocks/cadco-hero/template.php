@@ -135,8 +135,13 @@ $wrapper = get_block_wrapper_attributes([
         <?php /* Capped at the design's 1239.89px so it wraps to three lines as
                  drawn. px-10 leaves 1360px inside the 1440 column, so this cap —
                  not the padding — is what sets the measure. */ ?>
+        <?php /* The wrap point is a content decision: a two-sentence headline
+                 reads badly broken mid-sentence. Inline because the value is a
+                 number, and defaulted to the full 1240px column so both
+                 existing heroes are untouched. */ ?>
         <h1 data-proto-field="heading" data-hero-heading
-            class="m-0 max-w-[1240px] font-display text-[clamp(38px,6.67vw,96px)] font-extrabold leading-[1.198] text-white">
+            style="max-width:<?php echo (int) max(600, min(1240, (int) ($attributes['headingWidth'] ?? 1240))); ?>px"
+            class="m-0 font-display text-[clamp(38px,6.67vw,96px)] font-extrabold leading-[1.198] text-white">
             <?php echo esc_html($heading); ?>
         </h1>
 

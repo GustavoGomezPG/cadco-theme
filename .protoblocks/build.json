@@ -120,6 +120,22 @@
           "scale": 1
         }
       ]
+    },
+    "cadco-logo-row": {
+      "usedOn": [
+        "about"
+      ],
+      "baselines": [
+        {
+          "page": "about",
+          "anchor": "pb-s5",
+          "breakpoint": "desktop",
+          "file": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/baselines/about/pb-s5-desktop.png",
+          "width": 1440,
+          "scale": 1
+        }
+      ],
+      "purpose": "A heading over a row of association or partner logos, each fitted inside a shared box rather than set to a common height"
     }
   },
   "pages": [
@@ -754,7 +770,7 @@
       "title": "About",
       "status": "building",
       "postId": 126,
-      "contentHash": "f782062772016945ef1f43b7d0d63d02f764e7fb6fc235903daa458347e5222b",
+      "contentHash": "bf74df14d71452aaee1e839cccb73498b806f483700366f6b12555e2eecd8875",
       "design": {
         "frames": [
           {
@@ -812,7 +828,8 @@
             "gradientTop": "#000000",
             "gradientBottom": "#021a2a",
             "minHeight": 705,
-            "align": "full"
+            "align": "full",
+            "headingWidth": 1060
           },
           "prevStatus": "building",
           "preparedIteration": 2,
@@ -935,7 +952,7 @@
         {
           "n": 4,
           "anchor": "pb-s4",
-          "status": "verifying",
+          "status": "building",
           "crops": {
             "desktop": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/about/crops/desktop/pb-s4.png"
           },
@@ -953,8 +970,8 @@
             "eyebrow": "The History of Cadco",
             "heading": "Throughout the years of <span style=\"color:#00476e\">leading</span> the food equipment industry.",
             "scrub": true,
-            "railColor": "#d1d1cf",
-            "dotColor": "#00476e",
+            "railColor": "#4a6a8a",
+            "dotColor": "#4a6a8a",
             "milestones": [
               {
                 "id": "m1",
@@ -986,12 +1003,72 @@
             "align": "full"
           },
           "prevStatus": "building",
-          "preparedIteration": 2
+          "preparedIteration": 6,
+          "qa": [
+            {
+              "iteration": 3,
+              "breakpoint": "desktop",
+              "mode": "diff",
+              "mismatch": 0.1752,
+              "heightDelta": 0.0234,
+              "widthDelta": 0,
+              "numericPass": false,
+              "pass": false,
+              "verdict": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/about/pb-s4/iter-3/verdict.json"
+            },
+            {
+              "iteration": 3,
+              "breakpoint": "tablet",
+              "mode": "sanity",
+              "widthDelta": 0,
+              "numericPass": true,
+              "pass": false,
+              "verdict": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/about/pb-s4/iter-3/verdict.json"
+            },
+            {
+              "iteration": 3,
+              "breakpoint": "mobile",
+              "mode": "sanity",
+              "widthDelta": 0,
+              "numericPass": true,
+              "pass": false,
+              "verdict": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/about/pb-s4/iter-3/verdict.json"
+            },
+            {
+              "iteration": 6,
+              "breakpoint": "desktop",
+              "mode": "diff",
+              "mismatch": 0.1585,
+              "heightDelta": 0.001,
+              "widthDelta": 0,
+              "numericPass": false,
+              "pass": false,
+              "verdict": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/about/pb-s4/iter-6/verdict.json"
+            },
+            {
+              "iteration": 6,
+              "breakpoint": "tablet",
+              "mode": "sanity",
+              "widthDelta": 0,
+              "numericPass": true,
+              "pass": false,
+              "verdict": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/about/pb-s4/iter-6/verdict.json"
+            },
+            {
+              "iteration": 6,
+              "breakpoint": "mobile",
+              "mode": "sanity",
+              "widthDelta": 0,
+              "numericPass": true,
+              "pass": false,
+              "verdict": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/about/pb-s4/iter-6/verdict.json"
+            }
+          ]
         },
         {
           "n": 5,
           "anchor": "pb-s5",
-          "status": "planned",
+          "status": "done",
           "crops": {
             "desktop": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/about/crops/desktop/pb-s5.png"
           },
@@ -1004,12 +1081,75 @@
           "label": "Proud members of",
           "decision": "new",
           "block": "cadco-logo-row",
-          "notes": "Heading plus a gallery control of association logos (ABC, SEFA, NAFEM). Gallery rather than a repeater: the images are the layout."
+          "notes": "Heading plus a gallery control of association logos (ABC, SEFA, NAFEM). Gallery rather than a repeater: the images are the layout.",
+          "attrs": {
+            "heading": "We're proud members of...",
+            "logos": [
+              {
+                "id": 18333,
+                "url": "https://cadco.local/wp-content/uploads/2026/10/logo-abc.png",
+                "alt": "ABC association logo"
+              },
+              {
+                "id": 18334,
+                "url": "https://cadco.local/wp-content/uploads/2026/10/logo-sefa.png",
+                "alt": "SEFA, the Supply and Equipment Foodservice Alliance"
+              },
+              {
+                "id": 18335,
+                "url": "https://cadco.local/wp-content/uploads/2026/10/logo-nafem.png",
+                "alt": "NAFEM, the North American Association of Food Equipment Manufacturers"
+              }
+            ],
+            "logoHeight": 64,
+            "align": "center",
+            "tone": "paper",
+            "align_block": "full",
+            "boxWidth": 220,
+            "boxHeight": 105
+          },
+          "preparedIteration": 2,
+          "qa": [
+            {
+              "iteration": 2,
+              "breakpoint": "desktop",
+              "mode": "diff",
+              "mismatch": 0.0222,
+              "heightDelta": 0.0017,
+              "widthDelta": 0,
+              "numericPass": true,
+              "pass": true,
+              "verdict": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/about/pb-s5/iter-2/verdict.json"
+            },
+            {
+              "iteration": 2,
+              "breakpoint": "tablet",
+              "mode": "sanity",
+              "widthDelta": 0,
+              "numericPass": true,
+              "pass": true,
+              "verdict": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/about/pb-s5/iter-2/verdict.json"
+            },
+            {
+              "iteration": 2,
+              "breakpoint": "mobile",
+              "mode": "sanity",
+              "widthDelta": 0,
+              "numericPass": true,
+              "pass": true,
+              "verdict": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/about/pb-s5/iter-2/verdict.json"
+            }
+          ],
+          "motion": {
+            "presets": [],
+            "check": "pass",
+            "result": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/about/pb-s5/motion/motion-check.json"
+          }
         },
         {
           "n": 6,
           "anchor": "pb-s6",
-          "status": "planned",
+          "status": "verifying",
           "crops": {
             "desktop": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/about/crops/desktop/pb-s6.png"
           },
@@ -1022,7 +1162,24 @@
           "label": "Closing CTA",
           "decision": "extend",
           "block": "cadco-intro",
-          "notes": "Same block as the products CTA but dark. Additive tone control, light default, so home and products are untouched. Copy takes the revision agreed after design review rather than the superseded line in the frame."
+          "notes": "Same block as the products CTA but dark. Additive tone control, light default, so home and products are untouched. Copy takes the revision agreed after design review rather than the superseded line in the frame.",
+          "attrs": {
+            "eyebrow": "",
+            "heading": "Tell us what your kitchen needs to do. We'll build the solution.",
+            "body": "",
+            "cta": {
+              "url": "/contact/",
+              "text": "Contact Cadco",
+              "target": "",
+              "rel": "",
+              "title": ""
+            },
+            "alignment": "center",
+            "tone": "dark",
+            "align": "full"
+          },
+          "prevStatus": "building",
+          "preparedIteration": 2
         },
         {
           "n": 7,

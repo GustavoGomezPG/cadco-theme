@@ -105,6 +105,15 @@
         "min": 400,
         "max": 1100,
         "step": 1
+      },
+      "headingWidth": {
+        "type": "range",
+        "label": "Heading width (px)",
+        "default": 1240,
+        "min": 600,
+        "max": 1240,
+        "step": 10,
+        "help": "Where the headline wraps. The default is the full column. Narrow it to force a break -- a two-sentence headline usually wants one sentence per line."
       }
     }
   }

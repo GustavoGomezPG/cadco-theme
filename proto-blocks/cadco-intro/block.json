@@ -65,6 +65,22 @@
           }
         ],
         "help": "Centred also widens the heading's measure, matching the closing statement in the design."
+      },
+      "tone": {
+        "type": "select",
+        "label": "Tone",
+        "default": "paper",
+        "options": [
+          {
+            "key": "paper",
+            "label": "Paper (dark text)"
+          },
+          {
+            "key": "dark",
+            "label": "Dark (light text on a gradient)"
+          }
+        ],
+        "help": "Dark sets the section on the same gradient as the hero and inverts the text, for a closing call to action."
       }
     }
   }
