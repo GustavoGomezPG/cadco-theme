@@ -292,7 +292,7 @@ $panel_id = static function (string $key): string {
                                 </a>
 
                                 <button type="button"
-                                        class="flex shrink-0 cursor-pointer items-center border-0 border-l border-white/10 bg-transparent px-5 text-white transition-colors hover:bg-white/5"
+                                        class="flex shrink-0 cursor-pointer items-center border-0 bg-transparent px-5 text-white transition-colors hover:bg-white/5"
                                         aria-expanded="false"
                                         aria-controls="cadco-acc-<?php echo esc_attr($section); ?>"
                                         aria-label="<?php echo esc_attr(sprintf(__('Show %s menu', 'cadco-theme'), $label)); ?>"
