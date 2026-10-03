@@ -128,7 +128,7 @@
       "title": "Products",
       "status": "seo",
       "postId": 18312,
-      "contentHash": "c37f96be6d665a623c6e62f4b522d4ad75adaf1cf2792f6cf5caef440a275269",
+      "contentHash": "5238f3f3c358923caea161a5ef16aca5e747e67ce075ea8c7cf2fb0858d0a3fc",
       "design": {
         "frames": [
           {
@@ -547,9 +547,9 @@
           "label": "Help CTA",
           "decision": "reuse",
           "block": "cadco-intro",
-          "notes": "accepted by developer. Closest section on the page at 7.87% mismatch; type, weight, wrapping and button all match. The one real difference is height: 534px rendered vs 638px in the design, because cadco-intro ships fixed vertical padding and no padding control. It is reused on the home page twice, so adding one would have to default to the current spacing; raising it outright would relayout the home page. Design also draws a hairline rule along the section foot that the block does not render.",
+          "notes": "accepted by developer at 7.87% (cadco-intro ships fixed vertical padding and no padding control; it is reused twice on the home page, so raising it would relayout that page). Copy revised 2 Oct after design review: Alex Penn asked for the line to be solution-led rather than about finding equipment, so \"help you find the right equipment\" became \"help you build the right solution\", matching the footers existing \"Discover which solution is right for your business\". The Figma frame still carries the old line, so this section now differs from its crop by design and its recorded QA predates the change.",
           "attrs": {
-            "heading": "We can help you find the right equipment for your kitchen.",
+            "heading": "We can help you build the right solution for your kitchen.",
             "eyebrow": "",
             "body": "",
             "cta": {
