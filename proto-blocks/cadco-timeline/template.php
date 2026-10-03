@@ -154,7 +154,10 @@ $wrapper = get_block_wrapper_attributes([
         <?php /* In the editor the rail is scrolled by hand rather than by the
                  pin, so it starts at the block's own left edge instead of being
                  inset to the front end's container. */ ?>
-        <div class="relative z-10 flex w-max items-stretch pr-24 will-change-transform <?php echo $is_preview ? 'pl-0' : 'pl-[calc((100vw-1140px)/2+24px)]'; ?>"
+        <div <?php /* No trailing padding: the track's travel has to equal the rail's
+                 growth, or the line's right end drifts inward as it moves. The
+                 last column carries its own slack, so nothing is cramped. */ ?>
+             class="relative z-10 flex w-max items-stretch will-change-transform <?php echo $is_preview ? 'pl-0' : 'pl-[calc((100vw-1140px)/2+24px)]'; ?>"
              data-timeline-track>
 
             <?php if (empty($milestones)) : ?>
@@ -180,8 +183,14 @@ $wrapper = get_block_wrapper_attributes([
                  style="grid-auto-columns:752px">
 
                 <?php // The rail: one line across every column, in the middle row. ?>
-                <span class="relative z-0 h-px self-center"
-                      style="grid-row:2;grid-column:1/-1;background:<?php echo esc_attr($railColor); ?>"
+                <?php /* "1 / -1" spans only the EXPLICIT grid, and these columns
+                         are implicit (grid-auto-flow), so it covered a single
+                         column and the line stopped at the second dot. The span
+                         is stated explicitly instead. It also grows on scroll,
+                         so scaleX starts partial and transform-origin is left. */ ?>
+                <span data-timeline-rail
+                      class="relative z-0 h-px origin-left self-center"
+                      style="grid-row:2;grid-column:1/span <?php echo (int) max(1, $cols); ?>;background:<?php echo esc_attr($railColor); ?>"
                       aria-hidden="true"></span>
 
                 <?php for ($c = 1; $c <= $cols; $c++) : ?>

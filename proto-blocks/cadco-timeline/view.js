@@ -67,19 +67,40 @@
 
 		var index = 0;
 
-		var tween = gsap.to(track, {
-			x: function () { return -distance(); },
-			ease: 'none',
+		var rail = section.querySelector('[data-timeline-rail]');
+
+		/**
+		 * How much of the rail is drawn at the start.
+		 *
+		 * The track slides left as the section scrubs, so for the line's right
+		 * end to sit on the edge of the screen throughout, it has to grow by
+		 * exactly the distance the track travels. Starting it at the width
+		 * between its own left edge and the right edge of the viewport, and
+		 * ending it at full width, does that: the line appears to extend off
+		 * the screen as the rail moves, instead of ending at the last dot.
+		 */
+		function startScale() {
+			if (!rail) { return 1; }
+
+			var full = rail.scrollWidth || rail.getBoundingClientRect().width;
+
+			if (!full) { return 1; }
+
+			var left    = rail.getBoundingClientRect().left;
+			var visible = section.clientWidth - left;
+
+			return Math.max(0.02, Math.min(1, visible / full));
+		}
+
+		var tween = gsap.timeline({
 			scrollTrigger: {
 				trigger: section,
-				/* A section taller than the viewport cannot sit flush with the
-				   top without its foot being cut off, so it pins against the
-				   bottom instead. Resolved as a function, and re-resolved by
-				   invalidateOnRefresh, so a window resize across that boundary
-				   picks the right one. */
-				start: function () {
-					return section.offsetHeight > window.innerHeight ? 'bottom bottom' : 'top top';
-				},
+				/* Centred, not flush to an edge. Pinning to the top left the
+				   section's foot below the fold; pinning to the bottom pushed
+				   its head above it, which cut the eyebrow off. Centre splits
+				   any overflow evenly between top and bottom, so the rail sits
+				   in the middle of the screen whichever way it does not fit. */
+				start: 'center center',
 				/* The pinned length IS the travel distance, so one pixel of
 				   scrolling moves the rail one pixel and adding milestones
 				   lengthens the pinned region by exactly their width. */
@@ -96,6 +117,19 @@
 				}
 			}
 		});
+
+		tween.to(track, { x: function () { return -distance(); }, ease: 'none' }, 0);
+
+		if (rail) {
+			/* Both tweens sit on the same timeline, so the line grows in step
+			   with the track rather than on a scrub of its own. */
+			tween.fromTo(
+				rail,
+				{ scaleX: function () { return startScale(); } },
+				{ scaleX: 1, ease: 'none' },
+				0
+			);
+		}
 
 		var st = tween.scrollTrigger;
 
@@ -141,7 +175,7 @@
 
 			if (st) { st.kill(true); }
 			tween.kill();
-			gsap.set(track, { clearProps: 'transform' });
+			gsap.set([track, rail], { clearProps: 'transform' });
 		});
 	}
 
