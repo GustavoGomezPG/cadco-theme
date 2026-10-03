@@ -110,6 +110,45 @@ $wrapper = get_block_wrapper_attributes([
         </h2>
     </div>
 
+    <?php if ($is_preview) : ?>
+        <?php
+        /*
+         * The editor gets a plain card grid, not the rail.
+         *
+         * The rail is a horizontally scrolling strip that the front end drives
+         * with a pinned ScrollTrigger. There is no pin in the editor, so the
+         * same markup there is a strip the author has to scroll sideways
+         * through to reach later milestones, with the repeater's own controls
+         * layered on top of absolutely placed cards. Content entry does not
+         * need the rail; it needs every milestone visible and in order.
+         */
+        ?>
+        <div data-proto-repeater="milestones"
+             class="mx-auto mt-10 grid w-full max-w-[1140px] grid-cols-1 gap-6 px-6 md:grid-cols-2">
+
+            <?php if (empty($milestones)) : ?>
+                <p class="text-body-sm text-gray-500">
+                    <?php esc_html_e('Add a milestone in the block sidebar.', 'cadco-theme'); ?>
+                </p>
+            <?php endif; ?>
+
+            <?php foreach ((array) $milestones as $item) : ?>
+                <?php $img = $item['image'] ?? []; ?>
+                <div data-proto-repeater-item
+                     class="flex gap-5 rounded-[10px] border border-light-grey/60 bg-white p-4">
+                    <div class="h-[96px] w-[150px] shrink-0 overflow-hidden rounded-[6px] bg-light-grey/40">
+                        <?php if (! empty($img['url'])) : ?>
+                            <img src="<?php echo esc_url($img['url']); ?>"
+                                 alt="<?php echo esc_attr($img['alt'] ?? ''); ?>"
+                                 class="h-full w-full object-cover" />
+                        <?php endif; ?>
+                    </div>
+                    <div class="min-w-0"><?php $copy($item); ?></div>
+                </div>
+            <?php endforeach; ?>
+        </div>
+
+    <?php else : ?>
     <?php // ---------- Rail ---------- ?>
     <div class="relative mt-[11px] w-full" data-timeline-viewport>
         <?php /* In the editor the rail is scrolled by hand rather than by the
@@ -187,7 +226,10 @@ $wrapper = get_block_wrapper_attributes([
         </div>
     </div>
 
-    <?php // ---------- Controls ---------- ?>
+    <?php endif; ?>
+
+    <?php // ---------- Controls: they drive the rail, so front end only ---------- ?>
+    <?php if (! $is_preview) : ?>
     <div class="relative mx-auto mt-[10px] flex w-full max-w-[1140px] gap-3 px-6">
         <button type="button" data-timeline-prev
                 class="flex h-[48px] w-[48px] items-center justify-center rounded-full border border-cadco-blue/40 text-cadco-blue transition-colors hover:border-cadco-blue disabled:opacity-60"
@@ -204,4 +246,5 @@ $wrapper = get_block_wrapper_attributes([
             </svg>
         </button>
     </div>
+    <?php endif; ?>
 </section>

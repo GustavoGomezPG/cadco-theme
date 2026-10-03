@@ -36,6 +36,12 @@
         "label": "Heading",
         "default": "America's Leader in Innovative Foodservice Equipment"
       },
+      "headingLine2": {
+        "type": "text",
+        "tagName": "span",
+        "label": "Heading, second line",
+        "help": "Optional. Given a value, it is drawn on its own line under the heading, so a two-sentence headline breaks exactly where you want it instead of wherever the column happens to run out."
+      },
       "body": {
         "type": "wysiwyg",
         "label": "Body",
@@ -105,15 +111,6 @@
         "min": 400,
         "max": 1100,
         "step": 1
-      },
-      "headingWidth": {
-        "type": "range",
-        "label": "Heading width (px)",
-        "default": 1240,
-        "min": 600,
-        "max": 1240,
-        "step": 10,
-        "help": "Where the headline wraps. The default is the full column. Narrow it to force a break -- a two-sentence headline usually wants one sentence per line."
       }
     }
   }

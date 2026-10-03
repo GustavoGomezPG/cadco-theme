@@ -139,23 +139,23 @@ $wrapper = get_block_wrapper_attributes([
                  reads badly broken mid-sentence. Inline because the value is a
                  number, and defaulted to the full 1240px column so both
                  existing heroes are untouched. */ ?>
-        <h1 data-proto-field="heading" data-hero-heading
+        <h1 data-hero-heading
+            class="m-0 max-w-[1240px] font-display text-[clamp(38px,6.67vw,96px)] font-extrabold leading-[1.198] text-white">
             <?php
             /*
-             * Expressed in em, not px, deliberately. The heading size is
-             * viewport-relative -- clamp(38px, 6.67vw, 96px) -- so the same
-             * pixel width holds a different number of words at different
-             * canvas widths: in the editor's iframe the font renders around
-             * 78px and a fixed 1060px let one more word onto the first line
-             * than the front end did. An em width scales with the font, so the
-             * line breaks in the same place everywhere. The control is still
-             * authored in pixels, against the 96px desktop size.
+             * Two fields rather than one, so a two-sentence headline breaks
+             * where the author decides. Driving the break off a max-width
+             * failed: the size is viewport-relative, so the same width held a
+             * different number of words in the editor's narrower iframe than
+             * on the front end, and the sentences split mid-sentence there.
+             * Each line is its own block, so there is no wrap to get wrong.
              */
-            $headingWidth = max(600, min(1240, (int) ($attributes['headingWidth'] ?? 1240)));
+            $line2 = (string) ($attributes['headingLine2'] ?? '');
             ?>
-            style="max-width:<?php echo esc_attr(round($headingWidth / 96, 3)); ?>em"
-            class="m-0 font-display text-[clamp(38px,6.67vw,96px)] font-extrabold leading-[1.198] text-white">
-            <?php echo esc_html($heading); ?>
+            <span data-proto-field="heading" class="block"><?php echo esc_html($heading); ?></span>
+            <?php if ($line2 !== '' || $is_preview) : ?>
+                <span data-proto-field="headingLine2" class="block"><?php echo esc_html($line2); ?></span>
+            <?php endif; ?>
         </h1>
 
         <?php /* Rendered when it has copy, and always in the editor so it can

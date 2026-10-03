@@ -789,7 +789,7 @@
       "title": "About",
       "status": "building",
       "postId": 126,
-      "contentHash": "0bf476ac78e2e831a890eeec6f8c6f5b9ab292f0117d8a80026c2ba994492f40",
+      "contentHash": "9912510fc43f9f2bffbc066fcf3cc602aec6014e453e80bde533944fee51f733",
       "design": {
         "frames": [
           {
@@ -841,14 +841,15 @@
           "notes": "accepted by developer at 9.75% (from 10.39%); height exact. cadco-hero extended additively with a body field and a gradient background mode, both defaulting to the previous behaviour - home and products verified unchanged (no body element, scrim present, heights 841 and 523). The body wrapper is rendered only when it has copy or in the editor: an always-rendered one carried mt-6 and would have pushed the button 24px down on both existing heroes. Remaining differences: (1) content left edge 40px vs the frames 193px - the accepted theme container convention, and the dominant share of the mismatch. Note the frames are not consistent with each other here: products insets to 126px, about to 193px. (2) Heading wraps after Trusted rather than after Experience., and is heavier and a step larger; the size, weight and cap all live in the shared heading class, so matching this page would relayout the home and products heroes. (3) The soft blue glow the frame draws under the word Experience. is not rendered - it needs either markup inside the heading or a decorative control, neither of which exists yet. (4) Content sits about 25px lower; the vertical centring is shared.",
           "attrs": {
             "eyebrow": "Who We Are",
-            "heading": "Built on Experience. Trusted in Foodservice.",
+            "heading": "Built on Experience.",
             "body": "<p>Whether serving a single food truck or supporting a nationwide rollout, Cadco brings the same commitment to performance, reliability, and partnership to every customer we serve.</p>",
             "background": "gradient",
             "gradientTop": "#000000",
             "gradientBottom": "#021a2a",
             "minHeight": 705,
             "align": "full",
-            "headingWidth": 1060
+            "headingWidth": null,
+            "headingLine2": "Trusted in Foodservice."
           },
           "prevStatus": "building",
           "preparedIteration": 2,
