@@ -1,0 +1,42 @@
+{
+    "$schema": "https://schemas.wp.org/trunk/block.json",
+    "apiVersion": 3,
+    "name": "proto-blocks/cadco-logo-row",
+    "title": "Cadco Logo Row",
+    "description": "A heading above a row of association or partner logos, sized to a common optical height.",
+    "category": "proto-blocks",
+    "icon": "block-default",
+    "keywords": [
+        "cadco-logo-row"
+    ],
+    "supports": {
+        "html": false,
+        "anchor": true,
+        "customClassName": true,
+        "align": [
+            "wide",
+            "full"
+        ],
+        "color": {
+            "background": true,
+            "text": true
+        },
+        "spacing": {
+            "padding": true,
+            "margin": true
+        }
+    },
+    "protoBlocks": {
+        "version": "1.0",
+        "template": "template.php",
+        "fields": {
+            "title": {
+                "type": "text",
+                "tagName": "h2"
+            },
+            "content": {
+                "type": "wysiwyg"
+            }
+        }
+    }
+}

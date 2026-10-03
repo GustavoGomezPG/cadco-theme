@@ -1,0 +1,16 @@
+/**
+ * Styles for Cadco Timeline block
+ */
+
+.wp-block-proto-blocks-cadco-timeline {
+    display: block;
+}
+
+.wp-block-proto-blocks-cadco-timeline__title {
+    /* Styles for title field */
+}
+
+.wp-block-proto-blocks-cadco-timeline__content {
+    /* Styles for content field */
+}
+

@@ -1,0 +1,16 @@
+/**
+ * Styles for Cadco Logo Row block
+ */
+
+.wp-block-proto-blocks-cadco-logo-row {
+    display: block;
+}
+
+.wp-block-proto-blocks-cadco-logo-row__title {
+    /* Styles for title field */
+}
+
+.wp-block-proto-blocks-cadco-logo-row__content {
+    /* Styles for content field */
+}
+

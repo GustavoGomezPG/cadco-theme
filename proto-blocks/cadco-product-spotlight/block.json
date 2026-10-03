@@ -10,7 +10,9 @@
     "html": false,
     "anchor": true,
     "customClassName": true,
-    "align": ["full"]
+    "align": [
+      "full"
+    ]
   },
   "protoBlocks": {
     "version": "1.0",
@@ -45,26 +47,86 @@
         "label": "Layout",
         "default": "images",
         "options": [
-          { "key": "images", "label": "Photographs beside the copy" },
-          { "key": "photo", "label": "Copy over a photograph" }
+          {
+            "key": "images",
+            "label": "Photographs beside the copy"
+          },
+          {
+            "key": "photo",
+            "label": "Copy over a photograph"
+          }
         ],
         "help": "\"Beside\" sets the copy on white with the product shots to its right. \"Over\" runs a photograph full bleed and sets the copy on top of it."
+      },
+      "scale": {
+        "type": "select",
+        "label": "Scale",
+        "default": "display",
+        "options": [
+          {
+            "key": "display",
+            "label": "Display (product spotlight)"
+          },
+          {
+            "key": "section",
+            "label": "Section (supporting content)"
+          }
+        ],
+        "conditions": {
+          "visible": {
+            "layout": "images"
+          }
+        },
+        "help": "Display gives the product a full-size heading and a tall frame. Section is for supporting copy such as the About page, with a smaller heading, a landscape frame and the image centred against the text."
       },
       "imagePrimary": {
         "type": "image",
         "label": "Main photograph",
-        "conditions": { "visible": { "layout": "images" } }
+        "conditions": {
+          "visible": {
+            "layout": "images"
+          }
+        }
       },
       "imageSecondary": {
         "type": "image",
         "label": "Inset photograph",
-        "conditions": { "visible": { "layout": "images" } },
+        "conditions": {
+          "visible": {
+            "layout": "images"
+          }
+        },
         "help": "Optional. Sits over the lower-left corner of the main photograph."
+      },
+      "imageAspect": {
+        "type": "select",
+        "label": "Photograph shape",
+        "default": "tall",
+        "options": [
+          {
+            "key": "tall",
+            "label": "Near square (product shot)"
+          },
+          {
+            "key": "wide",
+            "label": "Landscape (scene)"
+          }
+        ],
+        "conditions": {
+          "visible": {
+            "layout": "images"
+          }
+        },
+        "help": "Product shots are drawn near square; a scene such as a building is drawn landscape."
       },
       "backgroundImage": {
         "type": "image",
         "label": "Background photograph",
-        "conditions": { "visible": { "layout": "photo" } }
+        "conditions": {
+          "visible": {
+            "layout": "photo"
+          }
+        }
       },
       "scrimOpacity": {
         "type": "range",
@@ -73,7 +135,11 @@
         "min": 0,
         "max": 100,
         "step": 1,
-        "conditions": { "visible": { "layout": "photo" } },
+        "conditions": {
+          "visible": {
+            "layout": "photo"
+          }
+        },
         "help": "Darkens the photograph from the right, so the copy keeps its contrast."
       },
       "minHeight": {
@@ -83,7 +149,11 @@
         "min": 320,
         "max": 1000,
         "step": 1,
-        "conditions": { "visible": { "layout": "photo" } }
+        "conditions": {
+          "visible": {
+            "layout": "photo"
+          }
+        }
       }
     }
   }

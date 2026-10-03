@@ -66,14 +66,34 @@ $scrimStyle  = sprintf(
 
 // Type scales differ between the dresses: the white layout carries a display
 // heading, the photo layout a smaller one beside the photograph's subject.
+/*
+ * Two scales share one layout. "display" is the product spotlight the block was
+ * built for; "section" is supporting content such as the About page's
+ * representation panel, where the same arrangement carries a modest heading
+ * rather than a display one. Every class is literal so Tailwind's scanner
+ * sees it.
+ */
+$isSection = ($attributes['scale'] ?? 'display') === 'section';
+
+$frameAspect = ($attributes['imageAspect'] ?? 'tall') === 'wide'
+    ? 'aspect-[465/305]'
+    : 'aspect-[494/488]';
+
+$sectionPad   = $isSection ? 'pt-[140px] pb-[70px]' : 'pt-12 pb-[130px]';
+$mediaWidth   = $isSection ? 'lg:w-[466px]' : 'lg:w-[494px]';
+$mediaMax     = $isSection ? 'max-w-[466px]' : 'max-w-[494px]';
+$rowAlign     = 'lg:items-start';
+$copyWidth    = $isSection ? 'lg:w-[540px]' : 'lg:w-[511px]';
+$bodyTop      = $isSection ? 'mt-7 max-w-[490px]' : 'mt-8';
+
 $headingType = $isPhoto
     ? 'text-[30px] leading-[1.2] md:text-[40px]'
-    : 'text-[40px] leading-[1.21] md:text-[64px]';
+    : ($isSection ? 'text-[26px] leading-[1.25] md:text-[34px]'   /* 38px matches the frame's size but wraps to three lines in this column, which costs more height than the size gains */ : 'text-[40px] leading-[1.21] md:text-[64px]');
 $eyebrowGap  = $isPhoto ? 'mt-[54px]' : 'mt-[26px]';
 
 $wrapper = get_block_wrapper_attributes([
     'class' => 'cadco-product-spotlight relative isolate w-full '
-        . ($isPhoto ? 'overflow-hidden bg-true-black' : 'bg-paper pt-12 pb-[130px]'),
+        . ($isPhoto ? 'overflow-hidden bg-true-black' : 'bg-paper ' . $sectionPad),
 ]);
 ?>
 <section <?php echo $wrapper; ?> <?php echo $reveal; ?>
@@ -94,11 +114,11 @@ $wrapper = get_block_wrapper_attributes([
     <?php endif; ?>
 
     <div class="relative mx-auto flex w-full max-w-[1196px] px-6
-        <?php echo $isPhoto ? 'items-center justify-end lg:pr-[83px]' : 'flex-col gap-12 lg:flex-row lg:items-start lg:justify-between lg:gap-10'; ?>"
+        <?php echo $isPhoto ? 'items-center justify-end lg:pr-[83px]' : 'flex-col gap-12 lg:flex-row lg:justify-between lg:gap-10 ' . $rowAlign; ?>"
         <?php if ($isPhoto) : ?>style="min-height:<?php echo (int) $minHeight; ?>px"<?php endif; ?>>
 
         <?php // ---------- Copy ---------- ?>
-        <div class="<?php echo $isPhoto ? 'w-full max-w-[613px] pb-[26px]' : 'w-full lg:w-[511px] lg:shrink-0'; ?>">
+        <div class="<?php echo $isPhoto ? 'w-full max-w-[613px] pb-[26px]' : 'w-full lg:shrink-0 ' . $copyWidth; ?>">
 
             <?php // Always rendered, empty or not, so every region stays editable. ?>
             <p data-proto-field="eyebrow"
@@ -118,12 +138,15 @@ $wrapper = get_block_wrapper_attributes([
                      come back in the block's own stylesheet, scoped to here. */ ?>
             <div data-proto-field="body"
                  data-cadco-reveal="rise"
-                 class="cadco-spotlight-body mt-8 font-display text-[16px] font-normal leading-[24px] <?php echo $isPhoto ? 'text-paper/90' : 'text-true-black'; ?>">
+                 class="cadco-spotlight-body <?php echo esc_attr($bodyTop); ?> font-display text-[16px] font-normal leading-[24px] <?php echo $isPhoto ? 'text-paper/90' : 'text-true-black'; ?>">
                 <?php echo wp_kses_post($body); ?>
             </div>
 
-            <?php /* The link element is always rendered so the button stays
-                     editable even before a destination is chosen. */ ?>
+            <?php /* Rendered when it has a destination or some label, and always
+                     in the editor so it can be filled in. Unconditional, a
+                     spotlight with no button -- the About page's representation
+                     section is one -- would draw an empty blue rectangle. */ ?>
+            <?php if ($ctaUrl !== '' || $ctaText !== '' || $is_preview) : ?>
             <div class="<?php echo $isPhoto ? 'mt-[60px]' : 'mt-[50px]'; ?>">
                 <a data-proto-field="cta"
                    data-cadco-reveal="rise"
@@ -132,16 +155,17 @@ $wrapper = get_block_wrapper_attributes([
                     <?php echo esc_html($ctaText); ?>
                 </a>
             </div>
+            <?php endif; ?>
         </div>
 
         <?php // ---------- Photographs ---------- ?>
         <?php if (! $isPhoto) : ?>
-            <div class="relative w-full lg:w-[494px] lg:shrink-0 lg:translate-x-[14px] lg:pb-[119px]" data-cadco-reveal="items">
+            <div class="relative w-full lg:shrink-0 <?php echo esc_attr($mediaWidth); ?> <?php echo $isSection ? '' : 'lg:translate-x-[14px] lg:pb-[119px]'; ?>" data-cadco-reveal="items">
 
                 <?php /* The inset hangs off the main photograph's lower-left
                          corner rather than sitting in flow, so the main frame
                          keeps its 494x488 proportions whatever the inset does. */ ?>
-                <div class="relative ml-auto aspect-[494/488] w-full max-w-[494px] overflow-hidden rounded-[15px] bg-light-grey/40">
+                <div class="relative ml-auto <?php echo esc_attr($frameAspect . ' ' . $mediaMax); ?> w-full overflow-hidden rounded-[15px] bg-light-grey/40">
                     <?php if (! empty($imgPrimary['url'])) : ?>
                         <img src="<?php echo esc_url($imgPrimary['url']); ?>"
                              alt="<?php echo esc_attr($imgPrimary['alt'] ?? ''); ?>"

@@ -26,6 +26,31 @@ $is_preview = ! isset($block) || $block === null;
 
 $bgUrl = $bg['url'] ?? '';
 
+$body       = (string) ($attributes['body'] ?? '');
+$background = ($attributes['background'] ?? 'photo') === 'gradient' ? 'gradient' : 'photo';
+
+/**
+ * Colour controls land in a style attribute, so they are checked against the
+ * shapes the control can actually produce rather than merely escaped --
+ * esc_attr would happily pass a value that closes the declaration.
+ */
+$colour = static function (string $value, string $fallback): string {
+    return preg_match('/^(#[0-9a-f]{3,8}|(rgb|hsl)a?\([0-9a-z%.,\/\s]+\))$/i', trim($value))
+        ? trim($value)
+        : $fallback;
+};
+
+$gradTop    = $colour((string) ($attributes['gradientTop'] ?? ''), '#000000');
+$gradBottom = $colour((string) ($attributes['gradientBottom'] ?? ''), '#011a27');
+
+/* Measured off the About frame: solid black at the top easing into the deep
+   navy the footer sits on, so the page reads as one continuous field. */
+$gradientStyle = sprintf(
+    'background-image:linear-gradient(180deg, %1$s 0%%, %2$s 100%%)',
+    $gradTop,
+    $gradBottom
+);
+
 /**
  * The scrim is one gradient rather than a flat tint so the photograph stays
  * readable on the right while the text side goes dark enough for white type.
@@ -60,8 +85,10 @@ $wrapper = get_block_wrapper_attributes([
         setTimeout(function(){s.classList.remove('is-anim-pending');},10000);})();</script>
     <?php endif; ?>
 
-    <?php // ---------- Background photograph ---------- ?>
-    <?php if ($bgUrl !== '') : ?>
+    <?php // ---------- Background ---------- ?>
+    <?php if ($background === 'gradient') : ?>
+        <div class="absolute inset-0" style="<?php echo esc_attr($gradientStyle); ?>" aria-hidden="true"></div>
+    <?php elseif ($bgUrl !== '') : ?>
         <img
             data-hero-image
             class="absolute inset-0 h-full w-full object-cover will-change-transform"
@@ -81,8 +108,12 @@ $wrapper = get_block_wrapper_attributes([
         </div>
     <?php endif; ?>
 
-    <?php // ---------- Scrim ---------- ?>
-    <div class="pointer-events-none absolute inset-0" style="<?php echo esc_attr($scrimStyle); ?>" aria-hidden="true"></div>
+    <?php /* ---------- Scrim ----------
+             Only over a photograph. The gradient is already a controlled field,
+             so a second darkening pass over it just flattens the colour. */ ?>
+    <?php if ($background !== 'gradient') : ?>
+        <div class="pointer-events-none absolute inset-0" style="<?php echo esc_attr($scrimStyle); ?>" aria-hidden="true"></div>
+    <?php endif; ?>
 
     <?php /* ---------- Content ----------
              Same container as the header and footer — max-w-[1440px] with
@@ -108,6 +139,19 @@ $wrapper = get_block_wrapper_attributes([
             class="m-0 max-w-[1240px] font-display text-[clamp(38px,6.67vw,96px)] font-extrabold leading-[1.198] text-white">
             <?php echo esc_html($heading); ?>
         </h1>
+
+        <?php /* Rendered when it has copy, and always in the editor so it can
+                 be filled in -- the same contract the button below uses. An
+                 always-rendered wrapper would be empty but still carry mt-6,
+                 pushing the button 24px down on every hero that has no body,
+                 which is both existing instances. wp_kses_post rather than
+                 esc_html: it is a wysiwyg region and carries paragraph markup. */ ?>
+        <?php if ($body !== '' || $is_preview) : ?>
+            <div data-proto-field="body" data-hero-body
+                 class="cadco-hero-body mt-6 max-w-[620px] font-display text-[17px] font-light leading-[30px] text-white/90 md:text-[19px]">
+                <?php echo wp_kses_post($body); ?>
+            </div>
+        <?php endif; ?>
 
         <?php if (! empty($cta['url']) || $is_preview) : ?>
             <div class="mt-10 lg:mt-[60px]">
