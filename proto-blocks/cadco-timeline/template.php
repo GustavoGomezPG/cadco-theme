@@ -84,7 +84,7 @@ $copy = static function (array $item): void {
 $reveal = $is_preview ? '' : 'data-proto-animate="manual" data-cadco-reveal-group';
 
 $wrapper = get_block_wrapper_attributes([
-    'class' => 'cadco-timeline relative w-full overflow-hidden bg-gradient-to-b from-paper via-paper to-[#f2f5f9] pt-[68px] pb-[124px]',
+    'class' => 'cadco-timeline relative w-full overflow-hidden bg-gradient-to-b from-paper via-paper to-[#f2f5f9] pt-[68px] pb-[174px]',
 ]);
 ?>
 <section <?php echo $wrapper; ?> <?php echo $reveal; ?>
@@ -105,13 +105,13 @@ $wrapper = get_block_wrapper_attributes([
 
         <h2 data-proto-field="heading"
             data-cadco-reveal="lines"
-            class="m-0 mt-6 max-w-[560px] font-display text-[26px] font-bold leading-[1.25] text-true-black md:text-[38px]">
+            class="m-0 mt-6 max-w-[600px] font-display text-[26px] font-bold leading-[1.2] text-true-black md:text-[36px]">
             <?php echo wp_kses_post($heading); ?>
         </h2>
     </div>
 
     <?php // ---------- Rail ---------- ?>
-    <div class="relative mt-8 w-full" data-timeline-viewport>
+    <div class="relative mt-[11px] w-full" data-timeline-viewport>
         <div class="relative z-10 flex w-max items-stretch pl-[calc((100vw-1140px)/2+24px)] pr-24 will-change-transform"
              data-timeline-track>
 
@@ -121,68 +121,63 @@ $wrapper = get_block_wrapper_attributes([
                 </p>
             <?php endif; ?>
 
-            <div data-proto-repeater="milestones" class="flex items-stretch">
-                <?php
-                /*
-                 * Two milestones per slide: the frame fills both rows of every
-                 * rail segment. array_chunk leaves a trailing odd milestone in
-                 * a pair of one, which renders below the rail with the row
-                 * above it empty -- the only case where a half-empty slide is
-                 * correct.
-                 */
-                foreach (array_chunk((array) $milestones, 2) as $pair) :
-                    $below = $pair[0] ?? null;   // earlier milestone, below the rail
-                    $above = $pair[1] ?? null;   // later milestone, above it
+            <?php
+            /*
+             * One DOM element per milestone, not per pair. The pairing is done
+             * by grid placement instead: a milestone is assigned a column
+             * (its pair) and a row (below the rail if it is the earlier of the
+             * two, above if the later). Wrapping two milestones in one element
+             * would have been simpler to write, but then a repeater item would
+             * hold two records and the editor would bind eight milestones to
+             * four items.
+             */
+            $cols = (int) ceil(count((array) $milestones) / 2);
+            ?>
+            <div data-proto-repeater="milestones"
+                 class="grid grid-flow-col grid-rows-[232px_72px_232px]"
+                 style="grid-auto-columns:752px">
+
+                <?php // The rail: one line across every column, in the middle row. ?>
+                <span class="relative z-0 h-px self-center"
+                      style="grid-row:2;grid-column:1/-1;background:<?php echo esc_attr($railColor); ?>"
+                      aria-hidden="true"></span>
+
+                <?php for ($c = 1; $c <= $cols; $c++) : ?>
+                    <span class="relative z-10 h-[14px] w-[14px] self-center justify-self-start rounded-full"
+                          style="grid-row:2;grid-column:<?php echo (int) $c; ?>;background:<?php echo esc_attr($dotColor); ?>"
+                          aria-hidden="true"></span>
+                <?php endfor; ?>
+
+                <?php foreach ((array) $milestones as $i => $item) : ?>
+                    <?php
+                    $above = ($i % 2) === 1;              // the later of the pair sits above
+                    $col   = (int) floor($i / 2) + 1;
+                    $img   = $item['image'] ?? [];
                     ?>
                     <div data-proto-repeater-item
                          data-timeline-item
-                         class="relative flex w-[752px] shrink-0 flex-col">
+                         class="flex <?php echo $above ? 'items-end' : 'items-start'; ?> <?php echo $above ? 'gap-[58px]' : ''; ?>"
+                         style="grid-row:<?php echo $above ? 1 : 3; ?>;grid-column:<?php echo $col; ?>">
 
-                        <?php // ----- Above the rail: image left, copy right ----- ?>
-                        <div class="flex h-[232px] items-end gap-[58px]">
-                            <?php if ($above) : ?>
-                                <?php $img = $above['image'] ?? []; ?>
-                                <div class="h-[163px] w-[353px] shrink-0 overflow-hidden rounded-[10px] bg-light-grey/40">
-                                    <?php if (! empty($img['url'])) : ?>
-                                        <img src="<?php echo esc_url($img['url']); ?>"
-                                             alt="<?php echo esc_attr($img['alt'] ?? ''); ?>"
-                                             class="h-full w-full object-cover" loading="lazy" decoding="async" />
-                                    <?php endif; ?>
-                                </div>
-                                <div class="w-[300px] shrink-0 pb-1">
-                                    <?php $copy($above); ?>
-                                </div>
-                            <?php endif; ?>
-                        </div>
-
-                        <?php // ----- The rail ----- ?>
-                        <div class="relative z-10 my-[29px] h-[14px] w-full">
-                            <?php /* One segment per slide. Together they read as a
-                                     single line that starts at the first dot and ends
-                                     with the last milestone, rather than bleeding off
-                                     the left edge as a viewport-wide rule would. */ ?>
-                            <span class="absolute left-0 top-1/2 h-px w-full -translate-y-1/2"
-                                  style="background:<?php echo esc_attr($railColor); ?>" aria-hidden="true"></span>
-                            <span class="absolute left-0 top-0 h-[14px] w-[14px] rounded-full"
-                                  style="background:<?php echo esc_attr($dotColor); ?>" aria-hidden="true"></span>
-                        </div>
-
-                        <?php // ----- Below the rail: copy left, image right ----- ?>
-                        <div class="flex h-[232px] items-start">
-                            <?php if ($below) : ?>
-                                <?php $img = $below['image'] ?? []; ?>
-                                <div class="w-[353px] shrink-0 pt-1">
-                                    <?php $copy($below); ?>
-                                </div>
-                                <div class="h-[163px] w-[353px] shrink-0 overflow-hidden rounded-[10px] bg-light-grey/40">
-                                    <?php if (! empty($img['url'])) : ?>
-                                        <img src="<?php echo esc_url($img['url']); ?>"
-                                             alt="<?php echo esc_attr($img['alt'] ?? ''); ?>"
-                                             class="h-full w-full object-cover" loading="lazy" decoding="async" />
-                                    <?php endif; ?>
-                                </div>
-                            <?php endif; ?>
-                        </div>
+                        <?php if ($above) : ?>
+                            <div class="h-[163px] w-[353px] shrink-0 overflow-hidden rounded-[10px] bg-light-grey/40">
+                                <?php if (! empty($img['url'])) : ?>
+                                    <img src="<?php echo esc_url($img['url']); ?>"
+                                         alt="<?php echo esc_attr($img['alt'] ?? ''); ?>"
+                                         class="h-full w-full object-cover" loading="lazy" decoding="async" />
+                                <?php endif; ?>
+                            </div>
+                            <div class="w-[300px] shrink-0 pb-1"><?php $copy($item); ?></div>
+                        <?php else : ?>
+                            <div class="w-[353px] shrink-0 pt-1"><?php $copy($item); ?></div>
+                            <div class="h-[163px] w-[353px] shrink-0 overflow-hidden rounded-[10px] bg-light-grey/40">
+                                <?php if (! empty($img['url'])) : ?>
+                                    <img src="<?php echo esc_url($img['url']); ?>"
+                                         alt="<?php echo esc_attr($img['alt'] ?? ''); ?>"
+                                         class="h-full w-full object-cover" loading="lazy" decoding="async" />
+                                <?php endif; ?>
+                            </div>
+                        <?php endif; ?>
                     </div>
                 <?php endforeach; ?>
             </div>
@@ -190,19 +185,19 @@ $wrapper = get_block_wrapper_attributes([
     </div>
 
     <?php // ---------- Controls ---------- ?>
-    <div class="relative mx-auto mt-[30px] flex w-full max-w-[1140px] gap-3 px-6">
+    <div class="relative mx-auto mt-[10px] flex w-full max-w-[1140px] gap-3 px-6">
         <button type="button" data-timeline-prev
                 class="flex h-[48px] w-[48px] items-center justify-center rounded-full border border-cadco-blue/40 text-cadco-blue transition-colors hover:border-cadco-blue disabled:opacity-60"
                 aria-label="<?php esc_attr_e('Previous milestone', 'cadco-theme'); ?>">
-            <svg viewBox="0 0 24 24" class="h-5 w-5" fill="none" aria-hidden="true">
-                <path d="M19 12H5M5 12l6-6M5 12l6 6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+            <svg viewBox="0 0 28 24" class="h-6 w-6" fill="none" aria-hidden="true">
+                <path d="M25 12H3M3 12l7-7M3 12l7 7" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" />
             </svg>
         </button>
         <button type="button" data-timeline-next
-                class="flex h-[48px] w-[48px] items-center justify-center rounded-full bg-[#4a6a8a] text-white transition-colors hover:bg-[#3c5873] disabled:opacity-40"
+                class="flex h-[48px] w-[48px] items-center justify-center rounded-full bg-cadco-blue text-white transition-colors hover:bg-[#00395a] disabled:opacity-40"
                 aria-label="<?php esc_attr_e('Next milestone', 'cadco-theme'); ?>">
-            <svg viewBox="0 0 24 24" class="h-5 w-5" fill="none" aria-hidden="true">
-                <path d="M5 12h14M19 12l-6-6M19 12l-6 6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+            <svg viewBox="0 0 28 24" class="h-6 w-6" fill="none" aria-hidden="true">
+                <path d="M3 12h22M25 12l-7-7M25 12l-7 7" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" />
             </svg>
         </button>
     </div>

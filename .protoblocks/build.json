@@ -789,7 +789,7 @@
       "title": "About",
       "status": "building",
       "postId": 126,
-      "contentHash": "ff4f7dec60d83b9224fe5a781e78e8407718e1d6bef78778cc86b52caab07144",
+      "contentHash": "0bf476ac78e2e831a890eeec6f8c6f5b9ab292f0117d8a80026c2ba994492f40",
       "design": {
         "frames": [
           {
@@ -1020,9 +1020,9 @@
               },
               {
                 "id": "m3",
-                "year": "1996",
-                "title": "Cadco is Founded",
-                "body": "In May, 1996 Cadco is founded and becomes a leader in the food service industry.",
+                "year": "2005",
+                "title": "New Product Line",
+                "body": "PLACEHOLDER. Replace with the real milestone for this year.",
                 "image": {
                   "id": 18331,
                   "url": "https://cadco.local/wp-content/uploads/2026/10/about-facility-scaled.jpg",
@@ -1033,9 +1033,61 @@
               },
               {
                 "id": "m4",
-                "year": "2001",
-                "title": "Expansion",
-                "body": "Cadco expands manufacturing within the food industry. Placeholder copy.",
+                "year": "2009",
+                "title": "Facility Growth",
+                "body": "PLACEHOLDER. Replace with the real milestone for this year.",
+                "image": {
+                  "id": 18331,
+                  "url": "https://cadco.local/wp-content/uploads/2026/10/about-facility-scaled.jpg",
+                  "alt": "Cadco's headquarters and manufacturing facility in Winsted, Connecticut, with the United States flag flying outside",
+                  "caption": "",
+                  "size": "full"
+                }
+              },
+              {
+                "id": "m5",
+                "year": "2013",
+                "title": "Industry Recognition",
+                "body": "PLACEHOLDER. Replace with the real milestone for this year.",
+                "image": {
+                  "id": 18331,
+                  "url": "https://cadco.local/wp-content/uploads/2026/10/about-facility-scaled.jpg",
+                  "alt": "Cadco's headquarters and manufacturing facility in Winsted, Connecticut, with the United States flag flying outside",
+                  "caption": "",
+                  "size": "full"
+                }
+              },
+              {
+                "id": "m6",
+                "year": "2017",
+                "title": "International Reach",
+                "body": "PLACEHOLDER. Replace with the real milestone for this year.",
+                "image": {
+                  "id": 18331,
+                  "url": "https://cadco.local/wp-content/uploads/2026/10/about-facility-scaled.jpg",
+                  "alt": "Cadco's headquarters and manufacturing facility in Winsted, Connecticut, with the United States flag flying outside",
+                  "caption": "",
+                  "size": "full"
+                }
+              },
+              {
+                "id": "m7",
+                "year": "2021",
+                "title": "Innovation Milestone",
+                "body": "PLACEHOLDER. Replace with the real milestone for this year.",
+                "image": {
+                  "id": 18331,
+                  "url": "https://cadco.local/wp-content/uploads/2026/10/about-facility-scaled.jpg",
+                  "alt": "Cadco's headquarters and manufacturing facility in Winsted, Connecticut, with the United States flag flying outside",
+                  "caption": "",
+                  "size": "full"
+                }
+              },
+              {
+                "id": "m8",
+                "year": "2025",
+                "title": "Looking Ahead",
+                "body": "PLACEHOLDER. Replace with the real milestone for this year.",
                 "image": {
                   "id": 18331,
                   "url": "https://cadco.local/wp-content/uploads/2026/10/about-facility-scaled.jpg",

@@ -35,6 +35,10 @@
 	function setUp(section) {
 		var track = section.querySelector('[data-timeline-track]');
 		var items = section.querySelectorAll('[data-timeline-item]');
+		/* Milestones are paired into columns, and the arrows step by column:
+		   each one holds two milestones, so stepping per milestone would
+		   advance the rail half a column at a time. */
+		var steps = Math.max(1, Math.ceil(items.length / 2));
 		var prev  = section.querySelector('[data-timeline-prev]');
 		var next  = section.querySelector('[data-timeline-next]');
 
@@ -87,8 +91,7 @@
 				invalidateOnRefresh: true,
 				onRefresh: syncButtons,
 				onUpdate: function (self) {
-					var span = Math.max(1, items.length - 1);
-					index = Math.round(self.progress * span);
+					index = Math.round(self.progress * Math.max(1, steps - 1));
 					syncButtons();
 				}
 			}
@@ -98,7 +101,7 @@
 
 		function syncButtons() {
 			if (prev) { prev.disabled = index <= 0; }
-			if (next) { next.disabled = index >= items.length - 1; }
+			if (next) { next.disabled = index >= steps - 1; }
 		}
 
 		/**
@@ -108,9 +111,9 @@
 		function go(delta) {
 			if (!st) { return; }
 
-			var span = Math.max(1, items.length - 1);
+			var span = Math.max(1, steps - 1);
 
-			index = Math.max(0, Math.min(items.length - 1, index + delta));
+			index = Math.max(0, Math.min(steps - 1, index + delta));
 
 			var target = st.start + (st.end - st.start) * (index / span);
 
