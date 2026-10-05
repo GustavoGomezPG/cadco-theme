@@ -71,6 +71,21 @@ $glowColor = preg_match('/^#[0-9a-f]{3,8}$/i', trim((string) ($attributes['highl
     ? trim((string) $attributes['highlightColor'])
     : '#2087d0';
 
+/*
+ * Two headline scales. Display is what the home, products and about heroes
+ * render and stays the default. Compact is a step down for an inner page: the
+ * warranty frame sets its headline on a 77px line pitch, which is 64px at the
+ * same 1.198 leading, and its highlight bar measures 322px under
+ * "satisfaction" -- the width that word takes at 64px, not at 96px.
+ */
+$isCompact = ($attributes['headingScale'] ?? 'display') === 'compact';
+
+$headingSize = $isCompact
+    ? 'text-[clamp(32px,4.44vw,64px)]'
+    : 'text-[clamp(38px,6.67vw,96px)]';
+
+$eyebrowGap  = $isCompact ? 'mb-9' : 'mb-6';
+
 $wrapper = get_block_wrapper_attributes([
     'class' => 'cadco-hero relative isolate w-full overflow-hidden bg-true-black',
 ]);
@@ -132,7 +147,7 @@ $wrapper = get_block_wrapper_attributes([
 
         <?php // Always rendered, empty or not, so both stay editable. ?>
         <p data-proto-field="eyebrow" data-hero-eyebrow
-           class="m-0 mb-6 font-display text-[16px] font-extrabold leading-[1.2] text-white md:text-[20px]">
+           class="m-0 font-display text-[16px] font-extrabold leading-[1.2] text-white md:text-[20px] <?php echo esc_attr($eyebrowGap); ?>">
             <?php echo esc_html($eyebrow); ?>
         </p>
 
@@ -140,14 +155,16 @@ $wrapper = get_block_wrapper_attributes([
                  still wraps as drawn. px-10 leaves 1360px inside the 1440
                  column, so this cap — not the padding — sets the measure.
 
-                 [&>*]:m-0 is for the editor: it swaps each bound field for its
-                 own rich-text element, which brings default block margins with
-                 it, and those opened a gap between the two headline lines and
-                 under the eyebrow that the front end never had. Zeroing the
-                 margin of whatever element it injects keeps the editor looking
-                 like the page. */ ?>
+                 The editor swaps each bound field for its own rich-text
+                 element, which brings default block margins with it and opens a
+                 gap between the headline lines that the front end never has.
+                 That margin is zeroed in style.css rather than with an
+                 arbitrary variant here: a ">" inside a class attribute breaks
+                 wptexturize's tag scanner, which then treats the rest of the
+                 attribute as prose and curly-quotes its closing quote, which
+                 silently corrupted this element's markup. */ ?>
         <h1 data-hero-heading
-            class="m-0 max-w-[1240px] font-display text-[clamp(38px,6.67vw,96px)] font-extrabold leading-[1.198] text-white [&>*]:m-0">
+            class="m-0 max-w-[1240px] font-display font-extrabold leading-[1.198] text-white <?php echo esc_attr($headingSize); ?>">
             <?php
             /*
              * Two fields rather than one, so a two-sentence headline breaks

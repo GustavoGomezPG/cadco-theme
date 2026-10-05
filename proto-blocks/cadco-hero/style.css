@@ -89,3 +89,17 @@
 @media (prefers-reduced-motion: reduce) {
     .cadco-hero-glow::after { filter: blur(0.136em); }
 }
+
+/*
+ * The editor renders each bound field as its own rich-text element, which
+ * carries default block margins and opens a gap between the two headline lines
+ * that the front end never shows.
+ *
+ * Written here rather than as a [&>*]:m-0 class on the element: a ">" inside a
+ * class attribute ends the tag as far as wptexturize is concerned, so it treats
+ * everything after it as prose and converts the attribute's own closing quote
+ * into a curly one. That corrupted the heading's markup on every hero.
+ */
+[data-hero-heading] > * {
+    margin: 0;
+}

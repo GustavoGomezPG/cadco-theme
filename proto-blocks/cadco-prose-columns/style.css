@@ -1,0 +1,16 @@
+/**
+ * Styles for Cadco Prose Columns block
+ */
+
+.wp-block-proto-blocks-cadco-prose-columns {
+    display: block;
+}
+
+.wp-block-proto-blocks-cadco-prose-columns__title {
+    /* Styles for title field */
+}
+
+.wp-block-proto-blocks-cadco-prose-columns__content {
+    /* Styles for content field */
+}
+

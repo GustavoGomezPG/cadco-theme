@@ -1347,6 +1347,199 @@
         "slug": "about",
         "postStatus": "publish"
       }
+    },
+    {
+      "slug": "warranty",
+      "title": "Warranty",
+      "status": "building",
+      "postId": 18365,
+      "contentHash": "fbdf6592f1dcc62a55c5c9550be3246ea908a9598a81cb6b0a73fde7029680f9",
+      "design": {
+        "frames": [
+          {
+            "breakpoint": "desktop",
+            "width": 1440,
+            "scale": 1,
+            "image": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/warranty/design/desktop.png",
+            "pixelWidth": 1440
+          }
+        ]
+      },
+      "sections": [
+        {
+          "n": 1,
+          "anchor": "pb-header",
+          "status": "building",
+          "crops": {
+            "desktop": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/warranty/crops/desktop/pb-header.png"
+          },
+          "ranges": {
+            "desktop": {
+              "y0": 0,
+              "y1": 74
+            }
+          },
+          "label": "Header",
+          "decision": "reuse",
+          "block": "cadco-header",
+          "notes": "rendered by the template part; verify only",
+          "inPart": true,
+          "prevStatus": "done"
+        },
+        {
+          "n": 2,
+          "anchor": "pb-s2",
+          "status": "verifying",
+          "crops": {
+            "desktop": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/warranty/crops/desktop/pb-s2.png"
+          },
+          "ranges": {
+            "desktop": {
+              "y0": 74,
+              "y1": 508
+            }
+          },
+          "label": "Hero",
+          "decision": "reuse",
+          "block": "cadco-hero",
+          "notes": "Two headline lines with the backlit word on \"satisfaction\"; gradient background, no body, no button",
+          "attrs": {
+            "eyebrow": "Warranty & Service",
+            "heading": "Cadco guarantees satisfaction",
+            "headingLine2": "across all 50 states.",
+            "highlight": "satisfaction",
+            "highlightColor": "#2087d0",
+            "background": "gradient",
+            "gradientTop": "#021A2A",
+            "gradientBottom": "#00070d",
+            "minHeight": 434,
+            "align": "full",
+            "headingScale": "compact"
+          },
+          "prevStatus": "building",
+          "preparedIteration": 2
+        },
+        {
+          "n": 3,
+          "anchor": "pb-s3",
+          "status": "planned",
+          "crops": {
+            "desktop": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/warranty/crops/desktop/pb-s3.png"
+          },
+          "ranges": {
+            "desktop": {
+              "y0": 508,
+              "y1": 1176
+            }
+          },
+          "label": "Coverage and exclusions",
+          "decision": "new",
+          "block": "cadco-prose-columns",
+          "notes": "Two rich-text columns. Left carries the coverage copy, the service process and a telephone button; right carries the exclusions with bold inline labels"
+        },
+        {
+          "n": 4,
+          "anchor": "pb-s4",
+          "status": "planned",
+          "crops": {
+            "desktop": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/warranty/crops/desktop/pb-s4.png"
+          },
+          "ranges": {
+            "desktop": {
+              "y0": 1176,
+              "y1": 1782
+            }
+          },
+          "label": "How to return a unit",
+          "decision": "new",
+          "block": "cadco-numbered-steps",
+          "notes": "Heading, a repeater of steps numbered from their order rather than authored, and a footnote"
+        },
+        {
+          "n": 5,
+          "anchor": "pb-s5",
+          "status": "planned",
+          "crops": {
+            "desktop": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/warranty/crops/desktop/pb-s5.png"
+          },
+          "ranges": {
+            "desktop": {
+              "y0": 1782,
+              "y1": 2413
+            }
+          },
+          "label": "Additional information",
+          "decision": "reuse",
+          "block": "cadco-prose-columns",
+          "notes": "Same two-column block as section 3, with a section heading; the CFESA logo sits inside the right column"
+        },
+        {
+          "n": 6,
+          "anchor": "pb-s6",
+          "status": "planned",
+          "crops": {
+            "desktop": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/warranty/crops/desktop/pb-s6.png"
+          },
+          "ranges": {
+            "desktop": {
+              "y0": 2413,
+              "y1": 3715
+            }
+          },
+          "label": "Warranty comparison",
+          "decision": "new",
+          "block": "cadco-comparison-table",
+          "notes": "Heading, a repeater of tabs each holding either a pasted CSV or a link to a CSV in the media library, and a footnote. First CSV row is the column headers, first column the model, any truthy cell a tick. Tabs filter client-side"
+        },
+        {
+          "n": 7,
+          "anchor": "pb-s7",
+          "status": "planned",
+          "crops": {
+            "desktop": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/warranty/crops/desktop/pb-s7.png"
+          },
+          "ranges": {
+            "desktop": {
+              "y0": 3715,
+              "y1": 4330
+            }
+          },
+          "label": "Closing call to action",
+          "decision": "reuse",
+          "block": "cadco-intro",
+          "notes": "Dark tone, same as the about page"
+        },
+        {
+          "n": 8,
+          "anchor": "pb-footer",
+          "status": "building",
+          "crops": {
+            "desktop": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/warranty/crops/desktop/pb-footer.png"
+          },
+          "ranges": {
+            "desktop": {
+              "y0": 4330,
+              "y1": 4933
+            }
+          },
+          "label": "Footer",
+          "decision": "reuse",
+          "block": "cadco-footer",
+          "notes": "rendered by the template part; verify only",
+          "inPart": true,
+          "prevStatus": "done"
+        }
+      ],
+      "plan": {
+        "approvedAt": "2026-10-05T20:44:59.087Z",
+        "by": "developer"
+      },
+      "url": "https://cadco.local/warranty/",
+      "written": {
+        "title": "Warranty",
+        "slug": "warranty",
+        "postStatus": "publish"
+      }
     }
   ]
 }

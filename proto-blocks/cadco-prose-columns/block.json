@@ -1,0 +1,63 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/block.json",
+  "apiVersion": 3,
+  "name": "proto-blocks/cadco-prose-columns",
+  "title": "Cadco Prose Columns",
+  "category": "proto",
+  "icon": "editor-justify",
+  "description": "An optional section heading above two columns of rich text, with an optional button under the left column.",
+  "supports": {
+    "html": false,
+    "anchor": true,
+    "customClassName": true,
+    "align": ["full"]
+  },
+  "protoBlocks": {
+    "version": "1.0",
+    "template": "template.php",
+    "useTailwind": true,
+    "fields": {
+      "heading": {
+        "type": "text",
+        "tagName": "h2",
+        "label": "Section heading",
+        "help": "Optional. Leave empty where the columns carry their own headings, as the warranty coverage section does."
+      },
+      "left": {
+        "type": "wysiwyg",
+        "label": "Left column",
+        "help": "Headings, paragraphs and lists together. Write it as one region rather than as separate fields, so the order is yours to change."
+      },
+      "right": {
+        "type": "wysiwyg",
+        "label": "Right column"
+      },
+      "cta": {
+        "type": "link",
+        "label": "Button under the left column",
+        "help": "Optional. A telephone link is written as tel:8776037693."
+      }
+    },
+    "controls": {
+      "surface": {
+        "type": "select",
+        "label": "Background",
+        "default": "paper",
+        "options": [
+          { "key": "paper", "label": "Paper" },
+          { "key": "tint", "label": "Tint" }
+        ]
+      },
+      "ctaStyle": {
+        "type": "select",
+        "label": "Button style",
+        "default": "outline",
+        "options": [
+          { "key": "outline", "label": "Outlined with a telephone icon" },
+          { "key": "solid", "label": "Solid" }
+        ],
+        "help": "The warranty page draws its service line as an outlined button with a handset beside it."
+      }
+    }
+  }
+}

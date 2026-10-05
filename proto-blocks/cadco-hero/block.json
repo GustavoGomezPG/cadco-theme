@@ -69,6 +69,22 @@
         ],
         "help": "Gradient is for heroes with no photograph behind them, such as the About page."
       },
+      "headingScale": {
+        "type": "select",
+        "label": "Headline size",
+        "default": "display",
+        "options": [
+          {
+            "key": "display",
+            "label": "Display (landing pages)"
+          },
+          {
+            "key": "compact",
+            "label": "Compact (inner pages)"
+          }
+        ],
+        "help": "Display is the full-height headline the home, products and about heroes carry. Compact is a step down, for an inner page whose hero is a title rather than a statement."
+      },
       "gradientTop": {
         "type": "color",
         "label": "Gradient top",
