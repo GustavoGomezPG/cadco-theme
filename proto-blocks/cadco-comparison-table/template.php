@@ -163,8 +163,21 @@ $panelId = static function (int $i): string {
                     <span data-proto-field="label" class="sr-only"><?php echo esc_html((string) ($tab['label'] ?? '')); ?></span>
 
                     <?php if (empty($head)) : ?>
+                        <?php
+                        /*
+                         * Two messages. A visitor is told the table is not ready
+                         * in their own terms; the instruction for filling it is
+                         * shown only to someone who could act on it, since an
+                         * authoring note on a public page reads as a fault.
+                         */
+                        $canEdit = $is_preview || current_user_can('edit_posts');
+                        ?>
                         <p class="rounded-[16px] bg-white p-8 text-body-sm text-gray-500">
-                            <?php esc_html_e('This tab has no table yet. Paste its CSV, or link a .csv file.', 'cadco-theme'); ?>
+                            <?php
+                            echo $canEdit
+                                ? esc_html__('This tab has no table yet. Paste its CSV, or link a .csv file.', 'cadco-theme')
+                                : esc_html__('Comparison details for this category are coming soon.', 'cadco-theme');
+                            ?>
                         </p>
                     <?php else : ?>
                         <?php /* The frame draws a white card with the table inside it;
