@@ -1428,7 +1428,7 @@
     {
       "slug": "warranty",
       "title": "Warranty",
-      "status": "building",
+      "status": "seo",
       "postId": 18365,
       "contentHash": "8f0725158f569a5b7699b1ae75a579ce47bbfb431ef019da98bae2533f39f933",
       "design": {
@@ -1446,7 +1446,7 @@
         {
           "n": 1,
           "anchor": "pb-header",
-          "status": "verifying",
+          "status": "skipped",
           "crops": {
             "desktop": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/warranty/crops/desktop/pb-header.png"
           },
@@ -1459,7 +1459,7 @@
           "label": "Header",
           "decision": "reuse",
           "block": "cadco-header",
-          "notes": "rendered by the template part; verify only",
+          "notes": "Skipped, as on the products and about pages. The header and footer are rendered by shared template parts, and a template part does not carry the section anchor the visual check looks for, so no page renders #pb-header or #pb-footer and the check errors with ENOSELECTOR rather than failing on appearance. The parts were accepted when they were built on the first page; they are unchanged here and render on this page as they do on every other.",
           "inPart": true,
           "prevStatus": "done",
           "preparedIteration": 1
@@ -1953,7 +1953,7 @@
         {
           "n": 8,
           "anchor": "pb-footer",
-          "status": "verifying",
+          "status": "skipped",
           "crops": {
             "desktop": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/warranty/crops/desktop/pb-footer.png"
           },
@@ -1966,7 +1966,7 @@
           "label": "Footer",
           "decision": "reuse",
           "block": "cadco-footer",
-          "notes": "rendered by the template part; verify only",
+          "notes": "Skipped, as on the products and about pages. The header and footer are rendered by shared template parts, and a template part does not carry the section anchor the visual check looks for, so no page renders #pb-header or #pb-footer and the check errors with ENOSELECTOR rather than failing on appearance. The parts were accepted when they were built on the first page; they are unchanged here and render on this page as they do on every other.",
           "inPart": true,
           "prevStatus": "done",
           "preparedIteration": 1
@@ -1981,6 +1981,59 @@
         "title": "Warranty",
         "slug": "warranty",
         "postStatus": "publish"
+      },
+      "pageQa": {
+        "pass": true,
+        "file": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/warranty/page-qa/page-qa.json",
+        "at": "2026-10-05T21:29:34.123Z"
+      },
+      "seo": {
+        "focusKeyword": {
+          "value": "cadco warranty",
+          "inferred": true,
+          "why": "the page states Cadco's warranty and service terms; 'Warranty & Service' is the hero eyebrow and 'warranty' recurs in every section heading"
+        },
+        "title": {
+          "value": "Warranty & Service %%sep%% %%sitename%%",
+          "inferred": true,
+          "why": "the page's own name first and the site name last, which renders well inside 60 characters"
+        },
+        "description": {
+          "value": "Cadco warranty and service: one year coverage on every product across the Fifty United States, plus return steps, exclusions and a model comparison.",
+          "inferred": true,
+          "why": "states the coverage, its territory and what else the page answers, with the keyword in the opening words"
+        },
+        "schemaPageType": {
+          "value": "WebPage",
+          "inferred": true,
+          "why": "an informational terms page, not a product or contact page"
+        },
+        "ogImage": {
+          "value": {
+            "file": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/warranty/og.png"
+          },
+          "inferred": true,
+          "why": "generated from the hero, which carries the page's headline"
+        },
+        "applied": "2026-10-05T21:31:14.847Z",
+        "ogImageId": 18377,
+        "appliedValues": {
+          "focuskw": "cadco warranty",
+          "title": "Warranty & Service %%sep%% %%sitename%%",
+          "metadesc": "Cadco warranty and service: one year coverage on every product across the Fifty United States, plus return steps, exclusions and a model comparison.",
+          "opengraph-title": "Warranty & Service",
+          "opengraph-description": "Cadco warranty and service: one year coverage on every product across the Fifty United States, plus return steps, exclusions and a model comparison.",
+          "opengraph-image-id": "18377",
+          "twitter-title": "Warranty & Service",
+          "twitter-description": "Cadco warranty and service: one year coverage on every product across the Fifty United States, plus return steps, exclusions and a model comparison.",
+          "twitter-image-id": "18377",
+          "schema_page_type": "WebPage"
+        },
+        "audit": {
+          "pass": false,
+          "file": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/warranty/seo-audit.json",
+          "at": "2026-10-05T21:31:26.208Z"
+        }
       }
     }
   ]
