@@ -156,28 +156,70 @@ $panelId = static function (int $i): string {
                      role="tabpanel"
                      aria-labelledby="<?php echo esc_attr($panelId((int) $i) . '-tab'); ?>"
                      data-cadco-cmp-panel="<?php echo (int) $i; ?>"
-                     <?php echo $i === 0 ? '' : 'hidden'; ?>>
+                     <?php echo $i === 0 || $is_preview ? '' : 'hidden'; ?>>
 
-                    <?php /* The tab's own name is editable here rather than only in
-                             the button above, which is rendered from the same value. */ ?>
-                    <span data-proto-field="label" class="sr-only"><?php echo esc_html((string) ($tab['label'] ?? '')); ?></span>
-
-                    <?php if (empty($head)) : ?>
+                    <?php if ($is_preview) : ?>
                         <?php
                         /*
-                         * Two messages. A visitor is told the table is not ready
-                         * in their own terms; the instruction for filling it is
-                         * shown only to someone who could act on it, since an
-                         * authoring note on a public page reads as a fault.
+                         * The authoring panel, editor only.
+                         *
+                         * A tab's content is a CSV that is parsed rather than
+                         * displayed, so without this there is nowhere to type
+                         * it: a field is only editable if an element carries
+                         * data-proto-field, and the front end has no element
+                         * for the CSV at all. Each tab therefore gets its own
+                         * panel here, with the rendered table beneath it, and
+                         * none of it is output on the front end.
+                         *
+                         * Every panel is visible in the editor, rather than
+                         * only the selected one, because the tab buttons do not
+                         * switch anything in the editor -- the view script does
+                         * not run there -- and a hidden panel cannot be edited.
                          */
-                        $canEdit = $is_preview || current_user_can('edit_posts');
                         ?>
+                        <div class="cadco-cmp__authoring">
+                            <p class="cadco-cmp__authoring-title">
+                                <?php
+                                /* translators: %d is the tab's position. */
+                                printf(esc_html__('Tab %d', 'cadco-theme'), (int) $i + 1);
+                                ?>
+                            </p>
+
+                            <label class="cadco-cmp__label"><?php esc_html_e('Tab name', 'cadco-theme'); ?></label>
+                            <div data-proto-field="label" class="cadco-cmp__input"><?php echo esc_html((string) ($tab['label'] ?? '')); ?></div>
+
+                            <label class="cadco-cmp__label"><?php esc_html_e('Table (CSV)', 'cadco-theme'); ?></label>
+                            <p class="cadco-cmp__hint">
+                                <?php esc_html_e('One row per line, cells separated by commas. The first line is the column headings and the first column is the product. Any other cell reading x, yes, y, true or 1 draws a tick; leave it empty for none. Put quotes round a cell that contains a comma.', 'cadco-theme'); ?>
+                            </p>
+                            <div data-proto-field="csv" class="cadco-cmp__input cadco-cmp__input--csv"><?php echo wp_kses_post((string) ($tab['csv'] ?? '')); ?></div>
+
+                            <label class="cadco-cmp__label"><?php esc_html_e('Or a CSV file', 'cadco-theme'); ?></label>
+                            <p class="cadco-cmp__hint">
+                                <?php esc_html_e('Link a .csv from the media library. When set it is used instead of whatever is pasted above.', 'cadco-theme'); ?>
+                            </p>
+                            <div data-proto-field="csvFile" class="cadco-cmp__input"><?php echo esc_html((string) ($tab['csvFile']['url'] ?? '')); ?></div>
+
+                            <p class="cadco-cmp__hint cadco-cmp__hint--preview">
+                                <?php
+                                echo empty($head)
+                                    ? esc_html__('No rows yet. The table appears here once this tab has a CSV.', 'cadco-theme')
+                                    : sprintf(
+                                        /* translators: 1: number of columns, 2: number of rows. */
+                                        esc_html__('Reading %1$d columns and %2$d rows:', 'cadco-theme'),
+                                        (int) $cols,
+                                        count($rows)
+                                    );
+                                ?>
+                            </p>
+                        </div>
+                    <?php endif; ?>
+
+                    <?php if (empty($head)) : ?>
+                        <?php /* The visitor's wording. An author is told how to fill
+                                 it in the panel above, where they can act on it. */ ?>
                         <p class="rounded-[16px] bg-white p-8 text-body-sm text-gray-500">
-                            <?php
-                            echo $canEdit
-                                ? esc_html__('This tab has no table yet. Paste its CSV, or link a .csv file.', 'cadco-theme')
-                                : esc_html__('Comparison details for this category are coming soon.', 'cadco-theme');
-                            ?>
+                            <?php esc_html_e('Comparison details for this category are coming soon.', 'cadco-theme'); ?>
                         </p>
                     <?php else : ?>
                         <?php /* The frame draws a white card with the table inside it;
