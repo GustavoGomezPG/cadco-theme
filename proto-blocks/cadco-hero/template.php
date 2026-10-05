@@ -65,7 +65,16 @@ $scrimStyle = sprintf(
  * Height is driven by the design's 841px at 1440px wide (58.4vw) and floored so
  * the heading still has room to wrap on small screens.
  */
-$heightStyle = sprintf('min-height:clamp(520px, 58.4vw, %dpx)', $minH);
+/*
+ * The floor follows the setting rather than sitting at a fixed 520px.
+ *
+ * A hard floor meant a hero could never be shorter than 520px however the
+ * control was set, which is fine for the landing heroes -- all of them ask for
+ * more -- but not for an inner page: the warranty frame draws a 434px band and
+ * the hero simply ignored it. Taking the lower of the two keeps every existing
+ * hero exactly where it was and lets a shorter one exist.
+ */
+$heightStyle = sprintf('min-height:clamp(%dpx, 58.4vw, %dpx)', min(520, $minH), $minH);
 
 $glowColor = preg_match('/^#[0-9a-f]{3,8}$/i', trim((string) ($attributes['highlightColor'] ?? '')))
     ? trim((string) $attributes['highlightColor'])

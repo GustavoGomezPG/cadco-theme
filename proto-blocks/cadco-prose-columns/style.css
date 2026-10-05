@@ -1,16 +1,114 @@
-/**
- * Styles for Cadco Prose Columns block
+/*
+ * Cadco Prose Columns.
+ *
+ * Both columns are authored as single rich-text regions, so their headings,
+ * paragraphs and lists arrive as plain markup with no classes to hook. Tailwind
+ * preflight strips the margins and list markers a browser would otherwise give
+ * them, so the typography is restored here instead.
+ *
+ * Scoped to .cadco-prose so it cannot reach any other rich text on the page.
  */
-
-.wp-block-proto-blocks-cadco-prose-columns {
-    display: block;
+.cadco-prose {
+    font-family: var(--font-display, inherit);
+    font-size: 16px;
+    font-weight: 400;
+    line-height: 24px;
+    color: #11181c;
 }
 
-.wp-block-proto-blocks-cadco-prose-columns__title {
-    /* Styles for title field */
+.cadco-prose > *:first-child {
+    margin-top: 0;
 }
 
-.wp-block-proto-blocks-cadco-prose-columns__content {
-    /* Styles for content field */
+.cadco-prose h2,
+.cadco-prose h3,
+.cadco-prose h4 {
+    margin: 0 0 16px;
+    font-weight: 700;
+    line-height: 1.25;
+    color: #000;
 }
 
+/* The frame runs two heading sizes in these columns: a major one at 36px
+   ("One Year Warranty Coverage", 43px tall in the frame) and a minor one at
+   20px ("Warranty Service Process" and the rest, 24px tall). */
+.cadco-prose h2 { font-size: 36px; margin-bottom: 28px; }
+.cadco-prose h3 { font-size: 20px; }
+
+/* The frame sets the smaller column headings at the body size, bolded. */
+.cadco-prose h4 { font-size: 17px; }
+
+.cadco-prose p {
+    margin: 0 0 24px;
+}
+
+.cadco-prose p:last-child {
+    margin-bottom: 0;
+}
+
+/* A headed passage opens further from the one above it than its own heading
+   sits from its body, which is what gives the column its rhythm. */
+.cadco-prose h2:not(:first-child),
+.cadco-prose h3:not(:first-child),
+.cadco-prose h4:not(:first-child) {
+    margin-top: 42px;
+}
+
+/*
+ * The frame marks these lists with a hyphen, and the marker is drawn here
+ * rather than typed into the copy: wptexturize rewrites a hyphen that starts a
+ * line into an en dash, and it decodes a &#45; entity before it does so, so
+ * there is no way to keep a literal hyphen in the text itself. In CSS it is out
+ * of reach of that filter and the markup stays a real list.
+ */
+/* A list that follows a lead-in line sits directly beneath it in the frame,
+   with none of the gap that separates two paragraphs. */
+.cadco-prose p + ul {
+    margin-top: -24px;
+}
+
+/* No indent: the frame sets these flush to the column, and an indent costs
+   enough width to orphan the last word of the longest item onto its own line. */
+.cadco-prose ul {
+    list-style: none;
+    margin: 0 0 24px;
+    padding-left: 0;
+}
+
+.cadco-prose ul > li {
+    position: relative;
+    padding-left: 0.85em;
+}
+
+.cadco-prose ul > li::before {
+    content: "-";
+    position: absolute;
+    left: 0;
+}
+
+.cadco-prose ol { list-style: decimal; }
+
+.cadco-prose li {
+    margin: 0;
+}
+
+.cadco-prose strong {
+    font-weight: 700;
+    color: #000;
+}
+
+.cadco-prose a {
+    font-weight: 700;
+    color: #00476e;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+}
+
+.cadco-prose a:hover {
+    color: #00395a;
+}
+
+.cadco-prose img {
+    max-width: 100%;
+    height: auto;
+}

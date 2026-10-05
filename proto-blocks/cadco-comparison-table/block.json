@@ -1,0 +1,62 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/block.json",
+  "apiVersion": 3,
+  "name": "proto-blocks/cadco-comparison-table",
+  "title": "Cadco Comparison Table",
+  "category": "proto",
+  "icon": "editor-table",
+  "description": "Tabbed comparison tables built from CSV, either pasted in or linked from the media library.",
+  "supports": {
+    "html": false,
+    "anchor": true,
+    "customClassName": true,
+    "align": ["full"]
+  },
+  "protoBlocks": {
+    "version": "1.0",
+    "template": "template.php",
+    "useTailwind": true,
+    "viewScript": "view.js",
+    "fields": {
+      "heading": {
+        "type": "text",
+        "tagName": "h2",
+        "label": "Heading",
+        "default": "Warranty Comparison"
+      },
+      "tabs": {
+        "type": "repeater",
+        "label": "Tabs",
+        "min": 1,
+        "fields": {
+          "label": { "type": "text", "label": "Tab name" },
+          "csv": {
+            "type": "wysiwyg",
+            "label": "Table (CSV)",
+            "help": "One row per line, cells separated by commas. The first line is the column headings and the first column is the product. Any other cell showing x, yes, true, y or 1 draws a tick; leave it empty for none. Wrap a cell in quotes if it contains a comma."
+          },
+          "csvFile": {
+            "type": "link",
+            "label": "Or a CSV file",
+            "help": "Link a .csv from the media library. When set it is used instead of whatever is pasted above."
+          }
+        }
+      },
+      "footnote": {
+        "type": "wysiwyg",
+        "label": "Footnote"
+      }
+    },
+    "controls": {
+      "firstColumnWidth": {
+        "type": "range",
+        "label": "First column width (%)",
+        "default": 24,
+        "min": 12,
+        "max": 45,
+        "step": 1,
+        "help": "The product column. The rest share what is left equally."
+      }
+    }
+  }
+}

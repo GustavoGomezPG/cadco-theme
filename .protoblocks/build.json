@@ -155,6 +155,51 @@
       "variants": [
         "dark"
       ]
+    },
+    "cadco-hero": {
+      "usedOn": [],
+      "baselines": [
+        {
+          "page": "warranty",
+          "anchor": "pb-s2",
+          "breakpoint": "desktop",
+          "file": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/baselines/warranty/pb-s2-desktop.png",
+          "width": 1440,
+          "scale": 1
+        }
+      ]
+    },
+    "cadco-prose-columns": {
+      "usedOn": [
+        "warranty"
+      ],
+      "baselines": [
+        {
+          "page": "warranty",
+          "anchor": "pb-s3",
+          "breakpoint": "desktop",
+          "file": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/baselines/warranty/pb-s3-desktop.png",
+          "width": 1440,
+          "scale": 1
+        }
+      ],
+      "purpose": "An optional section heading over two rich-text columns, with an optional button under the left"
+    },
+    "cadco-numbered-steps": {
+      "usedOn": [
+        "warranty"
+      ],
+      "baselines": [
+        {
+          "page": "warranty",
+          "anchor": "pb-s4",
+          "breakpoint": "desktop",
+          "file": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/baselines/warranty/pb-s4-desktop.png",
+          "width": 1440,
+          "scale": 1
+        }
+      ],
+      "purpose": "A heading over a row of steps numbered from their order, with an optional footnote"
     }
   },
   "pages": [
@@ -1353,7 +1398,7 @@
       "title": "Warranty",
       "status": "building",
       "postId": 18365,
-      "contentHash": "fbdf6592f1dcc62a55c5c9550be3246ea908a9598a81cb6b0a73fde7029680f9",
+      "contentHash": "8b92da362fa1644acb1a8a9ec8f1e8e2785063b021b74e549187d4d0859ee4cd",
       "design": {
         "frames": [
           {
@@ -1389,7 +1434,7 @@
         {
           "n": 2,
           "anchor": "pb-s2",
-          "status": "verifying",
+          "status": "done",
           "crops": {
             "desktop": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/warranty/crops/desktop/pb-s2.png"
           },
@@ -1402,7 +1447,7 @@
           "label": "Hero",
           "decision": "reuse",
           "block": "cadco-hero",
-          "notes": "Two headline lines with the backlit word on \"satisfaction\"; gradient background, no body, no button",
+          "notes": "Accepted at 6.32% with the height exact. Content starts at 40px against the frame's 193px: the theme's hero container is the same on every page and the developer chose to keep it over matching each frame. Two additive hero controls came from this section, both defaulting to what the other three heroes already render: a compact headline scale, since this frame sets a 77px line pitch which is 64px at the theme's leading and its highlight bar measures the width of \"satisfaction\" at that size; and a height floor that follows the minimum-height control rather than sitting at a fixed 520px, which had been silently overriding this frame's 434px band.",
           "attrs": {
             "eyebrow": "Warranty & Service",
             "heading": "Cadco guarantees satisfaction",
@@ -1410,19 +1455,54 @@
             "highlight": "satisfaction",
             "highlightColor": "#2087d0",
             "background": "gradient",
-            "gradientTop": "#021A2A",
-            "gradientBottom": "#00070d",
+            "gradientTop": "#00070d",
+            "gradientBottom": "#03203a",
             "minHeight": 434,
             "align": "full",
             "headingScale": "compact"
           },
-          "prevStatus": "building",
-          "preparedIteration": 2
+          "preparedIteration": 3,
+          "qa": [
+            {
+              "iteration": 3,
+              "breakpoint": "desktop",
+              "mode": "diff",
+              "mismatch": 0.0632,
+              "heightDelta": 0,
+              "widthDelta": 0,
+              "numericPass": true,
+              "pass": true,
+              "verdict": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/warranty/pb-s2/iter-3/verdict.json"
+            },
+            {
+              "iteration": 3,
+              "breakpoint": "tablet",
+              "mode": "sanity",
+              "widthDelta": 0,
+              "numericPass": true,
+              "pass": true,
+              "verdict": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/warranty/pb-s2/iter-3/verdict.json"
+            },
+            {
+              "iteration": 3,
+              "breakpoint": "mobile",
+              "mode": "sanity",
+              "widthDelta": 0,
+              "numericPass": true,
+              "pass": true,
+              "verdict": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/warranty/pb-s2/iter-3/verdict.json"
+            }
+          ],
+          "motion": {
+            "presets": [],
+            "check": "pass",
+            "result": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/warranty/pb-s2/motion/motion-check.json"
+          }
         },
         {
           "n": 3,
           "anchor": "pb-s3",
-          "status": "planned",
+          "status": "done",
           "crops": {
             "desktop": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/warranty/crops/desktop/pb-s3.png"
           },
@@ -1435,12 +1515,64 @@
           "label": "Coverage and exclusions",
           "decision": "new",
           "block": "cadco-prose-columns",
-          "notes": "Two rich-text columns. Left carries the coverage copy, the service process and a telephone button; right carries the exclusions with bold inline labels"
+          "notes": "Two rich-text columns. Left carries the coverage copy, the service process and a telephone button; right carries the exclusions with bold inline labels",
+          "attrs": {
+            "heading": "",
+            "left": "<h2>One Year Warranty Coverage</h2><p>Unless otherwise noted, Cadco, Ltd. warrants all products to be free from defects in material and workmanship for a period of one (1) year from the date of purchase. This commercial (non-residential) warranty coverage is applicable only within the Fifty United States. Units purchased and/or operated outside of the United States are not covered under Cadco’s warranty. Please refer to individual product descriptions and the official warranty at <a href=\"https://www.cadco-ltd.com\">www.cadco-ltd.com</a> for warranty terms on select models or components.</p><h3>Warranty Service Process</h3><p>For any warranty service request, customers must first call Cadco’s National Service Line to receive service authorization. Do not return units to the store where purchased for warranty repair.</p>",
+            "right": "<h3>Warranty Exclusions</h3><p><strong>Warranty does not apply in the following cases:</strong></p><ul><li>Misuse, abuse, or neglect</li><li>Damage resulting from unauthorized service or repair attempts</li><li>Use of Cadco ovens without a door gasket or with a damaged gasket</li></ul><p><strong>Note:</strong> Operating the unit without a functioning gasket may cause hinge failure and reduce oven efficiency. Doing so will void the warranty on the hinges.</p><p><strong>Reminder:</strong> Door gaskets should be inspected and cleaned daily.</p>",
+            "cta": {
+              "url": "tel:8776037693",
+              "text": "(877) 603-7693",
+              "target": "",
+              "rel": "",
+              "title": ""
+            },
+            "surface": "paper",
+            "ctaStyle": "outline",
+            "align": "full"
+          },
+          "preparedIteration": 5,
+          "qa": [
+            {
+              "iteration": 5,
+              "breakpoint": "desktop",
+              "mode": "diff",
+              "mismatch": 0.043,
+              "heightDelta": 0.003,
+              "widthDelta": 0,
+              "numericPass": true,
+              "pass": true,
+              "verdict": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/warranty/pb-s3/iter-5/verdict.json"
+            },
+            {
+              "iteration": 5,
+              "breakpoint": "tablet",
+              "mode": "sanity",
+              "widthDelta": 0,
+              "numericPass": true,
+              "pass": true,
+              "verdict": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/warranty/pb-s3/iter-5/verdict.json"
+            },
+            {
+              "iteration": 5,
+              "breakpoint": "mobile",
+              "mode": "sanity",
+              "widthDelta": 0,
+              "numericPass": true,
+              "pass": true,
+              "verdict": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/warranty/pb-s3/iter-5/verdict.json"
+            }
+          ],
+          "motion": {
+            "presets": [],
+            "check": "pass",
+            "result": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/warranty/pb-s3/motion/motion-check.json"
+          }
         },
         {
           "n": 4,
           "anchor": "pb-s4",
-          "status": "planned",
+          "status": "done",
           "crops": {
             "desktop": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/warranty/crops/desktop/pb-s4.png"
           },
@@ -1453,7 +1585,65 @@
           "label": "How to return a unit",
           "decision": "new",
           "block": "cadco-numbered-steps",
-          "notes": "Heading, a repeater of steps numbered from their order rather than authored, and a footnote"
+          "notes": "Heading, a repeater of steps numbered from their order rather than authored, and a footnote",
+          "attrs": {
+            "heading": "How to Return a Unit Directly to Cadco for Warranty Repair",
+            "steps": [
+              {
+                "id": "st1",
+                "body": "Call first to obtain a Return Authorization Number (RA#)."
+              },
+              {
+                "id": "st2",
+                "body": "Write RA# on the outside of the carton to ensure proper tracking and avoid service delays."
+              },
+              {
+                "id": "st3",
+                "body": "Pack the unit securely and insuring it for its original purchase value. Ship or deliver carry-in items to a Cadco-authorized service center or directly to Cadco."
+              }
+            ],
+            "footnote": "<p>Cadco is not responsible for damage or loss of unit in transit to us or a service center. Cadco is not responsible for units lost or damaged in transit</p>",
+            "surface": "tint",
+            "markerColor": "#00476e",
+            "align": "full"
+          },
+          "preparedIteration": 3,
+          "qa": [
+            {
+              "iteration": 3,
+              "breakpoint": "desktop",
+              "mode": "diff",
+              "mismatch": 0.0242,
+              "heightDelta": 0.0066,
+              "widthDelta": 0,
+              "numericPass": true,
+              "pass": true,
+              "verdict": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/warranty/pb-s4/iter-3/verdict.json"
+            },
+            {
+              "iteration": 3,
+              "breakpoint": "tablet",
+              "mode": "sanity",
+              "widthDelta": 0,
+              "numericPass": true,
+              "pass": true,
+              "verdict": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/warranty/pb-s4/iter-3/verdict.json"
+            },
+            {
+              "iteration": 3,
+              "breakpoint": "mobile",
+              "mode": "sanity",
+              "widthDelta": 0,
+              "numericPass": true,
+              "pass": true,
+              "verdict": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/warranty/pb-s4/iter-3/verdict.json"
+            }
+          ],
+          "motion": {
+            "presets": [],
+            "check": "pass",
+            "result": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/warranty/pb-s4/motion/motion-check.json"
+          }
         },
         {
           "n": 5,
@@ -1476,7 +1666,7 @@
         {
           "n": 6,
           "anchor": "pb-s6",
-          "status": "planned",
+          "status": "verifying",
           "crops": {
             "desktop": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/warranty/crops/desktop/pb-s6.png"
           },
@@ -1489,7 +1679,53 @@
           "label": "Warranty comparison",
           "decision": "new",
           "block": "cadco-comparison-table",
-          "notes": "Heading, a repeater of tabs each holding either a pasted CSV or a link to a CSV in the media library, and a footnote. First CSV row is the column headers, first column the model, any truthy cell a tick. Tabs filter client-side"
+          "notes": "Heading, a repeater of tabs each holding either a pasted CSV or a link to a CSV in the media library, and a footnote. First CSV row is the column headers, first column the model, any truthy cell a tick. Tabs filter client-side",
+          "attrs": {
+            "heading": "Warranty Comparison",
+            "tabs": [
+              {
+                "id": "t1",
+                "label": "Ovens",
+                "csv": "<p>Product Model/Category,On-Site Service,Carry-In Service,1 Year* Parts & Labor,2 Year* Parts Only,3 Year* Parts Only,30 Days - 1 Year* Parts Only</p><p>VK-120 / VK-220 / VKII-220,x,,x,x,,x</p><p>VK-120 / VK-220 / VKII-220,x,,x,x,,x</p><p>VK-120 / VK-220 / VKII-220,x,,x,x,,x</p><p>VK-120 / VK-220 / VKII-220,x,,x,x,,x</p><p>VK-120 / VK-220 / VKII-220,x,,x,x,,x</p><p>VK-120 / VK-220 / VKII-220,x,,x,x,,x</p><p>VK-120 / VK-220 / VKII-220,x,,x,x,,x</p><p>OV-003 / XAF003,x,x,x,x,x,x</p><p>OV-003 / XAF003,x,x,x,x,x,x</p><p>OV-003 / XAF003,x,x,x,x,x,x</p>",
+                "csvFile": {
+                  "url": "",
+                  "text": "",
+                  "target": "",
+                  "rel": "",
+                  "title": ""
+                }
+              },
+              {
+                "id": "t2",
+                "label": "Countertop Equipment",
+                "csv": "",
+                "csvFile": {
+                  "url": "",
+                  "text": "",
+                  "target": "",
+                  "rel": "",
+                  "title": ""
+                }
+              },
+              {
+                "id": "t3",
+                "label": "Carts",
+                "csv": "",
+                "csvFile": {
+                  "url": "",
+                  "text": "",
+                  "target": "",
+                  "rel": "",
+                  "title": ""
+                }
+              }
+            ],
+            "footnote": "<p>*2 year parts only excludes motor and fan. 3 year parts only includes 2 years on site service. 30 Day parts only includes 1 year motor and fan.</p>",
+            "firstColumnWidth": 24,
+            "align": "full"
+          },
+          "prevStatus": "building",
+          "preparedIteration": 1
         },
         {
           "n": 7,

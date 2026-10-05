@@ -1,0 +1,39 @@
+/*
+ * Cadco Comparison Table.
+ */
+.cadco-cmp__card {
+    box-shadow: 0 2px 18px rgba(16, 32, 48, 0.07);
+}
+
+/* The tabs are drawn as outlined pills, with the selected one filled. */
+.cadco-cmp__tab {
+    border-color: #00476e;
+    background: transparent;
+    color: #00476e;
+    cursor: pointer;
+}
+
+.cadco-cmp__tab:hover {
+    background: rgba(0, 71, 110, 0.06);
+}
+
+.cadco-cmp__tab.is-active {
+    background: #0b3a5d;
+    border-color: #0b3a5d;
+    color: #fff;
+}
+
+.cadco-cmp__tab:focus-visible {
+    outline: 2px solid #2f86e0;
+    outline-offset: 2px;
+}
+
+/* Without the script every table would otherwise stack; the first is enough,
+   and the rest stay reachable in the markup for anything reading the page. */
+.cadco-cmp__note p {
+    margin: 0 0 6px;
+}
+
+.cadco-cmp__note p:last-child {
+    margin-bottom: 0;
+}

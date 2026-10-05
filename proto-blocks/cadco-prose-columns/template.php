@@ -34,7 +34,7 @@ $outline = ($attributes['ctaStyle'] ?? 'outline') !== 'solid';
 $reveal = $is_preview ? '' : 'data-proto-animate="manual" data-cadco-reveal-group';
 
 $wrapper = get_block_wrapper_attributes([
-    'class' => 'cadco-prose-columns w-full ' . $surface . ' py-[88px] md:py-[120px]',
+    'class' => 'cadco-prose-columns w-full ' . $surface . ' py-[88px] md:pt-[96px] md:pb-[98px]',
 ]);
 ?>
 <section <?php echo $wrapper; ?> <?php echo $reveal; ?>>
@@ -62,9 +62,9 @@ $wrapper = get_block_wrapper_attributes([
                        href="<?php echo esc_url($ctaUrl); ?>"
                        <?php if (! empty($cta['target'])) : ?>target="<?php echo esc_attr($cta['target']); ?>"<?php endif; ?>
                        <?php if (! empty($cta['rel'])) : ?>rel="<?php echo esc_attr($cta['rel']); ?>"<?php endif; ?>
-                       class="mt-10 inline-flex h-[42px] items-center gap-2 rounded-[8px] px-5 font-display text-[15px] font-bold leading-none no-underline transition-colors <?php
+                       class="mt-10 inline-flex min-h-[44px] items-center gap-2 rounded-[10px] px-5 py-2 md:min-h-0 md:h-9 md:py-0 font-display text-[15px] font-bold leading-none no-underline transition-colors <?php
                            echo $outline
-                               ? 'border border-cadco-blue/40 text-cadco-blue hover:border-cadco-blue hover:bg-cadco-blue/5'
+                               ? 'border border-cadco-blue text-cadco-blue hover:bg-cadco-blue/5'
                                : 'bg-cadco-blue text-white hover:bg-[#00395a]'; ?>">
                         <?php if ($outline) : ?>
                             <?php /* Inline so it takes the link's colour and needs no asset. */ ?>

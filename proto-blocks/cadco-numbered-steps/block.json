@@ -1,0 +1,58 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/block.json",
+  "apiVersion": 3,
+  "name": "proto-blocks/cadco-numbered-steps",
+  "title": "Cadco Numbered Steps",
+  "category": "proto",
+  "icon": "editor-ol",
+  "description": "A heading above a row of numbered steps, with an optional footnote beneath.",
+  "supports": {
+    "html": false,
+    "anchor": true,
+    "customClassName": true,
+    "align": ["full"]
+  },
+  "protoBlocks": {
+    "version": "1.0",
+    "template": "template.php",
+    "useTailwind": true,
+    "fields": {
+      "heading": {
+        "type": "text",
+        "tagName": "h2",
+        "label": "Heading",
+        "default": "How to Return a Unit Directly to Cadco for Warranty Repair"
+      },
+      "steps": {
+        "type": "repeater",
+        "label": "Steps",
+        "min": 1,
+        "fields": {
+          "body": { "type": "text", "label": "Step" }
+        },
+        "help": "Numbered from their order, so reordering renumbers them and nothing has to be renumbered by hand."
+      },
+      "footnote": {
+        "type": "wysiwyg",
+        "label": "Footnote",
+        "help": "Optional. Sits below the steps in smaller type."
+      }
+    },
+    "controls": {
+      "surface": {
+        "type": "select",
+        "label": "Background",
+        "default": "tint",
+        "options": [
+          { "key": "tint", "label": "Tint" },
+          { "key": "paper", "label": "Paper" }
+        ]
+      },
+      "markerColor": {
+        "type": "color",
+        "label": "Number colour",
+        "default": "#00476e"
+      }
+    }
+  }
+}
