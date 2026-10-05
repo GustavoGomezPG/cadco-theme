@@ -154,6 +154,40 @@ add_action('wp_enqueue_scripts', function () {
 }, 20);
 
 /**
+ * Layout-change notifier.
+ *
+ * Lenis caches the document's length and ScrollTrigger caches every trigger
+ * against it, and neither notices a block changing its own height -- a tab
+ * switch, an accordion, an image arriving late. Without a nudge the pinned
+ * sections release at the wrong point and the page's scrollable length is
+ * wrong until the next window resize.
+ *
+ * Exposes window.cadcoLayoutChanged() for any block that resizes itself.
+ * Registered after the vendored libraries so it can depend on what exists;
+ * with neither present it simply does nothing.
+ */
+add_action('wp_enqueue_scripts', function () {
+    $path = get_stylesheet_directory() . '/assets/js/cadco-layout.js';
+
+    if (! file_exists($path)) {
+        return;
+    }
+
+    $deps = array_values(array_filter(
+        ['proto-gsap', 'proto-scroll-trigger', 'proto-init'],
+        static fn(string $handle): bool => wp_script_is($handle, 'registered')
+    ));
+
+    wp_enqueue_script(
+        'cadco-layout',
+        get_stylesheet_directory_uri() . '/assets/js/cadco-layout.js',
+        $deps,
+        filemtime($path),
+        true
+    );
+}, 20);
+
+/**
  * Page-transition curtain.
  *
  * Only with Taxi on: without it every navigation is a full document load, the

@@ -35,6 +35,18 @@
 			Array.prototype.forEach.call(panels, function (panel) {
 				panel.hidden = Number(panel.getAttribute('data-cadco-cmp-panel')) !== index;
 			});
+
+			/*
+			 * The panels are wildly different heights -- a ten-row table against
+			 * an empty-state line -- so switching tabs moves everything below
+			 * this section. Lenis and ScrollTrigger both cache the document's
+			 * length and neither watches for it, so without this the pinned
+			 * timeline above releases at the wrong point and the page's
+			 * scrollable length stays wrong until the next window resize.
+			 */
+			if (typeof window.cadcoLayoutChanged === 'function') {
+				window.cadcoLayoutChanged();
+			}
 		}
 
 		Array.prototype.forEach.call(tabs, function (tab) {

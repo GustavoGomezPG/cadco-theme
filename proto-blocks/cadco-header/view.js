@@ -500,6 +500,13 @@
         var gsap = gsapOrNull();
         var willOpen = !section.classList.contains('is-open');
 
+        /* Opening or closing a section changes the menu's height, and with it
+           the document's. Lenis and ScrollTrigger both cache that and neither
+           watches for it. */
+        if (typeof window.cadcoLayoutChanged === 'function') {
+          window.cadcoLayoutChanged();
+        }
+
         // One section at a time, so the menu never becomes a long scroll — but
         // only among siblings. Accordions nest (a top-level item, then a
         // category inside it), and closing every open accordion would collapse
