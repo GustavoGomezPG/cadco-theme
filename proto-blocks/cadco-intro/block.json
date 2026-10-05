@@ -81,6 +81,26 @@
           }
         ],
         "help": "Dark sets the section on the same gradient as the hero and inverts the text, for a closing call to action."
+      },
+      "headingSize": {
+        "type": "select",
+        "label": "Headline size",
+        "default": "auto",
+        "options": [
+          {
+            "key": "auto",
+            "label": "Follow the tone"
+          },
+          {
+            "key": "large",
+            "label": "Large (64px)"
+          },
+          {
+            "key": "medium",
+            "label": "Medium (56px)"
+          }
+        ],
+        "help": "By default a paper panel takes the larger headline and a dark one the smaller. Set it outright where a frame asks for the other."
       }
     }
   }

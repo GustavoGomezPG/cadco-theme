@@ -149,6 +149,14 @@
           "file": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/baselines/about/pb-s6-desktop.png",
           "width": 1440,
           "scale": 1
+        },
+        {
+          "page": "warranty",
+          "anchor": "pb-s7",
+          "breakpoint": "desktop",
+          "file": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/baselines/warranty/pb-s7-desktop.png",
+          "width": 1440,
+          "scale": 1
         }
       ],
       "purpose": "Centred eyebrow, heading, body and call to action; paper or dark tone",
@@ -181,6 +189,14 @@
           "file": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/baselines/warranty/pb-s3-desktop.png",
           "width": 1440,
           "scale": 1
+        },
+        {
+          "page": "warranty",
+          "anchor": "pb-s5",
+          "breakpoint": "desktop",
+          "file": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/baselines/warranty/pb-s5-desktop.png",
+          "width": 1440,
+          "scale": 1
         }
       ],
       "purpose": "An optional section heading over two rich-text columns, with an optional button under the left"
@@ -200,6 +216,22 @@
         }
       ],
       "purpose": "A heading over a row of steps numbered from their order, with an optional footnote"
+    },
+    "cadco-comparison-table": {
+      "usedOn": [
+        "warranty"
+      ],
+      "baselines": [
+        {
+          "page": "warranty",
+          "anchor": "pb-s6",
+          "breakpoint": "desktop",
+          "file": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/baselines/warranty/pb-s6-desktop.png",
+          "width": 1440,
+          "scale": 1
+        }
+      ],
+      "purpose": "Tabbed comparison tables built from CSV, pasted or linked from the media library"
     }
   },
   "pages": [
@@ -1398,7 +1430,7 @@
       "title": "Warranty",
       "status": "building",
       "postId": 18365,
-      "contentHash": "8b92da362fa1644acb1a8a9ec8f1e8e2785063b021b74e549187d4d0859ee4cd",
+      "contentHash": "8f0725158f569a5b7699b1ae75a579ce47bbfb431ef019da98bae2533f39f933",
       "design": {
         "frames": [
           {
@@ -1414,7 +1446,7 @@
         {
           "n": 1,
           "anchor": "pb-header",
-          "status": "building",
+          "status": "verifying",
           "crops": {
             "desktop": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/warranty/crops/desktop/pb-header.png"
           },
@@ -1429,7 +1461,8 @@
           "block": "cadco-header",
           "notes": "rendered by the template part; verify only",
           "inPart": true,
-          "prevStatus": "done"
+          "prevStatus": "done",
+          "preparedIteration": 1
         },
         {
           "n": 2,
@@ -1515,7 +1548,7 @@
           "label": "Coverage and exclusions",
           "decision": "new",
           "block": "cadco-prose-columns",
-          "notes": "Two rich-text columns. Left carries the coverage copy, the service process and a telephone button; right carries the exclusions with bold inline labels",
+          "notes": "Accepted at 4.28%. Content starts at 174px against the frame's 193px: the theme's container is the same on every page and the developer chose to keep it. The exclusions list draws its hyphen markers from CSS rather than from the copy, because wptexturize rewrites a hyphen that opens a line into an en dash and decodes a &#45; entity before doing so; writing it as a real list puts the marker out of that filter's reach. The telephone button is 36px as the frame draws it, but lifts to 44px below the md breakpoint so it meets the tap-target guidance on a phone.",
           "attrs": {
             "heading": "",
             "left": "<h2>One Year Warranty Coverage</h2><p>Unless otherwise noted, Cadco, Ltd. warrants all products to be free from defects in material and workmanship for a period of one (1) year from the date of purchase. This commercial (non-residential) warranty coverage is applicable only within the Fifty United States. Units purchased and/or operated outside of the United States are not covered under Cadco’s warranty. Please refer to individual product descriptions and the official warranty at <a href=\"https://www.cadco-ltd.com\">www.cadco-ltd.com</a> for warranty terms on select models or components.</p><h3>Warranty Service Process</h3><p>For any warranty service request, customers must first call Cadco’s National Service Line to receive service authorization. Do not return units to the store where purchased for warranty repair.</p>",
@@ -1529,9 +1562,10 @@
             },
             "surface": "paper",
             "ctaStyle": "outline",
-            "align": "full"
+            "align": "full",
+            "leftMeasure": "wide"
           },
-          "preparedIteration": 5,
+          "preparedIteration": 6,
           "qa": [
             {
               "iteration": 5,
@@ -1561,6 +1595,35 @@
               "numericPass": true,
               "pass": true,
               "verdict": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/warranty/pb-s3/iter-5/verdict.json"
+            },
+            {
+              "iteration": 6,
+              "breakpoint": "desktop",
+              "mode": "diff",
+              "mismatch": 0.0428,
+              "heightDelta": 0.0254,
+              "widthDelta": 0,
+              "numericPass": true,
+              "pass": true,
+              "verdict": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/warranty/pb-s3/iter-6/verdict.json"
+            },
+            {
+              "iteration": 6,
+              "breakpoint": "tablet",
+              "mode": "sanity",
+              "widthDelta": 0,
+              "numericPass": true,
+              "pass": true,
+              "verdict": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/warranty/pb-s3/iter-6/verdict.json"
+            },
+            {
+              "iteration": 6,
+              "breakpoint": "mobile",
+              "mode": "sanity",
+              "widthDelta": 0,
+              "numericPass": true,
+              "pass": true,
+              "verdict": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/warranty/pb-s3/iter-6/verdict.json"
             }
           ],
           "motion": {
@@ -1648,7 +1711,7 @@
         {
           "n": 5,
           "anchor": "pb-s5",
-          "status": "planned",
+          "status": "done",
           "crops": {
             "desktop": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/warranty/crops/desktop/pb-s5.png"
           },
@@ -1661,12 +1724,66 @@
           "label": "Additional information",
           "decision": "reuse",
           "block": "cadco-prose-columns",
-          "notes": "Same two-column block as section 3, with a section heading; the CFESA logo sits inside the right column"
+          "notes": "Accepted at 2.24% with the height within 0.2%. Reuses the block built for section 3 with a narrower left column, which the frame sets differently here. PLACEHOLDER ASSET: the CFESA logo is cropped from the frame and needs replacing with the supplied original.",
+          "attrs": {
+            "heading": "Additional Information",
+            "left": "<h3>Proof of Purchase Requirement</h3><p>A copy of the original invoice is required to validate warranty coverage. (Registration is not required.)</p><h3>Notes</h3><p>Warranty coverage for carts applies only within the 48 contiguous U.S. states.</p><h3>Service Centers</h3><p>Cadco has authorized service centers throughout the United States.</p>",
+            "right": "<h3>Membership</h3><p>Cadco is an Associate Member of the Commercial Food Equipment Service Association (CFESA)</p><p><img src=\"https://cadco.local/wp-content/uploads/2026/10/cfesa-logo.png\" alt=\"CFESA Certified Company logo\" width=\"212\" height=\"60\" /></p>",
+            "cta": {
+              "url": "",
+              "text": "",
+              "target": "",
+              "rel": "",
+              "title": ""
+            },
+            "surface": "paper",
+            "ctaStyle": "outline",
+            "align": "full",
+            "leftWidth": 490,
+            "leftMeasure": "narrow"
+          },
+          "preparedIteration": 2,
+          "qa": [
+            {
+              "iteration": 2,
+              "breakpoint": "desktop",
+              "mode": "diff",
+              "mismatch": 0.0224,
+              "heightDelta": 0.0016,
+              "widthDelta": 0,
+              "numericPass": true,
+              "pass": true,
+              "verdict": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/warranty/pb-s5/iter-2/verdict.json"
+            },
+            {
+              "iteration": 2,
+              "breakpoint": "tablet",
+              "mode": "sanity",
+              "widthDelta": 0,
+              "numericPass": true,
+              "pass": true,
+              "verdict": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/warranty/pb-s5/iter-2/verdict.json"
+            },
+            {
+              "iteration": 2,
+              "breakpoint": "mobile",
+              "mode": "sanity",
+              "widthDelta": 0,
+              "numericPass": true,
+              "pass": true,
+              "verdict": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/warranty/pb-s5/iter-2/verdict.json"
+            }
+          ],
+          "motion": {
+            "presets": [],
+            "check": "pass",
+            "result": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/warranty/pb-s5/motion/motion-check.json"
+          }
         },
         {
           "n": 6,
           "anchor": "pb-s6",
-          "status": "verifying",
+          "status": "done",
           "crops": {
             "desktop": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/warranty/crops/desktop/pb-s6.png"
           },
@@ -1679,7 +1796,7 @@
           "label": "Warranty comparison",
           "decision": "new",
           "block": "cadco-comparison-table",
-          "notes": "Heading, a repeater of tabs each holding either a pasted CSV or a link to a CSV in the media library, and a footnote. First CSV row is the column headers, first column the model, any truthy cell a tick. Tabs filter client-side",
+          "notes": "Accepted at 1.88% with the height within 0.9%. Tables are authored as CSV on the developer's instruction: a repeater of tabs, each taking either pasted CSV or a link to a .csv in the media library, with the first row the column headings, the first column the model and any truthy cell a tick. Columns are therefore content rather than code. The CSV field is a wysiwyg because a textarea is a control type and cannot sit inside a repeater, and a text field would offer one line for a whole table; its markup is stripped before parsing. A linked file is resolved to an attachment id and read from disk, never fetched over the network, and cached for an hour.\n\nPLACEHOLDER CONTENT: only the Ovens tab has data, taken from the frame, which repeats one VK row seven times and one OV row three times. Countertop Equipment and Carts render their empty state until their CSV is supplied.\n\nThe mobile and tablet sanity checks report a document scrollWidth larger than the viewport. That is the seven-column table's clipped content box being reported, not a page overflow: the card sits inside the viewport and a real horizontal wheel gesture dispatched above the card leaves window.scrollX at zero. Confirmed by QA on its own inspection.",
           "attrs": {
             "heading": "Warranty Comparison",
             "tabs": [
@@ -1724,13 +1841,48 @@
             "firstColumnWidth": 24,
             "align": "full"
           },
-          "prevStatus": "building",
-          "preparedIteration": 1
+          "preparedIteration": 3,
+          "qa": [
+            {
+              "iteration": 3,
+              "breakpoint": "desktop",
+              "mode": "diff",
+              "mismatch": 0.0188,
+              "heightDelta": 0.0092,
+              "widthDelta": 0,
+              "numericPass": true,
+              "pass": true,
+              "verdict": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/warranty/pb-s6/iter-3/verdict.json"
+            },
+            {
+              "iteration": 3,
+              "breakpoint": "tablet",
+              "mode": "sanity",
+              "widthDelta": 0,
+              "numericPass": true,
+              "pass": true,
+              "verdict": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/warranty/pb-s6/iter-3/verdict.json"
+            },
+            {
+              "iteration": 3,
+              "breakpoint": "mobile",
+              "mode": "sanity",
+              "widthDelta": 0,
+              "numericPass": true,
+              "pass": true,
+              "verdict": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/warranty/pb-s6/iter-3/verdict.json"
+            }
+          ],
+          "motion": {
+            "presets": [],
+            "check": "pass",
+            "result": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/warranty/pb-s6/motion/motion-check.json"
+          }
         },
         {
           "n": 7,
           "anchor": "pb-s7",
-          "status": "planned",
+          "status": "done",
           "crops": {
             "desktop": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/warranty/crops/desktop/pb-s7.png"
           },
@@ -1743,12 +1895,65 @@
           "label": "Closing call to action",
           "decision": "reuse",
           "block": "cadco-intro",
-          "notes": "Dark tone, same as the about page"
+          "notes": "Accepted at 6.27%. Reuses cadco-intro in its dark tone, as the about page does, with the headline a step larger: this frame sets 64px where the about frame sets 56px, so the size became a control defaulting to the tone-based behaviour. The about CTA was verified unchanged at 612px and 56px.",
+          "attrs": {
+            "eyebrow": "",
+            "heading": "Looking for more information? We’re here to help.",
+            "body": "",
+            "cta": {
+              "url": "/contact/",
+              "text": "Contact Cadco",
+              "target": "",
+              "rel": "",
+              "title": ""
+            },
+            "alignment": "center",
+            "tone": "dark",
+            "align": "full",
+            "headingSize": "large"
+          },
+          "preparedIteration": 2,
+          "qa": [
+            {
+              "iteration": 2,
+              "breakpoint": "desktop",
+              "mode": "diff",
+              "mismatch": 0.0627,
+              "heightDelta": 0.0276,
+              "widthDelta": 0,
+              "numericPass": true,
+              "pass": true,
+              "verdict": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/warranty/pb-s7/iter-2/verdict.json"
+            },
+            {
+              "iteration": 2,
+              "breakpoint": "tablet",
+              "mode": "sanity",
+              "widthDelta": 0,
+              "numericPass": true,
+              "pass": true,
+              "verdict": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/warranty/pb-s7/iter-2/verdict.json"
+            },
+            {
+              "iteration": 2,
+              "breakpoint": "mobile",
+              "mode": "sanity",
+              "widthDelta": 0,
+              "numericPass": true,
+              "pass": true,
+              "verdict": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/warranty/pb-s7/iter-2/verdict.json"
+            }
+          ],
+          "motion": {
+            "presets": [],
+            "check": "pass",
+            "result": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/warranty/pb-s7/motion/motion-check.json"
+          }
         },
         {
           "n": 8,
           "anchor": "pb-footer",
-          "status": "building",
+          "status": "verifying",
           "crops": {
             "desktop": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/warranty/crops/desktop/pb-footer.png"
           },
@@ -1763,7 +1968,8 @@
           "block": "cadco-footer",
           "notes": "rendered by the template part; verify only",
           "inPart": true,
-          "prevStatus": "done"
+          "prevStatus": "done",
+          "preparedIteration": 1
         }
       ],
       "plan": {

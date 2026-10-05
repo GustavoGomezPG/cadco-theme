@@ -112,3 +112,9 @@
     max-width: 100%;
     height: auto;
 }
+
+/* A logo dropped into a column stands clear of the copy above it. */
+.cadco-prose img {
+    display: block;
+    margin-top: 34px;
+}

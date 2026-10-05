@@ -29,12 +29,16 @@ $is_preview = ! isset($block) || $block === null;
 
 /* Literal classes so Tailwind's scanner sees them. */
 $surface = ($attributes['surface'] ?? 'paper') === 'tint' ? 'bg-[#eef2f6]' : 'bg-paper';
+
+/* Literal classes, so Tailwind's scanner sees them: it cannot generate a class
+   from a value computed in PHP, which an inline width quietly relied on. */
+$leftCol = ($attributes['leftMeasure'] ?? 'wide') === 'narrow' ? 'lg:w-[490px]' : 'lg:w-[542px]';
 $outline = ($attributes['ctaStyle'] ?? 'outline') !== 'solid';
 
 $reveal = $is_preview ? '' : 'data-proto-animate="manual" data-cadco-reveal-group';
 
 $wrapper = get_block_wrapper_attributes([
-    'class' => 'cadco-prose-columns w-full ' . $surface . ' py-[88px] md:pt-[96px] md:pb-[98px]',
+    'class' => 'cadco-prose-columns w-full ' . $surface . ' py-[88px] md:pt-[96px] md:pb-[117px]',
 ]);
 ?>
 <section <?php echo $wrapper; ?> <?php echo $reveal; ?>>
@@ -52,7 +56,7 @@ $wrapper = get_block_wrapper_attributes([
         <div class="flex flex-col gap-12 lg:flex-row lg:items-start lg:justify-between lg:gap-[64px]"
              data-cadco-reveal="items">
 
-            <div class="w-full lg:w-[542px] lg:shrink-0">
+            <div class="w-full lg:shrink-0 <?php echo esc_attr($leftCol); ?>">
                 <div data-proto-field="left" class="cadco-prose">
                     <?php echo wp_kses_post($left); ?>
                 </div>

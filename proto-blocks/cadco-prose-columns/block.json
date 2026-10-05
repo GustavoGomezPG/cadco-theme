@@ -10,7 +10,9 @@
     "html": false,
     "anchor": true,
     "customClassName": true,
-    "align": ["full"]
+    "align": [
+      "full"
+    ]
   },
   "protoBlocks": {
     "version": "1.0",
@@ -44,8 +46,14 @@
         "label": "Background",
         "default": "paper",
         "options": [
-          { "key": "paper", "label": "Paper" },
-          { "key": "tint", "label": "Tint" }
+          {
+            "key": "paper",
+            "label": "Paper"
+          },
+          {
+            "key": "tint",
+            "label": "Tint"
+          }
         ]
       },
       "ctaStyle": {
@@ -53,10 +61,32 @@
         "label": "Button style",
         "default": "outline",
         "options": [
-          { "key": "outline", "label": "Outlined with a telephone icon" },
-          { "key": "solid", "label": "Solid" }
+          {
+            "key": "outline",
+            "label": "Outlined with a telephone icon"
+          },
+          {
+            "key": "solid",
+            "label": "Solid"
+          }
         ],
         "help": "The warranty page draws its service line as an outlined button with a handset beside it."
+      },
+      "leftMeasure": {
+        "type": "select",
+        "label": "Left column measure",
+        "default": "wide",
+        "options": [
+          {
+            "key": "wide",
+            "label": "Wide (542px)"
+          },
+          {
+            "key": "narrow",
+            "label": "Narrow (490px)"
+          }
+        ],
+        "help": "How wide the left column runs before its copy wraps. The warranty page uses both: the coverage copy runs wide, the additional information narrow."
       }
     }
   }

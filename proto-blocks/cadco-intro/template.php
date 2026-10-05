@@ -67,7 +67,10 @@ $surface   = $isDark
    paper one, and a slightly smaller headline. Scoped so the paper instances
    keep exactly what they render today. */
 $pad       = $isDark ? 'py-20 md:py-[169px]' : 'py-20 md:py-[120px]';
-$headSize  = $isDark ? 'md:text-[56px]' : 'md:text-[64px]';
+$sizePick  = (string) ($attributes['headingSize'] ?? 'auto');
+$headSize  = $sizePick === 'large'
+    ? 'md:text-[64px]'
+    : ($sizePick === 'medium' ? 'md:text-[56px]' : ($isDark ? 'md:text-[56px]' : 'md:text-[64px]'));
 $textMain  = $isDark ? 'text-white' : 'text-true-black';
 
 $wrapper = get_block_wrapper_attributes([

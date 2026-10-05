@@ -128,7 +128,7 @@ $panelId = static function (int $i): string {
                                 aria-controls="<?php echo esc_attr($panelId((int) $i)); ?>"
                                 aria-selected="<?php echo $i === 0 ? 'true' : 'false'; ?>"
                                 data-cadco-cmp-tab="<?php echo (int) $i; ?>"
-                                class="cadco-cmp__tab h-9 rounded-[8px] border px-4 font-display text-[14px] font-bold leading-none transition-colors">
+                                class="cadco-cmp__tab h-11 rounded-[8px] border px-4 font-display text-[14px] font-bold leading-none transition-colors md:h-9">
                             <?php echo esc_html((string) ($tab['label'] ?? '')); ?>
                         </button>
                     <?php endforeach; ?>
@@ -170,21 +170,21 @@ $panelId = static function (int $i): string {
                         <?php /* The frame draws a white card with the table inside it;
                                  the wrapper scrolls sideways on a narrow screen so a
                                  seven-column table never widens the page. */ ?>
-                        <div class="cadco-cmp__card overflow-x-auto rounded-[16px] bg-white">
-                            <table class="w-full min-w-[860px] table-fixed border-collapse text-left">
+                        <div class="cadco-cmp__card overflow-x-auto rounded-[16px] bg-white px-3">
+                            <table class="w-full min-w-[860px] table-fixed border-separate border-spacing-0 text-left">
                                 <thead>
                                     <tr>
                                         <?php foreach ($head as $c => $cell) : ?>
                                             <th scope="col"
                                                 style="width:<?php echo esc_attr($c === 0 ? $firstCol : $rest); ?>%"
-                                                class="border-b border-[#e3e8ee] px-4 py-[17px] font-display text-[14px] font-bold leading-[19px] text-true-black <?php echo $c === 0 ? 'pl-7' : 'text-center'; ?>">
+                                                class="border-y border-[#e3e8ee] px-4 py-[17px] font-display text-[14px] font-bold leading-[19px] text-true-black <?php echo $c === 0 ? 'rounded-l-[12px] border-l pl-7' : 'text-center'; ?><?php echo $c === $cols - 1 ? ' rounded-r-[12px] border-r' : ''; ?>">
                                                 <?php echo esc_html($cell); ?>
                                             </th>
                                         <?php endforeach; ?>
                                     </tr>
                                 </thead>
 
-                                <tbody>
+                                <tbody class="cadco-cmp__body">
                                     <?php foreach ($rows as $row) : ?>
                                         <tr>
                                             <?php for ($c = 0; $c < $cols; $c++) : ?>
@@ -209,7 +209,7 @@ $panelId = static function (int $i): string {
 
                             <?php if ($footnote !== '' || $is_preview) : ?>
                                 <div data-proto-field="footnote"
-                                     class="cadco-cmp__note px-7 pb-7 pt-5 font-display text-[13px] font-normal leading-[20px] text-true-black">
+                                     class="cadco-cmp__note px-7 pb-7 pt-5 font-display text-[14px] font-normal leading-[21px] text-true-black md:text-[13px] md:leading-[20px]">
                                     <?php echo wp_kses_post($footnote); ?>
                                 </div>
                             <?php endif; ?>
