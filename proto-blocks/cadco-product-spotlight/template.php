@@ -113,7 +113,7 @@ $wrapper = get_block_wrapper_attributes([
              style="<?php echo esc_attr($scrimStyle); ?>" aria-hidden="true"></div>
     <?php endif; ?>
 
-    <div class="relative mx-auto flex w-full max-w-[1196px] px-6
+    <div class="relative mx-auto flex w-full max-w-[1140px] px-6
         <?php echo $isPhoto ? 'items-center justify-end lg:pr-[83px]' : 'flex-col gap-12 lg:flex-row lg:justify-between lg:gap-10 ' . $rowAlign; ?>"
         <?php if ($isPhoto) : ?>style="min-height:<?php echo (int) $minHeight; ?>px"<?php endif; ?>>
 

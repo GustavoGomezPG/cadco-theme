@@ -59,7 +59,28 @@
 		/* No GSAP, or the viewer asked for less motion: leave the rail as an
 		   ordinary horizontal scroll. No pin, no hijacked page scroll. */
 		if (!gsap || !ScrollTrigger || prefersReducedMotion() || section.dataset.scrub !== '1') {
-			track.parentElement.classList.add('overflow-x-auto');
+			var viewport = track.parentElement;
+
+			viewport.classList.add('overflow-x-auto');
+
+			/* Making it scroll is not enough: a region that scrolls but cannot be
+			   focused is reachable with a mouse or a finger and not with a
+			   keyboard, so its later milestones are simply unavailable to anyone
+			   who does not use a pointer. Give it a tab stop and a name, taking
+			   the name from the section's own heading rather than inventing one. */
+			if (!viewport.hasAttribute('tabindex')) {
+				var heading = section.querySelector('h2, h3');
+
+				viewport.setAttribute('tabindex', '0');
+				viewport.setAttribute('role', 'region');
+				viewport.setAttribute(
+					'aria-label',
+					heading && heading.textContent.trim() !== ''
+						? heading.textContent.trim()
+						: 'Timeline'
+				);
+			}
+
 			if (prev) { prev.disabled = true; }
 			if (next) { next.disabled = true; }
 			return;

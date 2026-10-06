@@ -144,14 +144,20 @@ $wrapper = get_block_wrapper_attributes([
     <?php endif; ?>
 
     <?php /* ---------- Content ----------
-             Same container as the header and footer — max-w-[1440px] with
-             px-6 lg:px-10 — so the copy starts on the same vertical line as the
-             logo above it and the footer columns below. The Figma frame insets
-             the hero to 160px, but its header is inset ~140px where the built
-             header sits at 40px; sharing the shipped container is what actually
-             lines the page up. Keep this in step with cadco-header and
-             cadco-footer if that column ever changes. */ ?>
-    <div class="relative mx-auto flex h-full w-full max-w-[1440px] flex-col justify-center px-6 lg:px-10"
+             The same container the content blocks use, so the hero copy starts
+             on the line the sections below it start on.
+
+             This used to share the header's container instead, to line the copy
+             up with the logo. That was the wrong reference: in the frame the
+             logo sits near 140 and the hero copy at 193, which is exactly where
+             every content band begins -- measured off the rendered frames, the
+             hero text, the coverage columns, the additional information and the
+             comparison table all start at 193. Aligning to the logo put the
+             copy at 40 and left it 153px adrift of the section beneath it on
+             every page.
+
+             Keep this in step with the content blocks, not with cadco-header. */ ?>
+    <div class="relative mx-auto flex h-full w-full max-w-[1140px] flex-col justify-center px-6"
          style="<?php echo esc_attr($heightStyle); ?>">
 
         <?php // Always rendered, empty or not, so both stay editable. ?>
@@ -173,7 +179,7 @@ $wrapper = get_block_wrapper_attributes([
                  attribute as prose and curly-quotes its closing quote, which
                  silently corrupted this element's markup. */ ?>
         <h1 data-hero-heading
-            class="m-0 max-w-[1240px] font-display font-extrabold leading-[1.198] text-white <?php echo esc_attr($headingSize); ?>">
+            class="m-0 max-w-[1019px] font-display font-extrabold leading-[1.198] text-white <?php echo esc_attr($headingSize); ?>">
             <?php
             /*
              * Two fields rather than one, so a two-sentence headline breaks

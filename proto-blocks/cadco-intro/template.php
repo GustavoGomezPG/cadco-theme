@@ -92,7 +92,7 @@ $wrapper = get_block_wrapper_attributes([
 $reveal = $is_preview ? '' : 'data-proto-animate="manual" data-cadco-reveal-group';
 ?>
 <section <?php echo $wrapper; ?> <?php echo $reveal; ?>>
-    <div class="mx-auto w-full max-w-[1106px] px-6">
+    <div class="mx-auto w-full max-w-[1140px] px-6">
 
         <?php // Always rendered, empty or not, so all four stay editable. ?>
         <p data-proto-field="eyebrow"

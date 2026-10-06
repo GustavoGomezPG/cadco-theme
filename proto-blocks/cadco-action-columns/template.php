@@ -30,13 +30,15 @@ $is_preview = ! isset($block) || $block === null;
    from a value computed in PHP. */
 $surface = ($attributes['surface'] ?? 'paper') === 'tint' ? 'bg-[#eef2f6]' : 'bg-paper';
 
-/* Literal classes again: the frame gives the opening column 541px and the next
-   400px with 82 between them, which is 1023 -- the container's content width.
-   A third column, or the even measure, just shares the row.
+/* The frame gives the opening column 541px and the next 400px. Those are held
+   as a ratio rather than as two fixed widths, because the block now shares the
+   site's container instead of one cut to this frame: fixed widths in a wider
+   box leave their slack to the gap, which would have opened the frame's 82px to
+   roughly 151. Growing in proportion keeps the frame's balance at any measure.
 
-   These are lg: rather than md:, because 1023px of columns does not fit the
-   768px the md breakpoint allows: pinned there, the second column ran past the
-   right edge of a tablet and gave the whole page a horizontal scrollbar. */
+   These are lg: rather than md:, because two columns of this width do not fit
+   the 768px the md breakpoint allows: pinned there, the second column ran past
+   the right edge of a tablet and gave the whole page a horizontal scrollbar. */
 $wideFirst = ($attributes['measure'] ?? 'even') === 'wideFirst';
 
 $columnClass = static function (int $i) use ($wideFirst): string {
@@ -45,11 +47,11 @@ $columnClass = static function (int $i) use ($wideFirst): string {
     }
 
     if (0 === $i) {
-        return 'lg:w-[541px] lg:shrink-0';
+        return 'lg:flex-[541_1_0%]';
     }
 
     if (1 === $i) {
-        return 'lg:w-[400px] lg:shrink-0';
+        return 'lg:flex-[400_1_0%]';
     }
 
     return 'lg:flex-1';
@@ -62,7 +64,7 @@ $wrapper = get_block_wrapper_attributes([
 ]);
 ?>
 <section <?php echo $wrapper; ?> <?php echo $reveal; ?>>
-    <div class="mx-auto w-full max-w-[1071px] px-6">
+    <div class="mx-auto w-full max-w-[1140px] px-6">
 
         <div data-proto-repeater="columns"
              class="flex flex-col gap-16 lg:flex-row lg:items-start lg:justify-between lg:gap-[82px]"

@@ -174,6 +174,14 @@
           "file": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/baselines/warranty/pb-s2-desktop.png",
           "width": 1440,
           "scale": 1
+        },
+        {
+          "page": "parts-ordering",
+          "anchor": "pb-s2",
+          "breakpoint": "desktop",
+          "file": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/baselines/parts-ordering/pb-s2-desktop.png",
+          "width": 1440,
+          "scale": 1
         }
       ]
     },
@@ -2032,7 +2040,7 @@
     {
       "slug": "parts-ordering",
       "title": "Parts Ordering",
-      "status": "building",
+      "status": "seo",
       "postId": 75,
       "contentHash": "9d368c74283196cb85f342f0d6dae0035bacb8497ead728f66624474cdbc7583",
       "design": {
@@ -2050,7 +2058,7 @@
         {
           "n": 1,
           "anchor": "pb-header",
-          "status": "building",
+          "status": "skipped",
           "crops": {
             "desktop": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/parts-ordering/crops/desktop/pb-header.png"
           },
@@ -2063,14 +2071,15 @@
           "label": "Header",
           "decision": "reuse",
           "block": "cadco-header",
-          "notes": "rendered by the template part; verify only",
+          "notes": "Skipped, as on the products, about and warranty pages. The header and footer are rendered by the template parts, so they are not rebuilt as page sections and carry no pb-header/pb-footer anchor to check against.",
           "inPart": true,
-          "prevStatus": "done"
+          "prevStatus": "done",
+          "preparedIteration": 1
         },
         {
           "n": 2,
           "anchor": "pb-s2",
-          "status": "building",
+          "status": "done",
           "crops": {
             "desktop": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/parts-ordering/crops/desktop/pb-s2.png"
           },
@@ -2097,8 +2106,7 @@
             "align": "full",
             "headingScale": "compact"
           },
-          "prevStatus": "building",
-          "preparedIteration": 2,
+          "preparedIteration": 3,
           "qa": [
             {
               "iteration": 2,
@@ -2128,13 +2136,47 @@
               "numericPass": true,
               "pass": false,
               "verdict": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/parts-ordering/pb-s2/iter-2/verdict.json"
+            },
+            {
+              "iteration": 3,
+              "breakpoint": "desktop",
+              "mode": "diff",
+              "mismatch": 0.0584,
+              "heightDelta": 0,
+              "widthDelta": 0,
+              "numericPass": true,
+              "pass": true,
+              "verdict": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/parts-ordering/pb-s2/iter-3/verdict.json"
+            },
+            {
+              "iteration": 3,
+              "breakpoint": "tablet",
+              "mode": "sanity",
+              "widthDelta": 0,
+              "numericPass": true,
+              "pass": true,
+              "verdict": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/parts-ordering/pb-s2/iter-3/verdict.json"
+            },
+            {
+              "iteration": 3,
+              "breakpoint": "mobile",
+              "mode": "sanity",
+              "widthDelta": 0,
+              "numericPass": true,
+              "pass": true,
+              "verdict": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/parts-ordering/pb-s2/iter-3/verdict.json"
             }
-          ]
+          ],
+          "motion": {
+            "presets": [],
+            "check": "pass",
+            "result": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/parts-ordering/pb-s2/motion/motion-check.json"
+          }
         },
         {
           "n": 3,
           "anchor": "pb-s3",
-          "status": "animating",
+          "status": "done",
           "crops": {
             "desktop": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/parts-ordering/crops/desktop/pb-s3.png"
           },
@@ -2224,12 +2266,17 @@
               "pass": true,
               "verdict": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/parts-ordering/pb-s3/iter-2/verdict.json"
             }
-          ]
+          ],
+          "motion": {
+            "presets": [],
+            "check": "pass",
+            "result": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/parts-ordering/pb-s3/motion/motion-check.json"
+          }
         },
         {
           "n": 4,
           "anchor": "pb-footer",
-          "status": "building",
+          "status": "skipped",
           "crops": {
             "desktop": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/parts-ordering/crops/desktop/pb-footer.png"
           },
@@ -2242,9 +2289,10 @@
           "label": "Footer",
           "decision": "reuse",
           "block": "cadco-footer",
-          "notes": "rendered by the template part; verify only",
+          "notes": "Skipped, as on the products, about and warranty pages. The header and footer are rendered by the template parts, so they are not rebuilt as page sections and carry no pb-header/pb-footer anchor to check against.",
           "inPart": true,
-          "prevStatus": "done"
+          "prevStatus": "done",
+          "preparedIteration": 1
         }
       ],
       "plan": {
@@ -2256,6 +2304,11 @@
         "title": "Parts Ordering",
         "slug": "parts-ordering",
         "postStatus": "publish"
+      },
+      "pageQa": {
+        "pass": true,
+        "file": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/parts-ordering/page-qa/page-qa.json",
+        "at": "2026-10-06T18:12:34.048Z"
       }
     }
   ]
