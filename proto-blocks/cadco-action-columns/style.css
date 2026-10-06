@@ -1,0 +1,44 @@
+/*
+ * Cadco Action Columns.
+ *
+ * The body of a column is authored as rich text, so its paragraphs arrive as
+ * plain markup with no classes to hook. Tailwind preflight strips the margins a
+ * browser would otherwise give them, so the typography is restored here.
+ *
+ * Scoped to .cadco-action-prose so it cannot reach any other rich text.
+ */
+.cadco-action-prose {
+    font-family: var(--font-display, inherit);
+    font-size: 16px;
+    font-weight: 400;
+    line-height: 24px;
+    color: #11181c;
+}
+
+.cadco-action-prose > *:first-child {
+    margin-top: 0;
+}
+
+.cadco-action-prose p {
+    margin: 0 0 24px;
+}
+
+.cadco-action-prose p:last-child {
+    margin-bottom: 0;
+}
+
+.cadco-action-prose strong {
+    font-weight: 700;
+    color: #000;
+}
+
+.cadco-action-prose a {
+    font-weight: 700;
+    color: #00476e;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+}
+
+.cadco-action-prose a:hover {
+    color: #00395a;
+}

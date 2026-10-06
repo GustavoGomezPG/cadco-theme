@@ -232,6 +232,19 @@
         }
       ],
       "purpose": "Tabbed comparison tables built from CSV, pasted or linked from the media library"
+    },
+    "cadco-action-columns": {
+      "usedOn": [],
+      "baselines": [
+        {
+          "page": "parts-ordering",
+          "anchor": "pb-s3",
+          "breakpoint": "desktop",
+          "file": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/baselines/parts-ordering/pb-s3-desktop.png",
+          "width": 1440,
+          "scale": 1
+        }
+      ]
     }
   },
   "pages": [
@@ -2014,6 +2027,235 @@
           "file": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/warranty/seo-audit.json",
           "at": "2026-10-05T21:31:26.208Z"
         }
+      }
+    },
+    {
+      "slug": "parts-ordering",
+      "title": "Parts Ordering",
+      "status": "building",
+      "postId": 75,
+      "contentHash": "f6548d0986b97594668c14083d98594f543ea845b082dc11582fee4e413c429a",
+      "design": {
+        "frames": [
+          {
+            "breakpoint": "desktop",
+            "width": 1440,
+            "scale": 1,
+            "image": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/parts-ordering/design/desktop.png",
+            "pixelWidth": 1440
+          }
+        ]
+      },
+      "sections": [
+        {
+          "n": 1,
+          "anchor": "pb-header",
+          "status": "building",
+          "crops": {
+            "desktop": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/parts-ordering/crops/desktop/pb-header.png"
+          },
+          "ranges": {
+            "desktop": {
+              "y0": 0,
+              "y1": 75
+            }
+          },
+          "label": "Header",
+          "decision": "reuse",
+          "block": "cadco-header",
+          "notes": "rendered by the template part; verify only",
+          "inPart": true,
+          "prevStatus": "done"
+        },
+        {
+          "n": 2,
+          "anchor": "pb-s2",
+          "status": "building",
+          "crops": {
+            "desktop": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/parts-ordering/crops/desktop/pb-s2.png"
+          },
+          "ranges": {
+            "desktop": {
+              "y0": 75,
+              "y1": 508
+            }
+          },
+          "label": "Hero",
+          "decision": "reuse",
+          "block": "cadco-hero",
+          "notes": "eyebrow Order Parts; heading split at the apostrophe line; highlight on Guaranteed; gradient #000000 to #011a28",
+          "attrs": {
+            "eyebrow": "Order Parts",
+            "heading": "Guaranteed to fit your equipment’s",
+            "headingLine2": "exact make and model.",
+            "highlight": "Guaranteed",
+            "highlightColor": "#2087d0",
+            "background": "gradient",
+            "gradientTop": "#000000",
+            "gradientBottom": "#011a27",
+            "minHeight": 433,
+            "align": "full",
+            "headingScale": "compact"
+          },
+          "prevStatus": "building",
+          "preparedIteration": 2,
+          "qa": [
+            {
+              "iteration": 2,
+              "breakpoint": "desktop",
+              "mode": "diff",
+              "mismatch": 0.0727,
+              "heightDelta": 0,
+              "widthDelta": 0,
+              "numericPass": true,
+              "pass": false,
+              "verdict": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/parts-ordering/pb-s2/iter-2/verdict.json"
+            },
+            {
+              "iteration": 2,
+              "breakpoint": "tablet",
+              "mode": "sanity",
+              "widthDelta": 0,
+              "numericPass": true,
+              "pass": false,
+              "verdict": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/parts-ordering/pb-s2/iter-2/verdict.json"
+            },
+            {
+              "iteration": 2,
+              "breakpoint": "mobile",
+              "mode": "sanity",
+              "widthDelta": 0,
+              "numericPass": true,
+              "pass": false,
+              "verdict": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/parts-ordering/pb-s2/iter-2/verdict.json"
+            }
+          ]
+        },
+        {
+          "n": 3,
+          "anchor": "pb-s3",
+          "status": "animating",
+          "crops": {
+            "desktop": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/parts-ordering/crops/desktop/pb-s3.png"
+          },
+          "ranges": {
+            "desktop": {
+              "y0": 508,
+              "y1": 1247
+            }
+          },
+          "label": "Two action columns",
+          "decision": "new",
+          "block": "cadco-action-columns",
+          "notes": "repeater of two columns: logo, heading, body, button. Left solid Find Parts (# for now), right outlined phone (877) 603-7693",
+          "attrs": {
+            "columns": [
+              {
+                "id": "col1",
+                "logo": {
+                  "id": 18385,
+                  "url": "https://cadco.local/wp-content/uploads/2026/10/partstown-logo.png",
+                  "alt": "Parts Town — Get real parts faster",
+                  "caption": "",
+                  "size": "full"
+                },
+                "heading": "Ready to order a new Cadco part for your equipment?",
+                "body": "<p>Parts Town offers the most in-stock parts on the planet, you’ll get first pick at real OEM gaskets, panels, bulbs, elements and more to keep your equipment safe and protected under warranty. Keep your customers happy and your chefs cooking with real OEM Cadco parts guaranteed to fit your equipment’s exact make and model.</p>",
+                "cta": {
+                  "url": "#",
+                  "text": "Find Parts",
+                  "target": "",
+                  "rel": "",
+                  "title": ""
+                }
+              },
+              {
+                "id": "col2",
+                "logo": {
+                  "id": 68,
+                  "url": "https://cadco.local/wp-content/uploads/2026/07/cadco-logo-svg.svg",
+                  "alt": "Cadco",
+                  "caption": "",
+                  "size": "full"
+                },
+                "heading": "Need help identifying what part you need?",
+                "body": "<p>To identify what part you need contact Cadco’s parts department, then order from one of our trusted parts suppliers.</p>",
+                "cta": {
+                  "url": "tel:8776037693",
+                  "text": "(877) 603-7693",
+                  "target": "",
+                  "rel": "",
+                  "title": ""
+                }
+              }
+            ],
+            "surface": "paper",
+            "align": "full",
+            "measure": "wideFirst"
+          },
+          "preparedIteration": 2,
+          "qa": [
+            {
+              "iteration": 2,
+              "breakpoint": "desktop",
+              "mode": "diff",
+              "mismatch": 0.0358,
+              "heightDelta": 0.0027,
+              "widthDelta": 0,
+              "numericPass": true,
+              "pass": true,
+              "verdict": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/parts-ordering/pb-s3/iter-2/verdict.json"
+            },
+            {
+              "iteration": 2,
+              "breakpoint": "tablet",
+              "mode": "sanity",
+              "widthDelta": 0,
+              "numericPass": true,
+              "pass": true,
+              "verdict": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/parts-ordering/pb-s3/iter-2/verdict.json"
+            },
+            {
+              "iteration": 2,
+              "breakpoint": "mobile",
+              "mode": "sanity",
+              "widthDelta": 0,
+              "numericPass": true,
+              "pass": true,
+              "verdict": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/parts-ordering/pb-s3/iter-2/verdict.json"
+            }
+          ]
+        },
+        {
+          "n": 4,
+          "anchor": "pb-footer",
+          "status": "building",
+          "crops": {
+            "desktop": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/parts-ordering/crops/desktop/pb-footer.png"
+          },
+          "ranges": {
+            "desktop": {
+              "y0": 1247,
+              "y1": 1853
+            }
+          },
+          "label": "Footer",
+          "decision": "reuse",
+          "block": "cadco-footer",
+          "notes": "rendered by the template part; verify only",
+          "inPart": true,
+          "prevStatus": "done"
+        }
+      ],
+      "plan": {
+        "approvedAt": "2026-10-06T04:04:08.687Z",
+        "by": "developer"
+      },
+      "url": "https://cadco.local/support/parts-ordering/",
+      "written": {
+        "title": "Parts Ordering",
+        "slug": "parts-ordering",
+        "postStatus": "publish"
       }
     }
   ]

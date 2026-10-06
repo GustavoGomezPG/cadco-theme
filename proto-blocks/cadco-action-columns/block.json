@@ -1,0 +1,83 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/block.json",
+  "apiVersion": 3,
+  "name": "proto-blocks/cadco-action-columns",
+  "title": "Cadco Action Columns",
+  "category": "proto",
+  "icon": "columns",
+  "description": "Side-by-side routes to act on: each column is a logo, a heading, a short passage and a button.",
+  "supports": {
+    "html": false,
+    "anchor": true,
+    "customClassName": true,
+    "align": [
+      "full"
+    ]
+  },
+  "protoBlocks": {
+    "version": "1.0",
+    "template": "template.php",
+    "useTailwind": true,
+    "fields": {
+      "columns": {
+        "type": "repeater",
+        "label": "Columns",
+        "min": 1,
+        "max": 3,
+        "help": "One per route the reader can take. A button whose link begins tel: is drawn outlined with a handset; any other link is drawn solid.",
+        "fields": {
+          "logo": {
+            "type": "image",
+            "label": "Logo"
+          },
+          "heading": {
+            "type": "text",
+            "tagName": "h2",
+            "label": "Heading"
+          },
+          "body": {
+            "type": "wysiwyg",
+            "label": "Body"
+          },
+          "cta": {
+            "type": "link",
+            "label": "Button"
+          }
+        }
+      }
+    },
+    "controls": {
+      "surface": {
+        "type": "select",
+        "label": "Background",
+        "default": "paper",
+        "options": [
+          {
+            "key": "paper",
+            "label": "Paper"
+          },
+          {
+            "key": "tint",
+            "label": "Tint"
+          }
+        ]
+      },
+      "measure": {
+        "type": "select",
+        "label": "Column measure",
+        "default": "even",
+        "options": [
+          {
+            "key": "even",
+            "label": "Even"
+          },
+          {
+            "key": "wideFirst",
+            "label": "Wide first (541 / 400)"
+          }
+        ],
+        "help": "Even splits the row. Wide first gives the opening column the longer measure, which is how the parts frame sets it; it applies to the first two columns only."
+      }
+    }
+  }
+}
