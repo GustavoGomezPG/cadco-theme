@@ -21,6 +21,49 @@ $is_preview = ! isset($block) || $block === null;
 
 $navItems = function_exists('cadco_get_nav_items') ? cadco_get_nav_items($navMenu) : [];
 
+/*
+ * Descriptions set on this block win over the one stored on the menu item.
+ *
+ * The menu item carries a `description` attribute, but nothing in a block theme
+ * surfaces it: the menu is rendered here in PHP rather than by a core Navigation
+ * block, so there is no link block to select and no inspector to type into. The
+ * control above is that missing surface. The menu's own value stays as the
+ * fallback, so anything written there before this existed still renders.
+ *
+ * Applied to the whole tree rather than to the panels alone, so an item shows
+ * the same description wherever it appears -- desktop panel, mobile menu.
+ */
+$descriptions = [];
+
+foreach ((array) ($attributes['menuDescriptions'] ?? []) as $row) {
+    $item = trim((string) ($row['item'] ?? ''));
+    $text = trim((string) preg_replace('/\s+/u', ' ', (string) ($row['text'] ?? '')));
+
+    if ('' !== $item && '' !== $text) {
+        $descriptions[$item] = $text;
+    }
+}
+
+if (! empty($descriptions)) {
+    $applyDescriptions = function (array $items) use (&$applyDescriptions, $descriptions): array {
+        foreach ($items as &$item) {
+            $label = (string) ($item['label'] ?? '');
+
+            if ('' !== $label && isset($descriptions[$label])) {
+                $item['description'] = $descriptions[$label];
+            }
+
+            if (! empty($item['children'])) {
+                $item['children'] = $applyDescriptions($item['children']);
+            }
+        }
+
+        return $items;
+    };
+
+    $navItems = $applyDescriptions($navItems);
+}
+
 // Show the shape of a menu in the editor when none is chosen yet, so the block
 // is not a bare bar with nothing to look at.
 if ($is_preview && empty($navItems)) {
