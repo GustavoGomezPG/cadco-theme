@@ -261,7 +261,7 @@
       "title": "Products",
       "status": "seo",
       "postId": 18312,
-      "contentHash": "b18d0da995fea78e0bd31a34256143dd9405ff311e82f86ff7c8d7dce48ebf40",
+      "contentHash": "bf62c4c6c34763f22cc3d62564cec9168e8e250eddc23fa9c13aaf9ef51cfcee",
       "design": {
         "frames": [
           {
@@ -322,7 +322,7 @@
           "notes": "accepted by developer: the theme shared container (max-w-[1440px] px-10) is the source of truth, not the Figma 1190px column. Accepted: content left edge 40px vs design 126px (~86px offset, the site-wide convention shared with header/footer per the hero template comment), and the heading therefore setting on one line instead of the design two. Residual differences NOT caused by the container and not addressed: eyebrow sits ~64px lower (hero content is vertically centred; design anchors it higher), background photo offset ~20px (low severity). QA iter-1 recorded pass:false mismatch 0.3179; the no-product-cards discrepancy was expected since section 3 was unbuilt.",
           "attrs": {
             "eyebrow": "Products",
-            "heading": "Explore Cadco Products.",
+            "heading": "Explore Cadco",
             "backgroundImage": {
               "id": 18311,
               "url": "https://cadco.local/wp-content/uploads/2026/10/products-hero-kitchen-scaled.jpg",
@@ -332,7 +332,8 @@
             },
             "scrimOpacity": 74,
             "minHeight": 523,
-            "align": "full"
+            "align": "full",
+            "headingLine2": "Products."
           },
           "prevStatus": "building",
           "preparedIteration": 1,
