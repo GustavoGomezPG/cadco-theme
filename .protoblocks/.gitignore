@@ -1,0 +1,9 @@
+artifacts/
+build.json.bak
+build.json.lock
+build.json.tmp-*
+# scratch files (plan gate, part markup, attrs)
+plan.json
+header.html
+footer.html
+*.attrs.json

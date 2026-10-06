@@ -131,8 +131,22 @@ if (! function_exists('cadco_featured_bullets')) {
     }
 }
 
+/*
+ * The section's own background sits under the scrim, so it has to match what
+ * the scrim is darkening -- not the page.
+ *
+ * With a photograph behind it the section read black, but its own background
+ * was paper. Wherever the photograph's edge rounded inward by a fraction of a
+ * device pixel -- which it does at any fractional ratio, including a browser
+ * zoom or a scaled display -- one row of that paper showed through the scrim
+ * instead of the photograph. Measured, it came out rgb(63,63,62): white at 255
+ * seen through a scrim about 75% opaque. That was the grey hairline, and no
+ * amount of covering the join from either side could fix it, because the line
+ * was never the join -- it was this section's own backdrop.
+ */
 $wrapper = get_block_wrapper_attributes([
-    'class' => 'cadco-featured-products relative isolate w-full overflow-hidden bg-paper',
+    'class' => 'cadco-featured-products relative isolate w-full overflow-hidden '
+        . (! empty($bg['url']) ? 'bg-black' : 'bg-paper'),
 ]);
 
 /**
@@ -156,7 +170,7 @@ $reveal = $is_preview ? '' : 'data-proto-animate="manual" data-cadco-reveal-grou
                  photograph, so serving a phone the desktop file is the single
                  most expensive mistake available here. */ ?>
         <?php echo wp_get_attachment_image($bgId, 'full', false, [
-            'class'         => 'pointer-events-none absolute inset-0 -z-20 h-full w-full object-cover ' . $bgPosClass,
+            'class'         => 'pointer-events-none absolute -inset-px -z-20 h-full w-full object-cover ' . $bgPosClass,
             'alt'           => '',
             'aria-hidden'   => 'true',
             'loading'       => 'lazy',
@@ -165,7 +179,7 @@ $reveal = $is_preview ? '' : 'data-proto-animate="manual" data-cadco-reveal-grou
     <?php elseif ($bgUrl !== '') : ?>
         <?php // No id (a url pasted straight into the attribute): no srcset available. ?>
         <img
-            class="pointer-events-none absolute inset-0 -z-20 h-full w-full object-cover <?php echo esc_attr($bgPosClass); ?>"
+            class="pointer-events-none absolute -inset-px -z-20 h-full w-full object-cover <?php echo esc_attr($bgPosClass); ?>"
             src="<?php echo esc_url($bgUrl); ?>"
             alt=""
             aria-hidden="true"
@@ -178,7 +192,7 @@ $reveal = $is_preview ? '' : 'data-proto-animate="manual" data-cadco-reveal-grou
              black under the section above it and fade out over whatever sits
              below -- the photograph when there is one, the white page when
              there is not. */ ?>
-    <div class="pointer-events-none absolute inset-0 -z-10"
+    <div class="pointer-events-none absolute -inset-px -z-10"
          style="background-image:linear-gradient(to bottom,#000 21.538%,rgba(0,0,0,0.79) 41.799%,rgba(0,0,0,0) 91.415%)"
          aria-hidden="true"></div>
 

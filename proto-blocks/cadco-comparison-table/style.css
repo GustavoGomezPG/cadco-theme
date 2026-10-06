@@ -1,0 +1,114 @@
+/*
+ * Cadco Comparison Table.
+ */
+.cadco-cmp__card {
+    box-shadow: 0 2px 18px rgba(16, 32, 48, 0.07);
+}
+
+/* The tabs are drawn as outlined pills, with the selected one filled. */
+.cadco-cmp__tab {
+    border-color: #00476e;
+    background: transparent;
+    color: #00476e;
+    cursor: pointer;
+}
+
+.cadco-cmp__tab:hover {
+    background: rgba(0, 71, 110, 0.06);
+}
+
+.cadco-cmp__tab.is-active {
+    background: #0b3a5d;
+    border-color: #0b3a5d;
+    color: #fff;
+}
+
+.cadco-cmp__tab:focus-visible {
+    outline: 2px solid #2f86e0;
+    outline-offset: 2px;
+}
+
+/* Without the script every table would otherwise stack; the first is enough,
+   and the rest stay reachable in the markup for anything reading the page. */
+.cadco-cmp__note p {
+    margin: 0 0 6px;
+}
+
+.cadco-cmp__note p:last-child {
+    margin-bottom: 0;
+}
+
+/*
+ * Authoring panel, editor only.
+ *
+ * A tab's content is a CSV that gets parsed rather than displayed, so the front
+ * end has no element to bind the field to and there would otherwise be nowhere
+ * to type it. This panel carries the bound regions, and is never output on the
+ * front end.
+ *
+ * Styled like a form rather than like the page, so it reads as editing
+ * furniture and not as something a visitor will see.
+ */
+.cadco-cmp__authoring {
+    margin: 0 0 16px;
+    padding: 16px 18px;
+    border: 1px solid #c9d4e0;
+    border-radius: 10px;
+    background: #f7f9fc;
+}
+
+.cadco-cmp__authoring-title {
+    margin: 0 0 12px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #5a6b7d;
+}
+
+.cadco-cmp__label {
+    display: block;
+    margin: 14px 0 4px;
+    font-size: 12px;
+    font-weight: 700;
+    color: #1d2b39;
+}
+
+.cadco-cmp__label:first-of-type {
+    margin-top: 0;
+}
+
+.cadco-cmp__hint {
+    margin: 0 0 6px;
+    font-size: 11px;
+    line-height: 1.5;
+    color: #5a6b7d;
+}
+
+.cadco-cmp__hint--preview {
+    margin: 14px 0 0;
+    font-style: italic;
+}
+
+.cadco-cmp__input {
+    min-height: 34px;
+    padding: 7px 10px;
+    border: 1px solid #c9d4e0;
+    border-radius: 6px;
+    background: #fff;
+    font-size: 13px;
+    line-height: 1.5;
+    color: #1d2b39;
+}
+
+/* The CSV wants to be read as rows, so it is monospaced and keeps its breaks. */
+.cadco-cmp__input--csv {
+    min-height: 120px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 12px;
+    white-space: pre-wrap;
+}
+
+.cadco-cmp__input--csv p {
+    margin: 0;
+}

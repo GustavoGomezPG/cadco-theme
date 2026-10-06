@@ -1,0 +1,66 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/block.json",
+  "apiVersion": 3,
+  "name": "proto-blocks/cadco-timeline",
+  "title": "Cadco Timeline",
+  "category": "proto",
+  "icon": "clock",
+  "description": "A horizontal history rail: milestones alternate above and below a progress line, scrubbed by page scroll with prev and next controls.",
+  "supports": {
+    "html": false,
+    "anchor": true,
+    "customClassName": true,
+    "align": ["full"]
+  },
+  "protoBlocks": {
+    "version": "1.0",
+    "template": "template.php",
+    "useTailwind": true,
+    "viewScript": "view.js",
+    "fields": {
+      "eyebrow": {
+        "type": "text",
+        "tagName": "p",
+        "label": "Eyebrow",
+        "default": "The History of Cadco"
+      },
+      "heading": {
+        "type": "text",
+        "tagName": "h2",
+        "format": "full",
+        "label": "Heading",
+        "default": "Throughout the years of leading the food equipment industry.",
+        "help": "Select a word and colour it with the editor's own colour tool to pick it out, as the design does with \"leading\"."
+      },
+      "milestones": {
+        "type": "repeater",
+        "label": "Milestones",
+        "min": 1,
+        "fields": {
+          "year": { "type": "text", "label": "Year" },
+          "title": { "type": "text", "label": "Title" },
+          "body": { "type": "text", "label": "Body" },
+          "image": { "type": "image", "label": "Image" }
+        }
+      }
+    },
+    "controls": {
+      "scrub": {
+        "type": "toggle",
+        "label": "Move with the page scroll",
+        "default": true,
+        "help": "The rail travels as the section passes through the viewport. Switch off to leave it driven only by the arrows."
+      },
+      "railColor": {
+        "type": "color",
+        "label": "Rail colour",
+        "default": "#d1d1cf"
+      },
+      "dotColor": {
+        "type": "color",
+        "label": "Marker colour",
+        "default": "#00476e"
+      }
+    }
+  }
+}

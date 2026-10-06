@@ -179,4 +179,41 @@ add_action('proto_blocks_register_options_providers', function ($providers) {
 
         return $options;
     }, ['menu_id']);
+
+    /*
+     * Every item in the menu, not only the top level.
+     *
+     * The panel settings above choose which top-level item opens a panel, so
+     * they only ever need the top level. A description is written on the items
+     * *inside* a panel -- "Warranty", "Parts Ordering" -- which are children,
+     * so they need the whole tree. Children are indented in the label to keep
+     * the dropdown readable, while the stored key stays the bare label, since
+     * that is what the template matches on.
+     */
+    $providers->register('cadco:nav-items-all', function (array $args): array {
+        $options = [['key' => '', 'label' => '— None —']];
+
+        $walk = function (array $items, int $depth) use (&$walk, &$options): void {
+            foreach ($items as $item) {
+                $label = (string) ($item['label'] ?? '');
+
+                if ('' === $label) {
+                    continue;
+                }
+
+                $options[] = [
+                    'key'   => $label,
+                    'label' => ($depth > 0 ? str_repeat("\u{00a0}\u{00a0}", $depth) . "\u{2014} " : '') . $label,
+                ];
+
+                if (! empty($item['children'])) {
+                    $walk($item['children'], $depth + 1);
+                }
+            }
+        };
+
+        $walk(cadco_get_nav_items((int) ($args['menu_id'] ?? 0)), 0);
+
+        return $options;
+    }, ['menu_id']);
 });

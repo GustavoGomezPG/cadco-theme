@@ -1,0 +1,74 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/block.json",
+  "apiVersion": 3,
+  "name": "proto-blocks/cadco-comparison-table",
+  "title": "Cadco Comparison Table",
+  "category": "proto",
+  "icon": "editor-table",
+  "description": "Tabbed comparison tables built from CSV, either pasted in or linked from the media library.",
+  "supports": {
+    "html": false,
+    "anchor": true,
+    "customClassName": true,
+    "align": [
+      "full"
+    ]
+  },
+  "protoBlocks": {
+    "version": "1.0",
+    "template": "template.php",
+    "useTailwind": true,
+    "viewScript": "view.js",
+    "fields": {
+      "heading": {
+        "type": "text",
+        "tagName": "h2",
+        "label": "Heading",
+        "default": "Warranty Comparison"
+      },
+      "footnote": {
+        "type": "wysiwyg",
+        "label": "Footnote"
+      }
+    },
+    "controls": {
+      "tabs": {
+        "type": "repeater",
+        "label": "Tabs",
+        "itemLabel": "label",
+        "min": 1,
+        "max": 12,
+        "help": "One table per tab. Each takes a pasted CSV, or a .csv from the media library.",
+        "fields": {
+          "label": {
+            "type": "text",
+            "label": "Tab name"
+          },
+          "csv": {
+            "type": "textarea",
+            "label": "Table (CSV)",
+            "help": "One row per line, cells separated by commas. The first line is the column headings and the first column is the product. Any other cell reading x, yes, y, true or 1 draws a tick; leave it empty for none. Put quotes round a cell that contains a comma."
+          },
+          "csvFile": {
+            "type": "file",
+            "label": "Or a CSV file",
+            "allowedTypes": [
+              "text/csv",
+              "text/plain"
+            ],
+            "help": "Used instead of whatever is pasted above when set."
+          }
+        }
+      },
+      "firstColumnWidth": {
+        "type": "range",
+        "label": "First column width (%)",
+        "default": 24,
+        "min": 12,
+        "max": 45,
+        "step": 1,
+        "help": "The product column. The rest share what is left equally."
+      }
+    }
+  }
+}

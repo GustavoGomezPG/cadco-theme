@@ -52,8 +52,29 @@ $headingWide = $centred ? 'max-w-[998px]' : 'max-w-[913px]';
 // $block is null in the editor preview.
 $is_preview = ! isset($block) || $block === null;
 
+/*
+ * Two tones. "paper" is what every existing instance renders and stays the
+ * default; "dark" sets the closing call to action on the hero's gradient with
+ * the text inverted. Each class is literal so Tailwind's scanner sees it.
+ */
+$isDark = ($attributes['tone'] ?? 'paper') === 'dark';
+
+$surface   = $isDark
+    ? 'bg-gradient-to-b from-[#00203a] to-[#000000]'
+    : 'bg-paper';
+
+/* The dark tone is a closing panel and the frame gives it more air than the
+   paper one, and a slightly smaller headline. Scoped so the paper instances
+   keep exactly what they render today. */
+$pad       = $isDark ? 'py-20 md:py-[169px]' : 'py-20 md:py-[120px]';
+$sizePick  = (string) ($attributes['headingSize'] ?? 'auto');
+$headSize  = $sizePick === 'large'
+    ? 'md:text-[64px]'
+    : ($sizePick === 'medium' ? 'md:text-[56px]' : ($isDark ? 'md:text-[56px]' : 'md:text-[64px]'));
+$textMain  = $isDark ? 'text-white' : 'text-true-black';
+
 $wrapper = get_block_wrapper_attributes([
-    'class' => 'cadco-intro w-full bg-paper py-20 md:py-[120px]',
+    'class' => 'cadco-intro ' . ($isDark ? 'cadco-intro--dark ' : '') . 'w-full ' . $pad . ' ' . $surface,
 ]);
 
 /**
@@ -76,7 +97,7 @@ $reveal = $is_preview ? '' : 'data-proto-animate="manual" data-cadco-reveal-grou
         <?php // Always rendered, empty or not, so all four stay editable. ?>
         <p data-proto-field="eyebrow"
            data-cadco-reveal="rise"
-           class="m-0 font-display text-[16px] font-extrabold leading-tight text-true-black md:text-[20px] <?php echo esc_attr($alignText); ?>">
+           class="m-0 font-display text-[16px] font-extrabold leading-tight md:text-[20px] <?php echo esc_attr($textMain); ?> <?php echo esc_attr($alignText); ?>">
             <?php echo esc_html($eyebrow); ?>
         </p>
 
@@ -87,7 +108,7 @@ $reveal = $is_preview ? '' : 'data-proto-animate="manual" data-cadco-reveal-grou
                  visible text. */ ?>
         <h2 data-proto-field="heading"
             data-cadco-reveal="lines"
-            class="m-0 mt-6 font-display text-[36px] font-bold leading-[1.18] text-true-black md:mt-9 md:text-[64px] <?php echo esc_attr($headingWide . ' ' . $alignText . ' ' . $alignSelf); ?>">
+            class="m-0 mt-6 font-display text-[36px] font-bold leading-[1.18] md:mt-9 <?php echo esc_attr($headSize . ' ' . $textMain); ?> <?php echo esc_attr($headingWide . ' ' . $alignText . ' ' . $alignSelf); ?>">
             <?php echo wp_kses_post($heading); ?>
         </h2>
 
@@ -98,7 +119,7 @@ $reveal = $is_preview ? '' : 'data-proto-animate="manual" data-cadco-reveal-grou
         <?php if (trim(wp_strip_all_tags((string) $body)) !== '' || $is_preview) : ?>
             <div data-proto-field="body"
                  data-cadco-reveal="rise"
-                 class="cadco-intro__body mt-8 max-w-[745px] font-display text-[16px] font-normal leading-6 text-true-black md:mt-12 <?php echo esc_attr($alignText . ' ' . $alignSelf); ?>">
+                 class="cadco-intro__body mt-8 max-w-[745px] font-display text-[16px] font-normal leading-6 md:mt-12 <?php echo esc_attr($textMain); ?> <?php echo esc_attr($alignText . ' ' . $alignSelf); ?>">
                 <?php echo wp_kses_post($body); ?>
             </div>
         <?php endif; ?>

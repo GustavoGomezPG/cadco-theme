@@ -21,6 +21,49 @@ $is_preview = ! isset($block) || $block === null;
 
 $navItems = function_exists('cadco_get_nav_items') ? cadco_get_nav_items($navMenu) : [];
 
+/*
+ * Descriptions set on this block win over the one stored on the menu item.
+ *
+ * The menu item carries a `description` attribute, but nothing in a block theme
+ * surfaces it: the menu is rendered here in PHP rather than by a core Navigation
+ * block, so there is no link block to select and no inspector to type into. The
+ * control above is that missing surface. The menu's own value stays as the
+ * fallback, so anything written there before this existed still renders.
+ *
+ * Applied to the whole tree rather than to the panels alone, so an item shows
+ * the same description wherever it appears -- desktop panel, mobile menu.
+ */
+$descriptions = [];
+
+foreach ((array) ($attributes['menuDescriptions'] ?? []) as $row) {
+    $item = trim((string) ($row['item'] ?? ''));
+    $text = trim((string) preg_replace('/\s+/u', ' ', (string) ($row['text'] ?? '')));
+
+    if ('' !== $item && '' !== $text) {
+        $descriptions[$item] = $text;
+    }
+}
+
+if (! empty($descriptions)) {
+    $applyDescriptions = function (array $items) use (&$applyDescriptions, $descriptions): array {
+        foreach ($items as &$item) {
+            $label = (string) ($item['label'] ?? '');
+
+            if ('' !== $label && isset($descriptions[$label])) {
+                $item['description'] = $descriptions[$label];
+            }
+
+            if (! empty($item['children'])) {
+                $item['children'] = $applyDescriptions($item['children']);
+            }
+        }
+
+        return $items;
+    };
+
+    $navItems = $applyDescriptions($navItems);
+}
+
 // Show the shape of a menu in the editor when none is chosen yet, so the block
 // is not a bare bar with nothing to look at.
 if ($is_preview && empty($navItems)) {
@@ -281,16 +324,27 @@ $panel_id = static function (string $key): string {
                     ?>
                     <?php if ($isMega || $isMini) : ?>
                         <div class="border-b border-white/10 last:border-b-0" data-cadco-acc>
-                            <button type="button"
-                                    class="flex w-full cursor-pointer items-center justify-between border-0 bg-transparent px-5 py-4 text-left text-[17px] font-medium text-white transition-colors hover:bg-white/5"
-                                    aria-expanded="false"
-                                    aria-controls="cadco-acc-<?php echo esc_attr($section); ?>"
-                                    data-cadco-acc-toggle>
-                                <span><?php echo esc_html($label); ?></span>
-                                <svg class="cadco-acc__chevron h-5 w-5 shrink-0 text-white/70" viewBox="0 0 20 20" fill="none" aria-hidden="true">
-                                    <path d="M5.5 7.5L10 12l4.5-4.5" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
-                                </svg>
-                            </button>
+                            <?php /* The label and the chevron do different things, so they are
+                                     separate controls. One full-width button made the only way to
+                                     reach a section's own page a trip through its submenu, and gave
+                                     no way to open the submenu without appearing to follow the link. */ ?>
+                            <div class="flex items-stretch">
+                                <a class="flex-1 px-5 py-4 text-[17px] font-medium text-white no-underline transition-colors hover:bg-white/5"
+                                   href="<?php echo esc_url($item['url'] ?? '#'); ?>">
+                                    <?php echo esc_html($label); ?>
+                                </a>
+
+                                <button type="button"
+                                        class="flex shrink-0 cursor-pointer items-center border-0 bg-transparent px-5 text-white transition-colors hover:bg-white/5"
+                                        aria-expanded="false"
+                                        aria-controls="cadco-acc-<?php echo esc_attr($section); ?>"
+                                        aria-label="<?php echo esc_attr(sprintf(__('Show %s menu', 'cadco-theme'), $label)); ?>"
+                                        data-cadco-acc-toggle>
+                                    <svg class="cadco-acc__chevron h-5 w-5 shrink-0 text-white/70" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                                        <path d="M5.5 7.5L10 12l4.5-4.5" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
+                                    </svg>
+                                </button>
+                            </div>
 
                             <div id="cadco-acc-<?php echo esc_attr($section); ?>" class="cadco-acc__panel" data-cadco-acc-panel>
                                 <div class="px-5 pb-5">

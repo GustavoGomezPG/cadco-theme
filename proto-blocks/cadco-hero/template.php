@@ -26,6 +26,31 @@ $is_preview = ! isset($block) || $block === null;
 
 $bgUrl = $bg['url'] ?? '';
 
+$body       = (string) ($attributes['body'] ?? '');
+$background = ($attributes['background'] ?? 'photo') === 'gradient' ? 'gradient' : 'photo';
+
+/**
+ * Colour controls land in a style attribute, so they are checked against the
+ * shapes the control can actually produce rather than merely escaped --
+ * esc_attr would happily pass a value that closes the declaration.
+ */
+$colour = static function (string $value, string $fallback): string {
+    return preg_match('/^(#[0-9a-f]{3,8}|(rgb|hsl)a?\([0-9a-z%.,\/\s]+\))$/i', trim($value))
+        ? trim($value)
+        : $fallback;
+};
+
+$gradTop    = $colour((string) ($attributes['gradientTop'] ?? ''), '#000000');
+$gradBottom = $colour((string) ($attributes['gradientBottom'] ?? ''), '#011a27');
+
+/* Measured off the About frame: solid black at the top easing into the deep
+   navy the footer sits on, so the page reads as one continuous field. */
+$gradientStyle = sprintf(
+    'background-image:linear-gradient(180deg, %1$s 0%%, %2$s 100%%)',
+    $gradTop,
+    $gradBottom
+);
+
 /**
  * The scrim is one gradient rather than a flat tint so the photograph stays
  * readable on the right while the text side goes dark enough for white type.
@@ -40,13 +65,41 @@ $scrimStyle = sprintf(
  * Height is driven by the design's 841px at 1440px wide (58.4vw) and floored so
  * the heading still has room to wrap on small screens.
  */
-$heightStyle = sprintf('min-height:clamp(520px, 58.4vw, %dpx)', $minH);
+/*
+ * The floor follows the setting rather than sitting at a fixed 520px.
+ *
+ * A hard floor meant a hero could never be shorter than 520px however the
+ * control was set, which is fine for the landing heroes -- all of them ask for
+ * more -- but not for an inner page: the warranty frame draws a 434px band and
+ * the hero simply ignored it. Taking the lower of the two keeps every existing
+ * hero exactly where it was and lets a shorter one exist.
+ */
+$heightStyle = sprintf('min-height:clamp(%dpx, 58.4vw, %dpx)', min(520, $minH), $minH);
+
+$glowColor = preg_match('/^#[0-9a-f]{3,8}$/i', trim((string) ($attributes['highlightColor'] ?? '')))
+    ? trim((string) $attributes['highlightColor'])
+    : '#2087d0';
+
+/*
+ * Two headline scales. Display is what the home, products and about heroes
+ * render and stays the default. Compact is a step down for an inner page: the
+ * warranty frame sets its headline on a 77px line pitch, which is 64px at the
+ * same 1.198 leading, and its highlight bar measures 322px under
+ * "satisfaction" -- the width that word takes at 64px, not at 96px.
+ */
+$isCompact = ($attributes['headingScale'] ?? 'display') === 'compact';
+
+$headingSize = $isCompact
+    ? 'text-[clamp(32px,4.44vw,64px)]'
+    : 'text-[clamp(38px,6.67vw,96px)]';
+
+$eyebrowGap  = $isCompact ? 'mb-9' : 'mb-6';
 
 $wrapper = get_block_wrapper_attributes([
     'class' => 'cadco-hero relative isolate w-full overflow-hidden bg-true-black',
 ]);
 ?>
-<section <?php echo $wrapper; ?> style="<?php echo esc_attr($heightStyle); ?>"<?php echo $is_preview ? '' : ' data-cadco-hero'; ?>>
+<section <?php echo $wrapper; ?> style="<?php echo esc_attr($heightStyle . ';--cadco-glow:' . $glowColor); ?>"<?php echo $is_preview ? '' : ' data-cadco-hero'; ?>>
 
     <?php if (! $is_preview) : ?>
         <?php /* Marks the pre-animation state while the section is still being
@@ -60,8 +113,10 @@ $wrapper = get_block_wrapper_attributes([
         setTimeout(function(){s.classList.remove('is-anim-pending');},10000);})();</script>
     <?php endif; ?>
 
-    <?php // ---------- Background photograph ---------- ?>
-    <?php if ($bgUrl !== '') : ?>
+    <?php // ---------- Background ---------- ?>
+    <?php if ($background === 'gradient') : ?>
+        <div class="absolute inset-0" style="<?php echo esc_attr($gradientStyle); ?>" aria-hidden="true"></div>
+    <?php elseif ($bgUrl !== '') : ?>
         <img
             data-hero-image
             class="absolute inset-0 h-full w-full object-cover will-change-transform"
@@ -81,8 +136,12 @@ $wrapper = get_block_wrapper_attributes([
         </div>
     <?php endif; ?>
 
-    <?php // ---------- Scrim ---------- ?>
-    <div class="pointer-events-none absolute inset-0" style="<?php echo esc_attr($scrimStyle); ?>" aria-hidden="true"></div>
+    <?php /* ---------- Scrim ----------
+             Only over a photograph. The gradient is already a controlled field,
+             so a second darkening pass over it just flattens the colour. */ ?>
+    <?php if ($background !== 'gradient') : ?>
+        <div class="pointer-events-none absolute inset-0" style="<?php echo esc_attr($scrimStyle); ?>" aria-hidden="true"></div>
+    <?php endif; ?>
 
     <?php /* ---------- Content ----------
              Same container as the header and footer — max-w-[1440px] with
@@ -97,17 +156,85 @@ $wrapper = get_block_wrapper_attributes([
 
         <?php // Always rendered, empty or not, so both stay editable. ?>
         <p data-proto-field="eyebrow" data-hero-eyebrow
-           class="m-0 mb-6 font-display text-[16px] font-extrabold leading-[1.2] text-white md:text-[20px]">
+           class="m-0 font-display text-[16px] font-extrabold leading-[1.2] text-white md:text-[20px] <?php echo esc_attr($eyebrowGap); ?>">
             <?php echo esc_html($eyebrow); ?>
         </p>
 
-        <?php /* Capped at the design's 1239.89px so it wraps to three lines as
-                 drawn. px-10 leaves 1360px inside the 1440 column, so this cap —
-                 not the padding — is what sets the measure. */ ?>
-        <h1 data-proto-field="heading" data-hero-heading
-            class="m-0 max-w-[1240px] font-display text-[clamp(38px,6.67vw,96px)] font-extrabold leading-[1.198] text-white">
-            <?php echo esc_html($heading); ?>
+        <?php /* Capped at the design's 1239.89px so a single-field headline
+                 still wraps as drawn. px-10 leaves 1360px inside the 1440
+                 column, so this cap — not the padding — sets the measure.
+
+                 The editor swaps each bound field for its own rich-text
+                 element, which brings default block margins with it and opens a
+                 gap between the headline lines that the front end never has.
+                 That margin is zeroed in style.css rather than with an
+                 arbitrary variant here: a ">" inside a class attribute breaks
+                 wptexturize's tag scanner, which then treats the rest of the
+                 attribute as prose and curly-quotes its closing quote, which
+                 silently corrupted this element's markup. */ ?>
+        <h1 data-hero-heading
+            class="m-0 max-w-[1240px] font-display font-extrabold leading-[1.198] text-white <?php echo esc_attr($headingSize); ?>">
+            <?php
+            /*
+             * Two fields rather than one, so a two-sentence headline breaks
+             * where the author decides. Driving the break off a max-width
+             * failed: the size is viewport-relative, so the same width held a
+             * different number of words in the editor's narrower iframe than
+             * on the front end, and the sentences split mid-sentence there.
+             * Each line is its own block, so there is no wrap to get wrong.
+             */
+            $line2 = (string) ($attributes['headingLine2'] ?? '');
+
+            /*
+             * The design backlights one word of the headline. Rather than
+             * hard-coding it, the author names the word and it is wrapped
+             * where it falls -- across either line, matched once, ignoring
+             * case. The match runs over the ALREADY ESCAPED string and the
+             * wrapper is the only markup added, so nothing from the field can
+             * become markup.
+             */
+            $highlight = trim((string) ($attributes['highlight'] ?? ''));
+            $glowDone  = false;
+
+            $glow = static function (string $text) use ($highlight, &$glowDone): string {
+                $safe = esc_html($text);
+
+                if ($glowDone || $highlight === '') {
+                    return $safe;
+                }
+
+                $needle = esc_html($highlight);
+                $at     = stripos($safe, $needle);
+
+                if ($at === false) {
+                    return $safe;
+                }
+
+                $glowDone = true;
+
+                return substr($safe, 0, $at)
+                    . '<span class="cadco-hero-glow">' . substr($safe, $at, strlen($needle)) . '</span>'
+                    . substr($safe, $at + strlen($needle));
+            };
+            ?>
+            <span data-proto-field="heading" class="m-0 block leading-[inherit]"><?php echo $glow($heading); ?></span>
+            <?php if ($line2 !== '' || $is_preview) : ?>
+                <span data-proto-field="headingLine2" class="m-0 block leading-[inherit]"><?php echo $glow($line2); ?></span>
+            <?php endif; ?>
         </h1>
+
+        <?php /* Rendered when it has copy, and always in the editor so it can
+                 be filled in -- the same contract the button below uses. An
+                 always-rendered wrapper would be empty but still carry mt-6,
+                 pushing the button 24px down on every hero that has no body,
+                 which is both existing instances. wp_kses_post rather than
+                 esc_html: it is a wysiwyg region and carries paragraph markup. */ ?>
+        <?php if ($body !== '' || $is_preview) : ?>
+            <div data-proto-field="body" data-hero-body
+                 class="cadco-hero-body mt-6 max-w-[620px] font-display text-[17px] font-light leading-[30px] text-white/90 md:text-[19px]">
+                <?php echo wp_kses_post($body); ?>
+            </div>
+        <?php endif; ?>
 
         <?php if (! empty($cta['url']) || $is_preview) : ?>
             <div class="mt-10 lg:mt-[60px]">

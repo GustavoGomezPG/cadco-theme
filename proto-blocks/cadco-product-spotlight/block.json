@@ -1,0 +1,160 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/block.json",
+  "apiVersion": 3,
+  "name": "proto-blocks/cadco-product-spotlight",
+  "title": "Cadco Product Spotlight",
+  "category": "proto",
+  "icon": "star-filled",
+  "description": "One product given the full width: eyebrow, display heading, body copy and a call-to-action button, set either beside a pair of product photographs or over a full-bleed one.",
+  "supports": {
+    "html": false,
+    "anchor": true,
+    "customClassName": true,
+    "align": [
+      "full"
+    ]
+  },
+  "protoBlocks": {
+    "version": "1.0",
+    "template": "template.php",
+    "useTailwind": true,
+    "fields": {
+      "eyebrow": {
+        "type": "text",
+        "tagName": "p",
+        "label": "Eyebrow",
+        "default": "Featured Product"
+      },
+      "heading": {
+        "type": "text",
+        "tagName": "h2",
+        "label": "Heading",
+        "default": "Bakerlux Half Size Proofer"
+      },
+      "body": {
+        "type": "wysiwyg",
+        "label": "Body",
+        "help": "The paragraph and the specification list are one region: write them together, bullets and all."
+      },
+      "cta": {
+        "type": "link",
+        "label": "Call to action"
+      }
+    },
+    "controls": {
+      "layout": {
+        "type": "select",
+        "label": "Layout",
+        "default": "images",
+        "options": [
+          {
+            "key": "images",
+            "label": "Photographs beside the copy"
+          },
+          {
+            "key": "photo",
+            "label": "Copy over a photograph"
+          }
+        ],
+        "help": "\"Beside\" sets the copy on white with the product shots to its right. \"Over\" runs a photograph full bleed and sets the copy on top of it."
+      },
+      "scale": {
+        "type": "select",
+        "label": "Scale",
+        "default": "display",
+        "options": [
+          {
+            "key": "display",
+            "label": "Display (product spotlight)"
+          },
+          {
+            "key": "section",
+            "label": "Section (supporting content)"
+          }
+        ],
+        "conditions": {
+          "visible": {
+            "layout": "images"
+          }
+        },
+        "help": "Display gives the product a full-size heading and a tall frame. Section is for supporting copy such as the About page, with a smaller heading, a landscape frame and the image centred against the text."
+      },
+      "imagePrimary": {
+        "type": "image",
+        "label": "Main photograph",
+        "conditions": {
+          "visible": {
+            "layout": "images"
+          }
+        }
+      },
+      "imageSecondary": {
+        "type": "image",
+        "label": "Inset photograph",
+        "conditions": {
+          "visible": {
+            "layout": "images"
+          }
+        },
+        "help": "Optional. Sits over the lower-left corner of the main photograph."
+      },
+      "imageAspect": {
+        "type": "select",
+        "label": "Photograph shape",
+        "default": "tall",
+        "options": [
+          {
+            "key": "tall",
+            "label": "Near square (product shot)"
+          },
+          {
+            "key": "wide",
+            "label": "Landscape (scene)"
+          }
+        ],
+        "conditions": {
+          "visible": {
+            "layout": "images"
+          }
+        },
+        "help": "Product shots are drawn near square; a scene such as a building is drawn landscape."
+      },
+      "backgroundImage": {
+        "type": "image",
+        "label": "Background photograph",
+        "conditions": {
+          "visible": {
+            "layout": "photo"
+          }
+        }
+      },
+      "scrimOpacity": {
+        "type": "range",
+        "label": "Scrim opacity",
+        "default": 55,
+        "min": 0,
+        "max": 100,
+        "step": 1,
+        "conditions": {
+          "visible": {
+            "layout": "photo"
+          }
+        },
+        "help": "Darkens the photograph from the right, so the copy keeps its contrast."
+      },
+      "minHeight": {
+        "type": "range",
+        "label": "Minimum height (px)",
+        "default": 620,
+        "min": 320,
+        "max": 1000,
+        "step": 1,
+        "conditions": {
+          "visible": {
+            "layout": "photo"
+          }
+        }
+      }
+    }
+  }
+}

@@ -32,9 +32,20 @@
       },
       "heading": {
         "type": "text",
-        "tagName": "h1",
+        "tagName": "span",
         "label": "Heading",
         "default": "America's Leader in Innovative Foodservice Equipment"
+      },
+      "headingLine2": {
+        "type": "text",
+        "tagName": "span",
+        "label": "Heading, second line",
+        "help": "Optional. Given a value, it is drawn on its own line under the heading, so a two-sentence headline breaks exactly where you want it instead of wherever the column happens to run out."
+      },
+      "body": {
+        "type": "wysiwyg",
+        "label": "Body",
+        "help": "Optional. A short paragraph under the heading; the home page hero leaves it empty."
       },
       "cta": {
         "type": "link",
@@ -42,6 +53,58 @@
       }
     },
     "controls": {
+      "background": {
+        "type": "select",
+        "label": "Background",
+        "default": "photo",
+        "options": [
+          {
+            "key": "photo",
+            "label": "Photograph"
+          },
+          {
+            "key": "gradient",
+            "label": "Gradient"
+          }
+        ],
+        "help": "Gradient is for heroes with no photograph behind them, such as the About page."
+      },
+      "headingScale": {
+        "type": "select",
+        "label": "Headline size",
+        "default": "display",
+        "options": [
+          {
+            "key": "display",
+            "label": "Display (landing pages)"
+          },
+          {
+            "key": "compact",
+            "label": "Compact (inner pages)"
+          }
+        ],
+        "help": "Display is the full-height headline the home, products and about heroes carry. Compact is a step down, for an inner page whose hero is a title rather than a statement."
+      },
+      "gradientTop": {
+        "type": "color",
+        "label": "Gradient top",
+        "default": "#000000",
+        "conditions": {
+          "visible": {
+            "background": "gradient"
+          }
+        }
+      },
+      "gradientBottom": {
+        "type": "color",
+        "label": "Gradient bottom",
+        "default": "#011a27",
+        "conditions": {
+          "visible": {
+            "background": "gradient"
+          }
+        }
+      },
       "backgroundImage": {
         "type": "image",
         "label": "Background image",
@@ -64,6 +127,16 @@
         "min": 400,
         "max": 1100,
         "step": 1
+      },
+      "highlight": {
+        "type": "text",
+        "label": "Highlighted word",
+        "help": "A word or phrase from the headline to backlight, as the design does with \"Experience.\". Matched once, ignoring case, across both headline lines. Leave empty for no highlight."
+      },
+      "highlightColor": {
+        "type": "color",
+        "label": "Highlight colour",
+        "default": "#2087d0"
       }
     }
   }

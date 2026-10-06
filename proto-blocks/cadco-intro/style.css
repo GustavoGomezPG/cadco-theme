@@ -44,3 +44,14 @@
 .cadco-intro__body ol {
 	list-style: decimal;
 }
+
+/*
+ * Sub-pixel seam cover, dark tone only.
+ *
+ * Its gradient ends on black and the footer below it is black, so a fractional
+ * device pixel ratio rounding the two apart shows as a pale line across the
+ * join. One pixel of black past the edges covers it without moving anything.
+ */
+.cadco-intro--dark {
+    box-shadow: 0 1px 0 0 #000, 0 -1px 0 0 #00203a;
+}

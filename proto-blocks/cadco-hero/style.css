@@ -44,3 +44,62 @@
 		visibility: visible;
 	}
 }
+
+/*
+ * Headline backlight.
+ *
+ * The design draws this as a vector, not as a glow on the text: a 12px stroke
+ * in Secondary Blue, 504px long, blurred by 13.1px, lying under the
+ * highlighted word. So it is built the same way here -- a bar behind the word,
+ * blurred -- rather than as a text-shadow, which hugs the glyphs and reads as
+ * a halo instead of a light under the line.
+ *
+ * The bar spans the word because it is inset to the span's own box, so it
+ * follows whatever word is highlighted at whatever size, instead of carrying
+ * the frame's 504px.
+ *
+ * z-index on the span makes a stacking context, so the bar sits behind the
+ * text but still in front of the section's background.
+ */
+.cadco-hero-glow {
+    position: relative;
+    z-index: 0;
+    color: inherit;
+}
+
+.cadco-hero-glow::after {
+    content: "";
+    position: absolute;
+    z-index: -1;
+    left: 0;
+    right: 0;
+    /*
+     * Just under the baseline, crossing the foot of the glyphs. There is not
+     * much room below this: the reveal's line wrapper clips exactly at the
+     * span's bottom edge, so dropping the bar much further starts cutting the
+     * underside of the blur away.
+     */
+    bottom: 0.177em;                 /* baseline, less the 8px the design sits lower */
+    height: 0.125em;                 /* 12px against the design's 96px headline */
+    background: var(--cadco-glow, #2087d0);
+    filter: blur(0.136em);           /* 13.1px at 96px */
+    pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .cadco-hero-glow::after { filter: blur(0.136em); }
+}
+
+/*
+ * The editor renders each bound field as its own rich-text element, which
+ * carries default block margins and opens a gap between the two headline lines
+ * that the front end never shows.
+ *
+ * Written here rather than as a [&>*]:m-0 class on the element: a ">" inside a
+ * class attribute ends the tag as far as wptexturize is concerned, so it treats
+ * everything after it as prose and converts the attribute's own closing quote
+ * into a curly one. That corrupted the heading's markup on every hero.
+ */
+[data-hero-heading] > * {
+    margin: 0;
+}

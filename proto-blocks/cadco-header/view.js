@@ -317,6 +317,77 @@
       return root.classList.contains('is-menu-open');
     }
 
+    /**
+     * Shut the menu immediately, with no animation.
+     *
+     * Used when the page is on its way out: an animated close would still be
+     * running while the next view renders, and Taxi keeps the header across
+     * navigations, so the menu would arrive on the new page still open.
+     */
+    function closeMenuNow() {
+      if (!mobile) { return; }
+
+      var gsap = gsapOrNull();
+
+      if (gsap) { gsap.killTweensOf([mobile, mobileInner]); }
+
+      mobile.hidden = true;
+      mobile.style.height = '';
+
+      if (mobileInner) { mobileInner.style.transform = ''; }
+
+      var toggle = root.querySelector('[data-cadco-menu-toggle]');
+
+      if (toggle) { toggle.setAttribute('aria-expanded', 'false'); }
+
+      root.classList.remove('is-menu-open');
+      document.documentElement.classList.remove('cadco-menu-open');
+
+      /* Leave every section collapsed, so it does not reopen mid-scroll next
+         time the menu is used. */
+      root.querySelectorAll('[data-cadco-acc].is-open').forEach(function (openSection) {
+        openSection.classList.remove('is-open');
+
+        var accToggle = openSection.querySelector('[data-cadco-acc-toggle]');
+        var accPanel = openSection.querySelector('[data-cadco-acc-panel]');
+
+        if (accToggle) { accToggle.setAttribute('aria-expanded', 'false'); }
+        if (accPanel) { accPanel.style.height = ''; }
+      });
+    }
+
+    /* A tap on any link inside the menu is a navigation: close straight away so
+       the menu is not still sitting open behind the new page. */
+    if (mobile) {
+      mobile.addEventListener('click', function (e) {
+        if (e.target.closest('a[href]')) { closeMenuNow(); }
+      });
+    }
+
+    /*
+     * Registered once for the document, not once per run.
+     *
+     * The header is a template part, so it sits outside the container Taxi
+     * swaps and the teardown below deliberately bails for it -- but this file
+     * is still re-executed on each navigation, so an unguarded listener here
+     * would stack up one per page visited.
+     */
+    if (!window.__cadcoHeaderCloseOnLeave) {
+      window.__cadcoHeaderCloseOnLeave = true;
+
+      document.addEventListener('proto:page-leave', function () {
+        document.querySelectorAll('[data-cadco-header]').forEach(function (h) {
+          var closer = h.__cadcoCloseMenuNow;
+
+          if (typeof closer === 'function') { closer(); }
+        });
+      });
+    }
+
+    /* Published on the element, so the one document-level listener above can
+       reach whichever header instance is on the page. */
+    root.__cadcoCloseMenuNow = closeMenuNow;
+
     function closeMenu() {
       if (!mobile || !menuIsOpen()) return;
       var gsap = gsapOrNull();
@@ -413,13 +484,28 @@
       // Each accordion owns the toggle and panel that are its *own* direct
       // children. querySelector would reach into a nested accordion and wire a
       // parent's button to a child's panel.
-      var toggle = section.querySelector(':scope > [data-cadco-acc-toggle]');
+      // The toggle is no longer always a direct child: a top-level row wraps
+      // its link and its chevron in a flex row. Search the whole section and
+      // keep the match only if this section is the nearest accordion to it, so
+      // a nested accordion's toggle is never claimed by its parent.
+      var toggle = null;
+      var candidates = section.querySelectorAll('[data-cadco-acc-toggle]');
+      for (var ci = 0; ci < candidates.length; ci++) {
+        if (candidates[ci].closest('[data-cadco-acc]') === section) { toggle = candidates[ci]; break; }
+      }
       var panel = section.querySelector(':scope > [data-cadco-acc-panel]');
       if (!toggle || !panel) return;
 
       toggle.addEventListener('click', function () {
         var gsap = gsapOrNull();
         var willOpen = !section.classList.contains('is-open');
+
+        /* Opening or closing a section changes the menu's height, and with it
+           the document's. Lenis and ScrollTrigger both cache that and neither
+           watches for it. */
+        if (typeof window.cadcoLayoutChanged === 'function') {
+          window.cadcoLayoutChanged();
+        }
 
         // One section at a time, so the menu never becomes a long scroll — but
         // only among siblings. Accordions nest (a top-level item, then a
@@ -496,11 +582,24 @@
       closeMenu();
     });
 
-    document.addEventListener('click', function (event) {
+    /* Taxi re-runs this file per navigation, so this outside-click handler is
+       taken off when its header leaves or it would pile up for the visit. */
+    var onDocumentClick = function (event) {
       if (root.contains(event.target)) return;
       closeAll();
       closeSearch();
       closeMenu();
+    };
+
+    document.addEventListener('click', onDocumentClick);
+
+    document.addEventListener('proto:page-leave', function off(e) {
+      var container = e && e.detail && e.detail.container;
+
+      if (container && !container.contains(root)) { return; }
+
+      document.removeEventListener('click', onDocumentClick);
+      document.removeEventListener('proto:page-leave', off);
     });
   }
 
@@ -514,6 +613,16 @@
     initAll();
   }
 
-  // Dispatched by the theme on first load and after every Taxi navigation.
-  document.addEventListener('proto:page-ready', initAll);
+  /*
+   * Dispatched by the theme on first load and after every Taxi navigation.
+   *
+   * Registered once per document, not once per execution. Proto-Blocks stamps
+   * block view scripts with data-taxi-reload, so Taxi re-runs this whole file
+   * on every navigation -- an unguarded addEventListener here added another
+   * listener each time, and initAll then ran once per navigation ever made.
+   */
+  if (!window.__cadcoHeaderPageReadyBound) {
+    window.__cadcoHeaderPageReadyBound = true;
+    document.addEventListener('proto:page-ready', initAll);
+  }
 })();
