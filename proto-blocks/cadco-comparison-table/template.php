@@ -64,16 +64,20 @@ $is_tick = static function (string $cell): bool {
 /**
  * Read a linked CSV once per hour rather than on every render.
  *
- * Only a file on this site is read, and only through the media library: a URL
- * pointing anywhere else would make rendering a page depend on a third party,
- * and would let an edited link turn into a request to an arbitrary host.
+ * Takes the file control's value, which carries the attachment id, so the file
+ * is read from disk by id and never fetched over the network: a URL pointing
+ * anywhere else would make rendering this page depend on a third party.
+ *
+ * @param array<string, mixed> $file
  */
-$read_file = static function (string $url): string {
-    if ($url === '') {
-        return '';
-    }
+$read_file = static function (array $file): string {
+    $id = (int) ($file['id'] ?? 0);
 
-    $id = attachment_url_to_postid($url);
+    if (! $id && ! empty($file['url'])) {
+        /* An older value, or one pasted as a URL: resolve it to an attachment
+           rather than fetching it. */
+        $id = (int) attachment_url_to_postid((string) $file['url']);
+    }
 
     if (! $id) {
         return '';
@@ -142,78 +146,21 @@ $panelId = static function (int $i): string {
             </p>
         <?php endif; ?>
 
-        <div data-proto-repeater="tabs" class="mt-[40px]">
+        <div class="mt-[40px]">
             <?php foreach ((array) $tabs as $i => $tab) : ?>
                 <?php
-                $linked = $read_file((string) (($tab['csvFile']['url'] ?? '')));
+                $linked = $read_file($tab['csvFile'] ?? []);
                 $rows   = $parse_csv($linked !== '' ? $linked : (string) ($tab['csv'] ?? ''));
                 $head   = array_shift($rows);
                 $cols   = is_array($head) ? count($head) : 0;
                 $rest   = $cols > 1 ? round((100 - $firstCol) / ($cols - 1), 4) : 0;
                 ?>
-                <div data-proto-repeater-item
-                     id="<?php echo esc_attr($panelId((int) $i)); ?>"
+                <div id="<?php echo esc_attr($panelId((int) $i)); ?>"
                      role="tabpanel"
                      aria-labelledby="<?php echo esc_attr($panelId((int) $i) . '-tab'); ?>"
                      data-cadco-cmp-panel="<?php echo (int) $i; ?>"
-                     <?php echo $i === 0 || $is_preview ? '' : 'hidden'; ?>>
+                     <?php echo $i === 0 ? '' : 'hidden'; ?>>
 
-                    <?php if ($is_preview) : ?>
-                        <?php
-                        /*
-                         * The authoring panel, editor only.
-                         *
-                         * A tab's content is a CSV that is parsed rather than
-                         * displayed, so without this there is nowhere to type
-                         * it: a field is only editable if an element carries
-                         * data-proto-field, and the front end has no element
-                         * for the CSV at all. Each tab therefore gets its own
-                         * panel here, with the rendered table beneath it, and
-                         * none of it is output on the front end.
-                         *
-                         * Every panel is visible in the editor, rather than
-                         * only the selected one, because the tab buttons do not
-                         * switch anything in the editor -- the view script does
-                         * not run there -- and a hidden panel cannot be edited.
-                         */
-                        ?>
-                        <div class="cadco-cmp__authoring">
-                            <p class="cadco-cmp__authoring-title">
-                                <?php
-                                /* translators: %d is the tab's position. */
-                                printf(esc_html__('Tab %d', 'cadco-theme'), (int) $i + 1);
-                                ?>
-                            </p>
-
-                            <label class="cadco-cmp__label"><?php esc_html_e('Tab name', 'cadco-theme'); ?></label>
-                            <div data-proto-field="label" class="cadco-cmp__input"><?php echo esc_html((string) ($tab['label'] ?? '')); ?></div>
-
-                            <label class="cadco-cmp__label"><?php esc_html_e('Table (CSV)', 'cadco-theme'); ?></label>
-                            <p class="cadco-cmp__hint">
-                                <?php esc_html_e('One row per line, cells separated by commas. The first line is the column headings and the first column is the product. Any other cell reading x, yes, y, true or 1 draws a tick; leave it empty for none. Put quotes round a cell that contains a comma.', 'cadco-theme'); ?>
-                            </p>
-                            <div data-proto-field="csv" class="cadco-cmp__input cadco-cmp__input--csv"><?php echo wp_kses_post((string) ($tab['csv'] ?? '')); ?></div>
-
-                            <label class="cadco-cmp__label"><?php esc_html_e('Or a CSV file', 'cadco-theme'); ?></label>
-                            <p class="cadco-cmp__hint">
-                                <?php esc_html_e('Link a .csv from the media library. When set it is used instead of whatever is pasted above.', 'cadco-theme'); ?>
-                            </p>
-                            <div data-proto-field="csvFile" class="cadco-cmp__input"><?php echo esc_html((string) ($tab['csvFile']['url'] ?? '')); ?></div>
-
-                            <p class="cadco-cmp__hint cadco-cmp__hint--preview">
-                                <?php
-                                echo empty($head)
-                                    ? esc_html__('No rows yet. The table appears here once this tab has a CSV.', 'cadco-theme')
-                                    : sprintf(
-                                        /* translators: 1: number of columns, 2: number of rows. */
-                                        esc_html__('Reading %1$d columns and %2$d rows:', 'cadco-theme'),
-                                        (int) $cols,
-                                        count($rows)
-                                    );
-                                ?>
-                            </p>
-                        </div>
-                    <?php endif; ?>
 
                     <?php if (empty($head)) : ?>
                         <?php /* The visitor's wording. An author is told how to fill

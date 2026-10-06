@@ -1430,7 +1430,7 @@
       "title": "Warranty",
       "status": "seo",
       "postId": 18365,
-      "contentHash": "8f0725158f569a5b7699b1ae75a579ce47bbfb431ef019da98bae2533f39f933",
+      "contentHash": "c90f9e7521dbd8538fedb079a0834e33a4158db5d80cfe106134a18b0f46650f",
       "design": {
         "frames": [
           {
@@ -1801,40 +1801,19 @@
             "heading": "Warranty Comparison",
             "tabs": [
               {
-                "id": "t1",
                 "label": "Ovens",
-                "csv": "<p>Product Model/Category,On-Site Service,Carry-In Service,1 Year* Parts & Labor,2 Year* Parts Only,3 Year* Parts Only,30 Days - 1 Year* Parts Only</p><p>VK-120 / VK-220 / VKII-220,x,,x,x,,x</p><p>VK-120 / VK-220 / VKII-220,x,,x,x,,x</p><p>VK-120 / VK-220 / VKII-220,x,,x,x,,x</p><p>VK-120 / VK-220 / VKII-220,x,,x,x,,x</p><p>VK-120 / VK-220 / VKII-220,x,,x,x,,x</p><p>VK-120 / VK-220 / VKII-220,x,,x,x,,x</p><p>VK-120 / VK-220 / VKII-220,x,,x,x,,x</p><p>OV-003 / XAF003,x,x,x,x,x,x</p><p>OV-003 / XAF003,x,x,x,x,x,x</p><p>OV-003 / XAF003,x,x,x,x,x,x</p>",
-                "csvFile": {
-                  "url": "",
-                  "text": "",
-                  "target": "",
-                  "rel": "",
-                  "title": ""
-                }
+                "csv": "Product Model/Category,On-Site Service,Carry-In Service,1 Year* Parts & Labor,2 Year* Parts Only,3 Year* Parts Only,30 Days - 1 Year* Parts Only\nVK-120 / VK-220 / VKII-220,x,,x,x,,x\nVK-120 / VK-220 / VKII-220,x,,x,x,,x\nVK-120 / VK-220 / VKII-220,x,,x,x,,x\nVK-120 / VK-220 / VKII-220,x,,x,x,,x\nVK-120 / VK-220 / VKII-220,x,,x,x,,x\nVK-120 / VK-220 / VKII-220,x,,x,x,,x\nVK-120 / VK-220 / VKII-220,x,,x,x,,x\nOV-003 / XAF003,x,x,x,x,x,x\nOV-003 / XAF003,x,x,x,x,x,x\nOV-003 / XAF003,x,x,x,x,x,x",
+                "csvFile": {}
               },
               {
-                "id": "t2",
                 "label": "Countertop Equipment",
                 "csv": "",
-                "csvFile": {
-                  "url": "",
-                  "text": "",
-                  "target": "",
-                  "rel": "",
-                  "title": ""
-                }
+                "csvFile": {}
               },
               {
-                "id": "t3",
                 "label": "Carts",
                 "csv": "",
-                "csvFile": {
-                  "url": "",
-                  "text": "",
-                  "target": "",
-                  "rel": "",
-                  "title": ""
-                }
+                "csvFile": {}
               }
             ],
             "footnote": "<p>*2 year parts only excludes motor and fan. 3 year parts only includes 2 years on site service. 30 Day parts only includes 1 year motor and fan.</p>",
