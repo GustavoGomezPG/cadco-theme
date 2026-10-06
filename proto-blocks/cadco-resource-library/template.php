@@ -193,19 +193,27 @@ $wrapper = get_block_wrapper_attributes([
                     $fit     = $isStill ? 'object-cover' : 'object-contain p-5';
 
                     /*
-                     * Where a card goes depends on what the resource actually has,
-                     * not on a table of types. A video with a playable URL opens in
-                     * the modal; anything else with a URL opens its file in a new
-                     * tab -- which is what the catalogues, the brochures AND the
-                     * guides on cadco-ltd.com all are, every one of them a PDF.
-                     * A resource with no URL falls back to its own page, so a guide
-                     * that later becomes a written page rather than a download needs
-                     * only to have its link cleared.
+                     * What a card does is read from the resource's own destination
+                     * kind, not from its media type. The two answer different
+                     * questions and come apart in the real library: a guide is a PDF
+                     * on one row and a Dropbox folder on the next, and both are
+                     * guides. A kind left empty still behaves sensibly, so a resource
+                     * that predates the field does not break.
                      */
-                    $embed    = $isStill ? $embedUrl($link) : '';
+                    $kind_of  = (string) get_post_meta($id, 'cadco_resource_link_type', true);
+                    $hasUrl   = '' !== $link && '#' !== $link;
+
+                    if ('' === $kind_of && $hasUrl) {
+                        $kind_of = $isStill && '' !== $embedUrl($link) ? 'video' : 'link';
+                    }
+
+                    $embed      = 'video' === $kind_of ? $embedUrl($link) : '';
                     $opensModal = '' !== $embed;
-                    $opensTab   = ! $opensModal && '' !== $link && '#' !== $link;
-                    $href       = $opensTab ? $link : ($opensModal ? $link : get_permalink($id));
+                    /* A file and a link both leave the page; they are kept apart so
+                       the card can say which it is, and so the client can change one
+                       without re-reading the other. */
+                    $opensTab   = ! $opensModal && $hasUrl && in_array($kind_of, ['file', 'link'], true);
+                    $href       = ($opensModal || $opensTab) ? $link : get_permalink($id);
                     ?>
                     <a href="<?php echo esc_url($href); ?>"
                        <?php if ($opensModal) : ?>
@@ -238,7 +246,11 @@ $wrapper = get_block_wrapper_attributes([
                                          surprising someone who cannot see the new tab
                                          appear. */ ?>
                                 <?php if ($opensTab) : ?>
-                                    <span class="sr-only"><?php esc_html_e('(opens the file in a new tab)', 'cadco-theme'); ?></span>
+                                    <span class="sr-only"><?php
+                                        echo 'file' === $kind_of
+                                            ? esc_html__('(opens the document in a new tab)', 'cadco-theme')
+                                            : esc_html__('(opens another site in a new tab)', 'cadco-theme');
+                                    ?></span>
                                 <?php elseif ($opensModal) : ?>
                                     <span class="sr-only"><?php esc_html_e('(plays in a dialog on this page)', 'cadco-theme'); ?></span>
                                 <?php endif; ?>

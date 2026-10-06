@@ -55,7 +55,17 @@
 		var frame = modal.querySelector('[data-cadco-video-frame]');
 		var title = modal.querySelector('#cadco-video-modal-title');
 
-		function close() {
+		var closing = false;
+
+		function reducedMotion() {
+			return window.matchMedia
+				&& window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+		}
+
+		function finish() {
+			closing = false;
+			modal.classList.remove('is-closing');
+
 			/* Emptying the frame stops playback. Pausing would need the player's
 			   own API and a message channel to it; removing the iframe does not. */
 			frame.innerHTML = '';
@@ -63,6 +73,40 @@
 			if (modal.open) {
 				modal.close();
 			}
+		}
+
+		/**
+		 * Close on the far side of the exit animation.
+		 *
+		 * close() takes the dialog out of the top layer immediately, so animating
+		 * after calling it shows nothing. The class goes on first, and the close
+		 * waits for the animation to end -- with a timer behind it in case the
+		 * animation never fires, which would otherwise leave the dialog stuck
+		 * open with no way back.
+		 */
+		function close() {
+			if (closing || !modal.open) {
+				return;
+			}
+
+			if (reducedMotion()) {
+				finish();
+				return;
+			}
+
+			closing = true;
+			modal.classList.add('is-closing');
+
+			var done = false;
+			var once = function () {
+				if (done) { return; }
+				done = true;
+				modal.removeEventListener('animationend', once);
+				finish();
+			};
+
+			modal.addEventListener('animationend', once);
+			window.setTimeout(once, 400);
 		}
 
 		section.querySelectorAll('[data-cadco-resource-video]').forEach(function (card) {
@@ -94,9 +138,20 @@
 
 		modal.querySelector('[data-cadco-video-close]').addEventListener('click', close);
 
-		/* Escape fires dialog's own close event, so the frame is cleared there too
-		   rather than only on the button. */
-		modal.addEventListener('close', function () { frame.innerHTML = ''; });
+		/* Escape closes a dialog natively and instantly, which would skip the exit
+		   animation, so it is taken over here and sent through the same path. The
+		   close event stays wired as the backstop: whatever route closed the
+		   dialog, the frame ends up empty and the video stops. */
+		modal.addEventListener('cancel', function (event) {
+			event.preventDefault();
+			close();
+		});
+
+		modal.addEventListener('close', function () {
+			closing = false;
+			modal.classList.remove('is-closing');
+			frame.innerHTML = '';
+		});
 
 		/* A click on the backdrop lands on the dialog itself, never on its
 		   children, which is what separates it from a click on the video. */

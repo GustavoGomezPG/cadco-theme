@@ -64,11 +64,34 @@ add_action('init', static function (): void {
 });
 
 /**
- * A resource points somewhere: a PDF to download, or a video to watch. The link
- * is a plain meta field rather than a taxonomy or the post body, because it is
- * one value the card needs and nothing else reads.
+ * Where a resource points, and what kind of destination it is.
+ *
+ * The kind is stored rather than guessed from the media type, because the two
+ * answer different questions. Media type is what the thing IS, and the library
+ * filters on it. The kind is what should HAPPEN when it is clicked, and those
+ * come apart: a guide is a PDF on one row and a Dropbox folder on the next, and
+ * both are guides. Three kinds cover it -- a video plays in a dialog, a file
+ * opens in a new tab, a link opens in a new tab on somebody else's site -- and
+ * a resource with no destination falls back to its own page.
  */
+function cadco_resource_link_types(): array
+{
+    return [
+        'video' => __('Video — plays in a dialog on the page', 'cadco-theme'),
+        'file'  => __('File — opens the document in a new tab', 'cadco-theme'),
+        'link'  => __('Link — opens another site in a new tab', 'cadco-theme'),
+    ];
+}
+
 add_action('init', static function (): void {
+    register_post_meta('resource', 'cadco_resource_link_type', [
+        'type'              => 'string',
+        'single'            => true,
+        'show_in_rest'      => true,
+        'sanitize_callback' => static fn ($v): string => array_key_exists((string) $v, cadco_resource_link_types()) ? (string) $v : '',
+        'auth_callback'     => static fn (): bool => current_user_can('edit_posts'),
+    ]);
+
     register_post_meta('resource', 'cadco_resource_url', [
         'type'              => 'string',
         'single'            => true,
@@ -86,11 +109,25 @@ add_action('add_meta_boxes', static function (): void {
         static function (WP_Post $post): void {
             wp_nonce_field('cadco_resource_url', 'cadco_resource_url_nonce');
             $value = (string) get_post_meta($post->ID, 'cadco_resource_url', true);
+            $kind  = (string) get_post_meta($post->ID, 'cadco_resource_link_type', true);
+
+            echo '<p><label for="cadco_resource_link_type"><strong>' . esc_html__('What happens on click', 'cadco-theme') . '</strong></label>';
+            echo '<select name="cadco_resource_link_type" id="cadco_resource_link_type" class="widefat">';
+            echo '<option value="">' . esc_html__('Nothing — open this resource\'s own page', 'cadco-theme') . '</option>';
+
+            foreach (cadco_resource_link_types() as $key => $label) {
+                printf('<option value="%s"%s>%s</option>', esc_attr($key), selected($kind, $key, false), esc_html($label));
+            }
+
+            echo '</select></p>';
+
             printf(
-                '<p><input type="url" name="cadco_resource_url" value="%s" class="widefat" placeholder="https://" /></p>
+                '<p><label for="cadco_resource_url"><strong>%s</strong></label>
+                 <input type="url" id="cadco_resource_url" name="cadco_resource_url" value="%s" class="widefat" placeholder="https://" /></p>
                  <p class="description">%s</p>',
+                esc_html__('Address', 'cadco-theme'),
                 esc_attr($value),
-                esc_html__('Where the card goes: the PDF, the video, or the page that holds it.', 'cadco-theme')
+                esc_html__('A YouTube or Vimeo address for a video; the PDF for a file; any address for a link. Leave both empty and the card opens this resource\'s own page.', 'cadco-theme')
             );
         },
         'resource',
@@ -113,4 +150,7 @@ add_action('save_post_resource', static function (int $post_id): void {
     }
 
     update_post_meta($post_id, 'cadco_resource_url', esc_url_raw(wp_unslash($_POST['cadco_resource_url'] ?? '')));
+
+    $kind = sanitize_key(wp_unslash($_POST['cadco_resource_link_type'] ?? ''));
+    update_post_meta($post_id, 'cadco_resource_link_type', array_key_exists($kind, cadco_resource_link_types()) ? $kind : '');
 });
