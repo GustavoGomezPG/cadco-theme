@@ -879,7 +879,7 @@
         "audit": {
           "pass": false,
           "file": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/products/seo-audit.json",
-          "at": "2026-10-02T23:29:38.898Z"
+          "at": "2026-10-06T18:26:20.291Z"
         }
       }
     },
@@ -2034,7 +2034,7 @@
         "audit": {
           "pass": false,
           "file": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/warranty/seo-audit.json",
-          "at": "2026-10-05T21:31:26.208Z"
+          "at": "2026-10-06T18:26:18.216Z"
         }
       }
     },
@@ -2310,6 +2310,84 @@
         "pass": true,
         "file": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/parts-ordering/page-qa/page-qa.json",
         "at": "2026-10-06T18:12:34.048Z"
+      },
+      "seo": {
+        "focusKeyword": {
+          "value": "cadco parts",
+          "inferred": true,
+          "why": "the page exists to order replacement parts; 'real OEM Cadco parts' appears in its opening paragraph and the slug is parts-ordering"
+        },
+        "title": {
+          "value": "Order Cadco Parts",
+          "inferred": true,
+          "why": "leads with the keyword and the action; renders well inside 60 characters with the site name"
+        },
+        "description": {
+          "value": "Order Cadco parts for your equipment: genuine OEM gaskets, panels, bulbs and elements through Parts Town, or call the service line to identify a part.",
+          "inferred": true,
+          "why": "leads with the keyword, names the parts the page actually lists and both routes it offers"
+        },
+        "ogTitle": {
+          "value": "Order Cadco Parts",
+          "inferred": true,
+          "why": "the SEO title, which already states the page's purpose"
+        },
+        "ogDescription": {
+          "value": "Order Cadco parts for your equipment: genuine OEM gaskets, panels, bulbs and elements through Parts Town, or call the service line to identify a part.",
+          "inferred": true,
+          "why": "same summary as the meta description"
+        },
+        "twitterTitle": {
+          "value": "Order Cadco Parts",
+          "inferred": true,
+          "why": "matches the Open Graph title"
+        },
+        "twitterDescription": {
+          "value": "Order Cadco parts for your equipment: genuine OEM gaskets, panels, bulbs and elements through Parts Town, or call the service line to identify a part.",
+          "inferred": true,
+          "why": "matches the Open Graph description"
+        },
+        "ogImage": {
+          "value": {
+            "file": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/parts-ordering/og.png"
+          },
+          "inferred": true,
+          "why": "generated from the hero, the page's first content section"
+        },
+        "schemaPageType": {
+          "value": "WebPage",
+          "inferred": true,
+          "why": "an informational page routing the reader to a supplier or the service line; it sells nothing itself"
+        },
+        "schema": {
+          "value": {
+            "@type": "WebPage",
+            "name": "Order Cadco Parts",
+            "description": "Order Cadco parts for your equipment: genuine OEM gaskets, panels, bulbs and elements through Parts Town, or call the service line to identify a part."
+          },
+          "inferred": true,
+          "why": "states only what the page shows: its name and purpose"
+        },
+        "applied": "2026-10-06T18:28:04.788Z",
+        "ogImageId": 18395,
+        "appliedValues": {
+          "focuskw": "cadco parts",
+          "title": "Order Cadco Parts",
+          "metadesc": "Order Cadco parts for your equipment: genuine OEM gaskets, panels, bulbs and elements through Parts Town, or call the service line to identify a part.",
+          "opengraph-title": "Order Cadco Parts",
+          "opengraph-description": "Order Cadco parts for your equipment: genuine OEM gaskets, panels, bulbs and elements through Parts Town, or call the service line to identify a part.",
+          "twitter-title": "Order Cadco Parts",
+          "twitter-description": "Order Cadco parts for your equipment: genuine OEM gaskets, panels, bulbs and elements through Parts Town, or call the service line to identify a part.",
+          "schema_page_type": "WebPage",
+          "jsonld": "[\n    {\n        \"@type\": \"WebPage\",\n        \"name\": \"Order Cadco Parts\",\n        \"description\": \"Order Cadco parts for your equipment: genuine OEM gaskets, panels, bulbs and elements through Parts Town, or call the service line to identify a part.\"\n    }\n]",
+          "opengraph-image-id": "18395",
+          "twitter-image-id": "18395"
+        },
+        "audit": {
+          "pass": false,
+          "file": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/parts-ordering/seo-audit.json",
+          "at": "2026-10-06T18:28:12.375Z"
+        }
       }
     }
   ]
