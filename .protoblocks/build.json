@@ -2403,7 +2403,7 @@
       "title": "Resource Center",
       "status": "seo",
       "postId": 125,
-      "contentHash": "7767b65f41adf59b9f3698661394a0abf4d066a796ee9833336efe7623e03c8d",
+      "contentHash": "ee5ea25ef150c8682610520b28c9a7a92e89df79d0ef98843a85b58bc6f597d7",
       "design": {
         "frames": [
           {
@@ -2458,8 +2458,8 @@
             "heading": "Find guides, catalogs, videos,",
             "headingLine2": "and more.",
             "sideImage": {
-              "id": 18411,
-              "url": "https://cadco.local/wp-content/uploads/2026/10/resource-covers.png",
+              "id": 18415,
+              "url": "https://cadco.local/wp-content/uploads/2026/10/resource-covers-v2.png",
               "alt": "Cadco Glass Ceramic Grills and Countertop Convection Ovens catalogue covers",
               "caption": "",
               "size": "full"
