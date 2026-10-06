@@ -6,6 +6,7 @@
 require_once get_stylesheet_directory() . '/inc/proto-required-plugins.php';
 require_once get_stylesheet_directory() . '/inc/proto-taxi.php';
 require_once get_stylesheet_directory() . '/inc/cadco-nav.php';
+require_once get_stylesheet_directory() . '/inc/cadco-resources.php';
 require_once get_stylesheet_directory() . '/inc/cadco-woocommerce.php';
 require_once get_stylesheet_directory() . '/inc/proto-yoast-jsonld.php'; // Inert unless Yoast SEO is active.
 

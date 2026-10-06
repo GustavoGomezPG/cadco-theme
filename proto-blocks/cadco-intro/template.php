@@ -47,7 +47,10 @@ $ctaRow      = $centred ? 'flex justify-center' : '';
 
 // The design gives the centred statement a wider measure than the left one:
 // 998px against 913px, so its three lines break where they are drawn.
-$headingWide = $centred ? 'max-w-[998px]' : 'max-w-[913px]';
+/* Literal classes so Tailwind's scanner sees them. */
+$headingWide = ($attributes['headingMeasure'] ?? 'wide') === 'narrow'
+    ? 'max-w-[720px]'
+    : ($centred ? 'max-w-[998px]' : 'max-w-[913px]');
 
 // $block is null in the editor preview.
 $is_preview = ! isset($block) || $block === null;
@@ -66,7 +69,11 @@ $surface   = $isDark
 /* The dark tone is a closing panel and the frame gives it more air than the
    paper one, and a slightly smaller headline. Scoped so the paper instances
    keep exactly what they render today. */
-$pad       = $isDark ? 'py-20 md:py-[169px]' : 'py-20 md:py-[120px]';
+/* Literal classes so Tailwind's scanner sees them. */
+$compact   = ($attributes['density'] ?? 'normal') === 'compact';
+$pad       = $isDark
+    ? ($compact ? 'py-20 md:py-[158px]' : 'py-20 md:py-[169px]')
+    : ($compact ? 'py-20 md:py-[109px]' : 'py-20 md:py-[120px]');
 $sizePick  = (string) ($attributes['headingSize'] ?? 'auto');
 $headSize  = $sizePick === 'large'
     ? 'md:text-[64px]'

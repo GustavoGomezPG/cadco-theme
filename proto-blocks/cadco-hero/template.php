@@ -21,6 +21,14 @@ $bg      = $attributes['backgroundImage'] ?? [];
 $scrim   = max(0, min(100, (int) ($attributes['scrimOpacity'] ?? 74)));
 $minH    = max(400, min(1100, (int) ($attributes['minHeight'] ?? 841)));
 
+$sideImage = $attributes['sideImage'] ?? [];
+$hasSideArt = ! empty($sideImage['url']);
+
+/* The artwork hangs below the hero on purpose, so the section cannot clip when
+   it is there. Every hero without it keeps clipping, which is what stops the
+   background photo and the glow spilling onto the section beneath. */
+$clip = $hasSideArt ? 'overflow-visible' : 'overflow-hidden';
+
 // $block is null in the editor preview.
 $is_preview = ! isset($block) || $block === null;
 
@@ -96,7 +104,7 @@ $headingSize = $isCompact
 $eyebrowGap  = $isCompact ? 'mb-9' : 'mb-6';
 
 $wrapper = get_block_wrapper_attributes([
-    'class' => 'cadco-hero relative isolate w-full overflow-hidden bg-true-black',
+    'class' => 'cadco-hero relative isolate w-full ' . $clip . ' bg-true-black',
 ]);
 ?>
 <section <?php echo $wrapper; ?> style="<?php echo esc_attr($heightStyle . ';--cadco-glow:' . $glowColor); ?>"<?php echo $is_preview ? '' : ' data-cadco-hero'; ?>>
@@ -160,6 +168,23 @@ $wrapper = get_block_wrapper_attributes([
     <div class="relative mx-auto flex h-full w-full max-w-[1140px] flex-col justify-center px-6"
          style="<?php echo esc_attr($heightStyle); ?>">
 
+        <?php /* Anchored to the container's right edge and hanging below it, as
+                 the frame draws it. Hidden from assistive technology: it is a
+                 photograph of two covers, and the headline beside it already
+                 says what the page offers. Below the headline's breakpoint it
+                 is dropped rather than shrunk -- at that width it would either
+                 crowd the copy or be too small to read. */ ?>
+        <?php if ($hasSideArt) : ?>
+            <div data-proto-field="sideImage"
+                 class="pointer-events-none absolute right-6 hidden w-[431px] lg:block"
+                 style="bottom:-36px">
+                <img src="<?php echo esc_url($sideImage['url']); ?>"
+                     alt="<?php echo esc_attr($sideImage['alt'] ?? ''); ?>"
+                     class="block h-auto w-full"
+                     aria-hidden="true" />
+            </div>
+        <?php endif; ?>
+
         <?php // Always rendered, empty or not, so both stay editable. ?>
         <p data-proto-field="eyebrow" data-hero-eyebrow
            class="m-0 font-display text-[16px] font-extrabold leading-[1.2] text-white md:text-[20px] <?php echo esc_attr($eyebrowGap); ?>">
@@ -179,7 +204,7 @@ $wrapper = get_block_wrapper_attributes([
                  attribute as prose and curly-quotes its closing quote, which
                  silently corrupted this element's markup. */ ?>
         <h1 data-hero-heading
-            class="m-0 max-w-[1019px] font-display font-extrabold leading-[1.198] text-white <?php echo esc_attr($headingSize); ?>">
+            class="m-0 <?php echo $hasSideArt ? 'max-w-[560px]' : 'max-w-[1019px]'; ?> font-display font-extrabold leading-[1.198] text-white <?php echo esc_attr($headingSize); ?>">
             <?php
             /*
              * Two fields rather than one, so a two-sentence headline breaks

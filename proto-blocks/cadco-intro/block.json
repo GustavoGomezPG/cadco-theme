@@ -101,6 +101,38 @@
           }
         ],
         "help": "By default a paper panel takes the larger headline and a dark one the smaller. Set it outright where a frame asks for the other."
+      },
+      "headingMeasure": {
+        "type": "select",
+        "label": "Headline measure",
+        "default": "wide",
+        "options": [
+          {
+            "key": "wide",
+            "label": "Wide"
+          },
+          {
+            "key": "narrow",
+            "label": "Narrow (720px)"
+          }
+        ],
+        "help": "How wide the headline runs before it wraps. The frames set it per page -- the resource centre breaks after 'solution is' where the warranty page runs wider -- so it is chosen here rather than fixed in the block."
+      },
+      "density": {
+        "type": "select",
+        "label": "Vertical space",
+        "default": "normal",
+        "options": [
+          {
+            "key": "normal",
+            "label": "Normal"
+          },
+          {
+            "key": "compact",
+            "label": "Compact"
+          }
+        ],
+        "help": "How much room the band takes above and below its content. The frames differ by about twenty pixels between pages, so it is chosen here rather than fixed in the block."
       }
     }
   }

@@ -42,6 +42,11 @@
         "label": "Heading, second line",
         "help": "Optional. Given a value, it is drawn on its own line under the heading, so a two-sentence headline breaks exactly where you want it instead of wherever the column happens to run out."
       },
+      "sideImage": {
+        "type": "image",
+        "label": "Artwork beside the headline",
+        "help": "Optional. Sits at the right of the hero and is allowed to hang below it, as the resource centre's catalogue covers do. Setting it narrows the headline so the two do not collide."
+      },
       "body": {
         "type": "wysiwyg",
         "label": "Body",

@@ -1,0 +1,52 @@
+/*
+ * Cadco Resource Library.
+ *
+ * The note under the grid is authored as rich text, so its paragraphs and links
+ * arrive as plain markup with no classes to hook, and Tailwind preflight has
+ * already stripped the margins a browser would give them.
+ */
+.cadco-resource-note {
+    font-family: var(--font-display, inherit);
+    font-size: 30px;
+    font-weight: 700;
+    line-height: 1.35;
+    color: #000;
+}
+
+.cadco-resource-note p {
+    margin: 0;
+}
+
+/*
+ * Underlined, not merely recoloured. The frame distinguishes this link by its
+ * blue alone, which someone who cannot separate it from the surrounding black
+ * has no way of reading as a link -- the rule axe reports as link-in-text-block,
+ * and WCAG 1.4.1. The underline is offset far enough not to crowd the descenders
+ * at this size, so it stays close to the frame's intent.
+ */
+.cadco-resource-note a {
+    color: #00476e;
+    text-decoration: underline;
+    text-decoration-thickness: 2px;
+    text-underline-offset: 6px;
+}
+
+.cadco-resource-note a:hover {
+    color: #00395a;
+}
+
+/* The selects carry their own chevron: appearance:none removes the platform's,
+   and drawing it here keeps it on the right of the control at every width
+   without a wrapper element around each one. */
+.cadco-resource-library select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='13' height='8' fill='none'%3E%3Cpath d='M1 1l5.5 5.5L12 1' stroke='%2300476e' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0 center;
+}
+
+/* Safari shows a clear button and an inner cancel on a search input, neither of
+   which the frame draws. */
+.cadco-resource-library input[type="search"]::-webkit-search-decoration,
+.cadco-resource-library input[type="search"]::-webkit-search-cancel-button {
+    -webkit-appearance: none;
+}

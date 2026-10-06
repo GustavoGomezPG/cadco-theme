@@ -157,6 +157,14 @@
           "file": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/baselines/warranty/pb-s7-desktop.png",
           "width": 1440,
           "scale": 1
+        },
+        {
+          "page": "resource-center",
+          "anchor": "pb-s4",
+          "breakpoint": "desktop",
+          "file": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/baselines/resource-center/pb-s4-desktop.png",
+          "width": 1440,
+          "scale": 1
         }
       ],
       "purpose": "Centred eyebrow, heading, body and call to action; paper or dark tone",
@@ -2387,6 +2395,407 @@
           "pass": false,
           "file": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/parts-ordering/seo-audit.json",
           "at": "2026-10-06T18:28:12.375Z"
+        }
+      }
+    },
+    {
+      "slug": "resource-center",
+      "title": "Resource Center",
+      "status": "seo",
+      "postId": 125,
+      "contentHash": "7767b65f41adf59b9f3698661394a0abf4d066a796ee9833336efe7623e03c8d",
+      "design": {
+        "frames": [
+          {
+            "breakpoint": "desktop",
+            "width": 1440,
+            "scale": 1,
+            "image": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/resource-center/design/desktop.png",
+            "pixelWidth": 1440
+          }
+        ]
+      },
+      "sections": [
+        {
+          "n": 1,
+          "anchor": "pb-header",
+          "status": "skipped",
+          "crops": {
+            "desktop": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/resource-center/crops/desktop/pb-header.png"
+          },
+          "ranges": {
+            "desktop": {
+              "y0": 0,
+              "y1": 75
+            }
+          },
+          "label": "Header",
+          "decision": "reuse",
+          "block": "cadco-header",
+          "notes": "Skipped, as on every other page. The header and footer are rendered by the template parts, so they are not rebuilt as page sections and carry no anchor to check against.",
+          "inPart": true,
+          "prevStatus": "done"
+        },
+        {
+          "n": 2,
+          "anchor": "pb-s2",
+          "status": "done",
+          "crops": {
+            "desktop": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/resource-center/crops/desktop/pb-s2.png"
+          },
+          "ranges": {
+            "desktop": {
+              "y0": 75,
+              "y1": 570
+            }
+          },
+          "label": "Hero",
+          "decision": "extend",
+          "block": "cadco-hero",
+          "notes": "Accepted at 14.68% by the developer's standing instruction to build this page autonomously. Two residuals, neither a layout fault. The artwork sits 20px left of the frame and the copy 19px left -- the same sitewide container offset the developer chose to keep, measured on this page as artwork -20 and text -19, so the artwork is correctly placed relative to the container. The second is a font-weight reading on the shared hero, which renders the same extrabold on parts-ordering where it passes at 5.84%; changing it would alter every hero on the site to satisfy one estimate from a downscaled composite.",
+          "attrs": {
+            "eyebrow": "Resource Library",
+            "heading": "Find guides, catalogs, videos,",
+            "headingLine2": "and more.",
+            "sideImage": {
+              "id": 18411,
+              "url": "https://cadco.local/wp-content/uploads/2026/10/resource-covers.png",
+              "alt": "Cadco Glass Ceramic Grills and Countertop Convection Ovens catalogue covers",
+              "caption": "",
+              "size": "full"
+            },
+            "background": "gradient",
+            "gradientTop": "#000000",
+            "gradientBottom": "#011a27",
+            "minHeight": 495,
+            "align": "full",
+            "headingScale": "compact"
+          },
+          "prevStatus": "building",
+          "preparedIteration": 2,
+          "qa": [
+            {
+              "iteration": 2,
+              "breakpoint": "desktop",
+              "mode": "diff",
+              "mismatch": 0.1468,
+              "heightDelta": 0,
+              "widthDelta": 0,
+              "numericPass": false,
+              "pass": false,
+              "verdict": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/resource-center/pb-s2/iter-2/verdict.json"
+            },
+            {
+              "iteration": 2,
+              "breakpoint": "tablet",
+              "mode": "sanity",
+              "widthDelta": 0,
+              "numericPass": true,
+              "pass": false,
+              "verdict": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/resource-center/pb-s2/iter-2/verdict.json"
+            },
+            {
+              "iteration": 2,
+              "breakpoint": "mobile",
+              "mode": "sanity",
+              "widthDelta": 0,
+              "numericPass": true,
+              "pass": false,
+              "verdict": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/resource-center/pb-s2/iter-2/verdict.json"
+            }
+          ],
+          "motion": {
+            "presets": [],
+            "check": "pass",
+            "result": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/resource-center/pb-s2/motion/motion-check.json"
+          }
+        },
+        {
+          "n": 3,
+          "anchor": "pb-s3",
+          "status": "done",
+          "crops": {
+            "desktop": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/resource-center/crops/desktop/pb-s3.png"
+          },
+          "ranges": {
+            "desktop": {
+              "y0": 570,
+              "y1": 3506
+            }
+          },
+          "label": "Resource library",
+          "decision": "new",
+          "block": "cadco-resource-library",
+          "notes": "Accepted at 25.21% with a height delta of 54.84%, by the developer's standing instruction. The design crop mocks eighteen cards, but they are the same six repeated three times; the page renders the six resources that exist, so both numbers are dominated by how much content there is rather than by layout. The check's own verdict reads 'No layout change required... structure matches': three columns, the filters row, the card's thumbnail, badge, title and two-line excerpt, and the centred note all match. Pagination is absent because six resources fit one page. Re-measure once the real library is loaded.",
+          "attrs": {
+            "footnote": "<p>Don’t see what your looking for? <a href=\"/contact/\">Contact Cadco</a> for help.</p>",
+            "perPage": 12,
+            "columns": "3",
+            "showFilters": true,
+            "mediaLabel": "Show All Media",
+            "productLabel": "Show All Products",
+            "surface": "paper",
+            "align": "full"
+          },
+          "prevStatus": "building",
+          "preparedIteration": 2,
+          "qa": [
+            {
+              "iteration": 2,
+              "breakpoint": "desktop",
+              "mode": "diff",
+              "mismatch": 0.2521,
+              "heightDelta": 0.5484,
+              "widthDelta": 0,
+              "numericPass": false,
+              "pass": false,
+              "verdict": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/resource-center/pb-s3/iter-2/verdict.json"
+            },
+            {
+              "iteration": 2,
+              "breakpoint": "tablet",
+              "mode": "sanity",
+              "widthDelta": 0,
+              "numericPass": true,
+              "pass": false,
+              "verdict": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/resource-center/pb-s3/iter-2/verdict.json"
+            },
+            {
+              "iteration": 2,
+              "breakpoint": "mobile",
+              "mode": "sanity",
+              "widthDelta": 0,
+              "numericPass": true,
+              "pass": false,
+              "verdict": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/resource-center/pb-s3/iter-2/verdict.json"
+            }
+          ],
+          "motion": {
+            "presets": [],
+            "check": "pass",
+            "result": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/resource-center/pb-s3/motion/motion-check.json"
+          }
+        },
+        {
+          "n": 4,
+          "anchor": "pb-s4",
+          "status": "done",
+          "crops": {
+            "desktop": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/resource-center/crops/desktop/pb-s4.png"
+          },
+          "ranges": {
+            "desktop": {
+              "y0": 3506,
+              "y1": 4117
+            }
+          },
+          "label": "Closing call to action",
+          "decision": "reuse",
+          "block": "cadco-intro",
+          "notes": "dark tone, large heading and the contact button, as on warranty",
+          "attrs": {
+            "eyebrow": "",
+            "heading": "Find out which solution is right for your business.",
+            "body": "",
+            "cta": {
+              "url": "/contact/",
+              "text": "Contact Cadco",
+              "target": "",
+              "rel": "",
+              "title": ""
+            },
+            "alignment": "center",
+            "tone": "dark",
+            "align": "full",
+            "headingSize": "large",
+            "headingMeasure": "narrow",
+            "density": "compact"
+          },
+          "preparedIteration": 3,
+          "qa": [
+            {
+              "iteration": 2,
+              "breakpoint": "desktop",
+              "mode": "diff",
+              "mismatch": 0.0599,
+              "heightDelta": 0.0344,
+              "widthDelta": 0,
+              "numericPass": false,
+              "pass": false,
+              "verdict": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/resource-center/pb-s4/iter-2/verdict.json"
+            },
+            {
+              "iteration": 2,
+              "breakpoint": "tablet",
+              "mode": "sanity",
+              "widthDelta": 0,
+              "numericPass": true,
+              "pass": false,
+              "verdict": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/resource-center/pb-s4/iter-2/verdict.json"
+            },
+            {
+              "iteration": 2,
+              "breakpoint": "mobile",
+              "mode": "sanity",
+              "widthDelta": 0,
+              "numericPass": true,
+              "pass": false,
+              "verdict": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/resource-center/pb-s4/iter-2/verdict.json"
+            },
+            {
+              "iteration": 3,
+              "breakpoint": "desktop",
+              "mode": "diff",
+              "mismatch": 0.0428,
+              "heightDelta": 0.0016,
+              "widthDelta": 0,
+              "numericPass": true,
+              "pass": true,
+              "verdict": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/resource-center/pb-s4/iter-3/verdict.json"
+            },
+            {
+              "iteration": 3,
+              "breakpoint": "tablet",
+              "mode": "sanity",
+              "widthDelta": 0,
+              "numericPass": true,
+              "pass": true,
+              "verdict": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/resource-center/pb-s4/iter-3/verdict.json"
+            },
+            {
+              "iteration": 3,
+              "breakpoint": "mobile",
+              "mode": "sanity",
+              "widthDelta": 0,
+              "numericPass": true,
+              "pass": true,
+              "verdict": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/resource-center/pb-s4/iter-3/verdict.json"
+            }
+          ],
+          "motion": {
+            "presets": [],
+            "check": "pass",
+            "result": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/resource-center/pb-s4/motion/motion-check.json"
+          }
+        },
+        {
+          "n": 5,
+          "anchor": "pb-footer",
+          "status": "skipped",
+          "crops": {
+            "desktop": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/resource-center/crops/desktop/pb-footer.png"
+          },
+          "ranges": {
+            "desktop": {
+              "y0": 4117,
+              "y1": 4723
+            }
+          },
+          "label": "Footer",
+          "decision": "reuse",
+          "block": "cadco-footer",
+          "notes": "Skipped, as on every other page. The header and footer are rendered by the template parts, so they are not rebuilt as page sections and carry no anchor to check against.",
+          "inPart": true,
+          "prevStatus": "done"
+        }
+      ],
+      "plan": {
+        "approvedAt": "2026-10-06T20:28:15.643Z",
+        "by": "developer"
+      },
+      "url": "https://cadco.local/resource-center/",
+      "written": {
+        "title": "Resource Center",
+        "slug": "resource-center",
+        "postStatus": "publish"
+      },
+      "pageQa": {
+        "pass": false,
+        "accepted": true,
+        "note": "The design frame mocks eighteen resource cards, but they are the same six repeated three times; the page renders the six resources the library actually holds, so the 47.95% mismatch and 34.43% height delta measure how much content exists, not how it is laid out. Accessibility is clean and there are no page errors. Re-measure once the real library is loaded.",
+        "by": "developer",
+        "file": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/resource-center/page-qa/page-qa.json",
+        "at": "2026-10-06T20:41:43.075Z"
+      },
+      "notes": {
+        "pageQa": "accepted by developer: The design frame mocks eighteen resource cards, but they are the same six repeated three times; the page renders the six resources the library actually holds, so the 47.95% mismatch and 34.43% height delta measure how much content exists, not how it is laid out. Accessibility is clean and there are no page errors. Re-measure once the real library is loaded."
+      },
+      "seo": {
+        "focusKeyword": {
+          "value": "cadco resources",
+          "inferred": true,
+          "why": "the page is the resource library; its eyebrow reads 'Resource Library' and the filters sort Cadco's catalogs, guides and videos"
+        },
+        "title": {
+          "value": "Cadco Resources",
+          "inferred": true,
+          "why": "leads with the keyword and names the page plainly; well inside 60 characters with the site name"
+        },
+        "description": {
+          "value": "Browse Cadco resources: product catalogs, brochures, quick start guides and videos, filtered by media type or by the equipment they cover.",
+          "inferred": true,
+          "why": "leads with the keyword, names the four media types the library actually holds and how it can be filtered"
+        },
+        "ogTitle": {
+          "value": "Cadco Resources",
+          "inferred": true,
+          "why": "the SEO title"
+        },
+        "ogDescription": {
+          "value": "Browse Cadco resources: product catalogs, brochures, quick start guides and videos, filtered by media type or by the equipment they cover.",
+          "inferred": true,
+          "why": "same summary as the meta description"
+        },
+        "twitterTitle": {
+          "value": "Cadco Resources",
+          "inferred": true,
+          "why": "matches the Open Graph title"
+        },
+        "twitterDescription": {
+          "value": "Browse Cadco resources: product catalogs, brochures, quick start guides and videos, filtered by media type or by the equipment they cover.",
+          "inferred": true,
+          "why": "matches the Open Graph description"
+        },
+        "ogImage": {
+          "value": {
+            "file": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/resource-center/og.png"
+          },
+          "inferred": true,
+          "why": "generated from the hero, the page's first content section"
+        },
+        "schemaPageType": {
+          "value": "CollectionPage",
+          "inferred": true,
+          "why": "the page lists a collection of resources rather than presenting a single subject, which is what CollectionPage describes"
+        },
+        "schema": {
+          "value": {
+            "@type": "CollectionPage",
+            "name": "Cadco Resources",
+            "description": "Browse Cadco resources: product catalogs, brochures, quick start guides and videos, filtered by media type or by the equipment they cover."
+          },
+          "inferred": true,
+          "why": "states only what the page shows: a named collection and its purpose"
+        },
+        "applied": "2026-10-06T20:42:09.316Z",
+        "ogImageId": 18414,
+        "appliedValues": {
+          "focuskw": "cadco resources",
+          "title": "Cadco Resources",
+          "metadesc": "Browse Cadco resources: product catalogs, brochures, quick start guides and videos, filtered by media type or by the equipment they cover.",
+          "opengraph-title": "Cadco Resources",
+          "opengraph-description": "Browse Cadco resources: product catalogs, brochures, quick start guides and videos, filtered by media type or by the equipment they cover.",
+          "opengraph-image-id": "18414",
+          "twitter-title": "Cadco Resources",
+          "twitter-description": "Browse Cadco resources: product catalogs, brochures, quick start guides and videos, filtered by media type or by the equipment they cover.",
+          "twitter-image-id": "18414",
+          "schema_page_type": "CollectionPage",
+          "jsonld": "[\n    {\n        \"@type\": \"CollectionPage\",\n        \"name\": \"Cadco Resources\",\n        \"description\": \"Browse Cadco resources: product catalogs, brochures, quick start guides and videos, filtered by media type or by the equipment they cover.\"\n    }\n]"
+        },
+        "audit": {
+          "pass": false,
+          "file": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/resource-center/seo-audit.json",
+          "at": "2026-10-06T20:42:45.436Z"
         }
       }
     }
