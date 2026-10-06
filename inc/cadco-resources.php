@@ -111,9 +111,15 @@ add_action('add_meta_boxes', static function (): void {
             $value = (string) get_post_meta($post->ID, 'cadco_resource_url', true);
             $kind  = (string) get_post_meta($post->ID, 'cadco_resource_link_type', true);
 
-            echo '<p><label for="cadco_resource_link_type"><strong>' . esc_html__('What happens on click', 'cadco-theme') . '</strong></label>';
-            echo '<select name="cadco_resource_link_type" id="cadco_resource_link_type" class="widefat">';
-            echo '<option value="">' . esc_html__('Nothing — open this resource\'s own page', 'cadco-theme') . '</option>';
+            /* Side by side: the kind is a short choice and the address is long,
+               so stacking them in a narrow column made the address unreadable --
+               which is what it looked like in the sidebar. */
+            echo '<div style="display:flex;flex-wrap:wrap;gap:20px;align-items:flex-start;max-width:900px">';
+
+            echo '<p style="flex:0 0 260px;margin:0">';
+            echo '<label for="cadco_resource_link_type"><strong>' . esc_html__('What happens on click', 'cadco-theme') . '</strong></label><br />';
+            echo '<select name="cadco_resource_link_type" id="cadco_resource_link_type" style="width:100%;max-width:100%">';
+            echo '<option value="">' . esc_html__('Nothing — open its own page', 'cadco-theme') . '</option>';
 
             foreach (cadco_resource_link_types() as $key => $label) {
                 printf('<option value="%s"%s>%s</option>', esc_attr($key), selected($kind, $key, false), esc_html($label));
@@ -122,16 +128,24 @@ add_action('add_meta_boxes', static function (): void {
             echo '</select></p>';
 
             printf(
-                '<p><label for="cadco_resource_url"><strong>%s</strong></label>
-                 <input type="url" id="cadco_resource_url" name="cadco_resource_url" value="%s" class="widefat" placeholder="https://" /></p>
-                 <p class="description">%s</p>',
+                '<p style="flex:1 1 360px;margin:0">
+                   <label for="cadco_resource_url"><strong>%s</strong></label><br />
+                   <input type="url" id="cadco_resource_url" name="cadco_resource_url" value="%s" class="widefat" placeholder="https://" />
+                 </p>',
                 esc_html__('Address', 'cadco-theme'),
-                esc_attr($value),
-                esc_html__('A YouTube or Vimeo address for a video; the PDF for a file; any address for a link. Leave both empty and the card opens this resource\'s own page.', 'cadco-theme')
+                esc_attr($value)
+            );
+
+            echo '</div>';
+
+            printf(
+                '<p class="description" style="margin-top:14px;max-width:900px">%s</p>',
+                esc_html__('A YouTube or Vimeo address for a video; the PDF for a file; any address — a Dropbox share, say — for a link. Leave both empty and the card opens this resource\'s own page.', 'cadco-theme')
             );
         },
         'resource',
-        'side'
+        'normal',
+        'high'
     );
 });
 
