@@ -87,6 +87,29 @@ $pageUrl = static function (int $n) use ($selMedia, $selProduct, $search): strin
     return esc_url(add_query_arg($args, get_permalink()));
 };
 
+/**
+ * The embed form of a video URL.
+ *
+ * The client will paste whatever the address bar gave them -- a watch link, a
+ * share link, sometimes already an embed link -- and only the embed form loads
+ * in a frame, so all three are accepted and normalised here rather than asking
+ * anyone to convert by hand. Anything unrecognised is returned untouched, which
+ * makes it open in a new tab instead of silently failing in the modal.
+ */
+$embedUrl = static function (string $url): string {
+    if (preg_match('~youtube\.com/embed/([A-Za-z0-9_-]+)~', $url, $m)
+        || preg_match('~youtube\.com/watch\?v=([A-Za-z0-9_-]+)~', $url, $m)
+        || preg_match('~youtu\.be/([A-Za-z0-9_-]+)~', $url, $m)) {
+        return 'https://www.youtube.com/embed/' . $m[1] . '?rel=0';
+    }
+
+    if (preg_match('~vimeo\.com/(?:video/)?(\d+)~', $url, $m)) {
+        return 'https://player.vimeo.com/video/' . $m[1];
+    }
+
+    return '';
+};
+
 $reveal = $is_preview ? '' : 'data-proto-animate="manual" data-cadco-reveal-group';
 
 $wrapper = get_block_wrapper_attributes([
@@ -168,8 +191,29 @@ $wrapper = get_block_wrapper_attributes([
                        to recognise, so it is shown whole on the card's tint. */
                     $isStill = 'video' === strtolower($kind);
                     $fit     = $isStill ? 'object-cover' : 'object-contain p-5';
+
+                    /*
+                     * Where a card goes depends on what the resource actually has,
+                     * not on a table of types. A video with a playable URL opens in
+                     * the modal; anything else with a URL opens its file in a new
+                     * tab -- which is what the catalogues, the brochures AND the
+                     * guides on cadco-ltd.com all are, every one of them a PDF.
+                     * A resource with no URL falls back to its own page, so a guide
+                     * that later becomes a written page rather than a download needs
+                     * only to have its link cleared.
+                     */
+                    $embed    = $isStill ? $embedUrl($link) : '';
+                    $opensModal = '' !== $embed;
+                    $opensTab   = ! $opensModal && '' !== $link && '#' !== $link;
+                    $href       = $opensTab ? $link : ($opensModal ? $link : get_permalink($id));
                     ?>
                     <a href="<?php echo esc_url($href); ?>"
+                       <?php if ($opensModal) : ?>
+                           data-cadco-resource-video="<?php echo esc_url($embed); ?>"
+                           data-cadco-resource-title="<?php echo esc_attr(get_the_title($id)); ?>"
+                       <?php elseif ($opensTab) : ?>
+                           target="_blank" rel="noopener noreferrer"
+                       <?php endif; ?>
                        class="group flex flex-col overflow-hidden rounded-[22px] border border-[#cfdeeb] bg-white no-underline transition-shadow hover:shadow-[0_6px_24px_rgba(0,0,0,0.08)]">
 
                         <div class="relative aspect-[342/202] w-full overflow-hidden bg-[#dbe7f3]">
@@ -190,6 +234,14 @@ $wrapper = get_block_wrapper_attributes([
                         <div class="flex flex-1 flex-col px-[36px] pb-[30px] pt-[24px]">
                             <h3 class="m-0 font-display text-[21px] font-bold leading-[1.25] text-true-black">
                                 <?php echo esc_html(get_the_title($id)); ?>
+                                <?php /* A link that opens elsewhere says so, rather than
+                                         surprising someone who cannot see the new tab
+                                         appear. */ ?>
+                                <?php if ($opensTab) : ?>
+                                    <span class="sr-only"><?php esc_html_e('(opens the file in a new tab)', 'cadco-theme'); ?></span>
+                                <?php elseif ($opensModal) : ?>
+                                    <span class="sr-only"><?php esc_html_e('(plays in a dialog on this page)', 'cadco-theme'); ?></span>
+                                <?php endif; ?>
                             </h3>
                             <?php $excerpt = get_the_excerpt($id); ?>
                             <?php if ('' !== $excerpt) : ?>
@@ -230,6 +282,30 @@ $wrapper = get_block_wrapper_attributes([
         <?php endif; ?>
 
         <?php wp_reset_postdata(); ?>
+
+        <?php /* One dialog for the whole grid rather than one per card: only one
+                 video can play at a time, and a <dialog> gives the focus trap, the
+                 Escape key and the inert background for free. The frame is only
+                 written when a card is opened, so no card costs a YouTube request
+                 until someone asks for it, and clearing it on close stops playback
+                 without having to talk to the player. */ ?>
+        <?php if (! $is_preview) : ?>
+            <dialog data-cadco-video-modal
+                    class="w-[min(1100px,92vw)] rounded-[16px] border-0 bg-true-black p-0 backdrop:bg-black/70"
+                    aria-labelledby="cadco-video-modal-title">
+                <div class="flex items-center justify-between gap-4 px-5 py-4">
+                    <h2 id="cadco-video-modal-title" class="m-0 font-display text-[18px] font-bold text-white"></h2>
+                    <button type="button" data-cadco-video-close
+                            class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-white transition-colors hover:bg-white/10"
+                            aria-label="<?php esc_attr_e('Close the video', 'cadco-theme'); ?>">
+                        <svg class="h-5 w-5" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                            <path d="m4 4 12 12M16 4 4 16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+                        </svg>
+                    </button>
+                </div>
+                <div class="aspect-video w-full bg-black" data-cadco-video-frame></div>
+            </dialog>
+        <?php endif; ?>
 
         <?php // Rendered whenever it has copy, and always in the editor so it stays editable. ?>
         <?php if ($footnote !== '' || $is_preview) : ?>
