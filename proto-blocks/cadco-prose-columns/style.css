@@ -29,9 +29,9 @@
     color: #000;
 }
 
-/* The frame runs two heading sizes in these columns: a major one at 36px
-   ("One Year Warranty Coverage", 43px tall in the frame) and a minor one at
-   20px ("Warranty Service Process" and the rest, 24px tall). */
+/* The frame runs two heading sizes in these columns: a major one at 36px (the
+   column's opening heading, 43px tall in the frame) and a minor one at 20px
+   ("Warranty Service Process" and the rest, 24px tall). */
 .cadco-prose h2 { font-size: 36px; margin-bottom: 28px; }
 .cadco-prose h3 { font-size: 20px; }
 
@@ -117,4 +117,20 @@
 .cadco-prose img {
     display: block;
     margin-top: 34px;
+}
+
+/*
+ * A callout is a short aside in its own box, so the rhythm that separates two
+ * headed passages in a column would be far too much space inside it.
+ */
+.cadco-callout h2:not(:first-child),
+.cadco-callout h3:not(:first-child),
+.cadco-callout h4:not(:first-child) {
+    margin-top: 20px;
+}
+
+.cadco-callout h3,
+.cadco-callout h4 {
+    font-size: 17px;
+    margin-bottom: 8px;
 }

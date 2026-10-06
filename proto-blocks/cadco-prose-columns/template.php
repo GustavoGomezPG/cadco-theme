@@ -19,6 +19,7 @@
 $heading = (string) ($attributes['heading'] ?? '');
 $left    = (string) ($attributes['left'] ?? '');
 $right   = (string) ($attributes['right'] ?? '');
+$callout = (string) ($attributes['callout'] ?? '');
 $cta     = $attributes['cta'] ?? [];
 
 $ctaUrl  = (string) ($cta['url'] ?? '');
@@ -32,7 +33,16 @@ $surface = ($attributes['surface'] ?? 'paper') === 'tint' ? 'bg-[#eef2f6]' : 'bg
 
 /* Literal classes, so Tailwind's scanner sees them: it cannot generate a class
    from a value computed in PHP, which an inline width quietly relied on. */
-$leftCol = ($attributes['leftMeasure'] ?? 'wide') === 'narrow' ? 'lg:w-[490px]' : 'lg:w-[542px]';
+/* 539px, not the 542 the column first took: the coverage paragraph breaks after
+   "coverage is" from 537 to 541 and after "applicable" from 542, so the frame's
+   own breaks sit in a five-pixel band and the column was one pixel outside it.
+   539 is its middle. The three pixels given up widen the gap to the 67 the frame
+   sets, since the row distributes what the columns do not use. */
+$leftCol = ($attributes['leftMeasure'] ?? 'wide') === 'narrow' ? 'lg:w-[490px]' : 'lg:w-[539px]';
+
+/* The callout has to separate from whatever it sits on, so it takes the colour
+   the section does not: white on the tinted surface, tint on the paper one. */
+$calloutBox = ($attributes['surface'] ?? 'paper') === 'tint' ? 'bg-white' : 'bg-[#eef2f6]';
 $outline = ($attributes['ctaStyle'] ?? 'outline') !== 'solid';
 
 $reveal = $is_preview ? '' : 'data-proto-animate="manual" data-cadco-reveal-group';
@@ -86,6 +96,14 @@ $wrapper = get_block_wrapper_attributes([
                 <div data-proto-field="right" class="cadco-prose">
                     <?php echo wp_kses_post($right); ?>
                 </div>
+
+                <?php // Rendered whenever it has copy, and always in the editor so it stays editable. ?>
+                <?php if ($callout !== '' || $is_preview) : ?>
+                    <div data-proto-field="callout"
+                         class="cadco-prose cadco-callout mt-8 rounded-[10px] border-l-4 border-cadco-blue <?php echo esc_attr($calloutBox); ?> px-6 py-5">
+                        <?php echo wp_kses_post($callout); ?>
+                    </div>
+                <?php endif; ?>
             </div>
         </div>
     </div>

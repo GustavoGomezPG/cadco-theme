@@ -1430,7 +1430,7 @@
       "title": "Warranty",
       "status": "seo",
       "postId": 18365,
-      "contentHash": "c90f9e7521dbd8538fedb079a0834e33a4158db5d80cfe106134a18b0f46650f",
+      "contentHash": "c07b8fad0e4b09aba96adeb308bb48ce0ce41d5682b738fd270589189d6e10b2",
       "design": {
         "frames": [
           {
@@ -1551,7 +1551,7 @@
           "notes": "Accepted at 4.28%. Content starts at 174px against the frame's 193px: the theme's container is the same on every page and the developer chose to keep it. The exclusions list draws its hyphen markers from CSS rather than from the copy, because wptexturize rewrites a hyphen that opens a line into an en dash and decodes a &#45; entity before doing so; writing it as a real list puts the marker out of that filter's reach. The telephone button is 36px as the frame draws it, but lifts to 44px below the md breakpoint so it meets the tap-target guidance on a phone.",
           "attrs": {
             "heading": "",
-            "left": "<h2>One Year Warranty Coverage</h2><p>Unless otherwise noted, Cadco, Ltd. warrants all products to be free from defects in material and workmanship for a period of one (1) year from the date of purchase. This commercial (non-residential) warranty coverage is applicable only within the Fifty United States. Units purchased and/or operated outside of the United States are not covered under Cadco’s warranty. Please refer to individual product descriptions and the official warranty at <a href=\"https://www.cadco-ltd.com\">www.cadco-ltd.com</a> for warranty terms on select models or components.</p><h3>Warranty Service Process</h3><p>For any warranty service request, customers must first call Cadco’s National Service Line to receive service authorization. Do not return units to the store where purchased for warranty repair.</p>",
+            "left": "<h2>Warranty Coverage</h2><p>Unless otherwise noted, Cadco, Ltd. warrants all products to be free from defects in material and workmanship for a period of one (1) year from the date of purchase. This commercial (non-residential) warranty coverage is applicable only within the Fifty United States. Units purchased and/or operated outside of the United States are not covered under Cadco’s warranty. Please refer to individual product descriptions and the official warranty at <a href=\"https://www.cadco-ltd.com\">www.cadco-ltd.com</a> for warranty terms on select models or components.</p><h3>Warranty Service Process</h3><p>For any warranty service request, customers must first call Cadco’s National Service Line to receive service authorization. Do not return units to the store where purchased for warranty repair.</p>",
             "right": "<h3>Warranty Exclusions</h3><p><strong>Warranty does not apply in the following cases:</strong></p><ul><li>Misuse, abuse, or neglect</li><li>Damage resulting from unauthorized service or repair attempts</li><li>Use of Cadco ovens without a door gasket or with a damaged gasket</li></ul><p><strong>Note:</strong> Operating the unit without a functioning gasket may cause hinge failure and reduce oven efficiency. Doing so will void the warranty on the hinges.</p><p><strong>Reminder:</strong> Door gaskets should be inspected and cleaned daily.</p>",
             "cta": {
               "url": "tel:8776037693",
@@ -1563,7 +1563,8 @@
             "surface": "paper",
             "ctaStyle": "outline",
             "align": "full",
-            "leftMeasure": "wide"
+            "leftMeasure": "wide",
+            "callout": "<h3>Ordering parts or requesting technical service</h3><p>To order replacement parts or to request technical service, call Cadco’s National Service Line at <a href=\"tel:8776037693\">(877) 603-7693</a>. Have your model and serial number ready so the right part can be identified.</p>"
           },
           "preparedIteration": 6,
           "qa": [
@@ -1727,7 +1728,7 @@
           "notes": "Accepted at 2.24% with the height within 0.2%. Reuses the block built for section 3 with a narrower left column, which the frame sets differently here. PLACEHOLDER ASSET: the CFESA logo is cropped from the frame and needs replacing with the supplied original.",
           "attrs": {
             "heading": "Additional Information",
-            "left": "<h3>Proof of Purchase Requirement</h3><p>A copy of the original invoice is required to validate warranty coverage. (Registration is not required.)</p><h3>Notes</h3><p>Warranty coverage for carts applies only within the 48 contiguous U.S. states.</p><h3>Service Centers</h3><p>Cadco has authorized service centers throughout the United States.</p>",
+            "left": "<h3>Proof of Purchase Requirement</h3><p>A copy of the original invoice is required to validate warranty coverage. (Registration is not required.)</p><h3>Notes</h3><p>Warranty coverage for carts applies only within the 48 contiguous U.S. states.</p><h3>Post-Warranty Service</h3><p>For post-warranty service needs, please contact a service center in your area using the information below.</p>",
             "right": "<h3>Membership</h3><p>Cadco is an Associate Member of the Commercial Food Equipment Service Association (CFESA)</p><p><img src=\"https://cadco.local/wp-content/uploads/2026/10/cfesa-logo.png\" alt=\"CFESA Certified Company logo\" width=\"212\" height=\"60\" /></p>",
             "cta": {
               "url": "",
@@ -1955,7 +1956,7 @@
         "approvedAt": "2026-10-05T20:44:59.087Z",
         "by": "developer"
       },
-      "url": "https://cadco.local/warranty/",
+      "url": "https://cadco.local/support/warranty-info/",
       "written": {
         "title": "Warranty",
         "slug": "warranty",
