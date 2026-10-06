@@ -91,7 +91,7 @@ $wrapper = get_block_wrapper_attributes([
                             <?php if (! empty($logo['url'])) : ?>
                                 <img src="<?php echo esc_url($logo['url']); ?>"
                                      alt="<?php echo esc_attr($logo['alt'] ?? ''); ?>"
-                                     class="block h-auto max-h-[106px] w-auto max-w-[175px]" />
+                                     class="block h-auto max-h-[106px] w-auto max-w-[166px]" />
                             <?php endif; ?>
                         </span>
                     </div>

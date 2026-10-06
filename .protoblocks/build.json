@@ -2034,7 +2034,7 @@
       "title": "Parts Ordering",
       "status": "building",
       "postId": 75,
-      "contentHash": "f6548d0986b97594668c14083d98594f543ea845b082dc11582fee4e413c429a",
+      "contentHash": "9d368c74283196cb85f342f0d6dae0035bacb8497ead728f66624474cdbc7583",
       "design": {
         "frames": [
           {
@@ -2153,8 +2153,8 @@
               {
                 "id": "col1",
                 "logo": {
-                  "id": 18385,
-                  "url": "https://cadco.local/wp-content/uploads/2026/10/partstown-logo.png",
+                  "id": 18392,
+                  "url": "https://cadco.local/wp-content/uploads/2026/10/parts-town-logo.png",
                   "alt": "Parts Town — Get real parts faster",
                   "caption": "",
                   "size": "full"
