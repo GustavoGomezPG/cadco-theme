@@ -69,6 +69,18 @@ $query = new WP_Query([
     'tax_query'      => $taxQuery ?: null,
 ]);
 
+/* The page's own address, taken before the loop runs.
+   get_permalink() with no argument answers for whatever the global post is, and
+   the_post() repoints that at each resource in turn. Read inside the pagination
+   -- which renders after the loop -- it returned the last resource, so every
+   page link pointed at /resources/<last-card>/?rpage=2 instead of at this page.
+   Resolved once here, where the global post is still the page. */
+$selfUrl = (string) get_permalink(get_queried_object_id());
+
+if ('' === (string) $selfUrl) {
+    $selfUrl = home_url(add_query_arg([], $GLOBALS['wp']->request ?? ''));
+}
+
 $mediaTerms   = get_terms(['taxonomy' => 'resource_media', 'hide_empty' => true]);
 $productTerms = get_terms(['taxonomy' => 'resource_product', 'hide_empty' => true]);
 $mediaTerms   = is_wp_error($mediaTerms) ? [] : $mediaTerms;
@@ -76,7 +88,7 @@ $productTerms = is_wp_error($productTerms) ? [] : $productTerms;
 
 /* Page links keep whatever the reader already chose, so paging does not quietly
    drop their filters. */
-$pageUrl = static function (int $n) use ($selMedia, $selProduct, $search): string {
+$pageUrl = static function (int $n) use ($selMedia, $selProduct, $search, &$selfUrl): string {
     $args = array_filter([
         'rmedia'   => $selMedia,
         'rproduct' => $selProduct,
@@ -84,7 +96,7 @@ $pageUrl = static function (int $n) use ($selMedia, $selProduct, $search): strin
         'rpage'   => $n > 1 ? $n : '',
     ], static fn ($v): bool => '' !== $v && null !== $v);
 
-    return esc_url(add_query_arg($args, get_permalink()));
+    return esc_url(add_query_arg($args, $selfUrl));
 };
 
 /**
@@ -129,7 +141,7 @@ $wrapper = get_block_wrapper_attributes([
         <?php if ($showFilters) : ?>
             <?php /* A GET form: the filtered view is a URL, so it can be linked and
                      shared, and it still works with the script switched off. */ ?>
-            <form method="get" action="<?php echo esc_url(get_permalink()); ?>"
+            <form method="get" action="<?php echo esc_url($selfUrl); ?>"
                   data-cadco-resource-filters
                   class="mb-[78px] flex flex-col gap-6 md:flex-row md:items-end md:gap-[54px]">
 
@@ -264,6 +276,10 @@ $wrapper = get_block_wrapper_attributes([
                         </div>
                     </a>
                 <?php endwhile; ?>
+                <?php /* Reset here rather than at the end of the block: everything
+                         below reads the page, not a card, and leaving the last
+                         card in place is what sent the page links to it. */ ?>
+                <?php wp_reset_postdata(); ?>
             </div>
 
             <?php if ($query->max_num_pages > 1) : ?>
@@ -292,8 +308,6 @@ $wrapper = get_block_wrapper_attributes([
                 <?php esc_html_e('No resources match those filters yet.', 'cadco-theme'); ?>
             </p>
         <?php endif; ?>
-
-        <?php wp_reset_postdata(); ?>
 
         <?php /* One dialog for the whole grid rather than one per card: only one
                  video can play at a time, and a <dialog> gives the focus trap, the
