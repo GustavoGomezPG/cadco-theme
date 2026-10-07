@@ -30,7 +30,7 @@
         "min": 1,
         "max": 24,
         "itemLabel": "name",
-        "help": "The territory is a comma separated list of states; the filter above the cards is built from these, so a state only appears once it belongs to somebody. The phone and email are what the card's dialog offers, each one clickable.",
+        "help": "The territory is a comma separated list of states; the filter above the cards is built from these, so a state only appears once it belongs to somebody. Click a card to fill in its phone, email, address and website in the sidebar -- the dialog reads those.",
         "fields": {
           "logo": {
             "type": "image",
@@ -43,7 +43,9 @@
           "territory": {
             "type": "text",
             "label": "States covered"
-          },
+          }
+        },
+        "itemControls": {
           "phone": {
             "type": "text",
             "label": "Phone"
@@ -53,13 +55,12 @@
             "label": "Email"
           },
           "address": {
-            "type": "text",
+            "type": "textarea",
             "label": "Address"
           },
           "website": {
             "type": "text",
-            "label": "Website",
-            "help": "Shown in the card's dialog beside the phone and email. A plain address: the card itself is the link, so there is no separate link text to write."
+            "label": "Website"
           }
         }
       }
