@@ -1,0 +1,65 @@
+{
+  "cookies": [
+    {
+      "name": "wordpress_sec_1dc276f0caab6ef095850a42c320e7ec",
+      "value": "cadcodev%7C1786766534%7CfdP9zOugSrld88iDoUoHDIWvpUzb3mYiwkrVafrADbi%7C0e82f201683619d28645ebd0cb9716d70349261a630e21ac96ebd5499de0cad8",
+      "domain": "cadco.local",
+      "path": "/wp-content/plugins",
+      "expires": -1,
+      "httpOnly": true,
+      "secure": true,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "wordpress_sec_1dc276f0caab6ef095850a42c320e7ec",
+      "value": "cadcodev%7C1786766534%7CfdP9zOugSrld88iDoUoHDIWvpUzb3mYiwkrVafrADbi%7C0e82f201683619d28645ebd0cb9716d70349261a630e21ac96ebd5499de0cad8",
+      "domain": "cadco.local",
+      "path": "/wp-admin",
+      "expires": -1,
+      "httpOnly": true,
+      "secure": true,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "wordpress_test_cookie",
+      "value": "WP%20Cookie%20check",
+      "domain": "cadco.local",
+      "path": "/",
+      "expires": -1,
+      "httpOnly": true,
+      "secure": true,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "wordpress_logged_in_1dc276f0caab6ef095850a42c320e7ec",
+      "value": "cadcodev%7C1786766534%7CfdP9zOugSrld88iDoUoHDIWvpUzb3mYiwkrVafrADbi%7C8f2f9e2edec55854742be17c9df59111ca03abb3df40a46a9cc833972f2d8dbd",
+      "domain": "cadco.local",
+      "path": "/",
+      "expires": -1,
+      "httpOnly": true,
+      "secure": true,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "wfwaf-authcookie-c91485e330302b78e0fceb83e56fb244",
+      "value": "1%7Cadministrator%7Cmanage_options%2Cunfiltered_html%2Cedit_others_posts%2Cupload_files%2Cpublish_posts%2Cedit_posts%2Cread%7Ccc710ac5330fc829f5519209dd276c2a7a5d9118268ef480982a1b46dacbe7e1",
+      "domain": "cadco.local",
+      "path": "/",
+      "expires": 1786636935.03853,
+      "httpOnly": true,
+      "secure": true,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "wp-settings-time-1",
+      "value": "1786593735",
+      "domain": "cadco.local",
+      "path": "/",
+      "expires": 1818129735.038652,
+      "httpOnly": false,
+      "secure": true,
+      "sameSite": "Lax"
+    }
+  ],
+  "origins": []
+}

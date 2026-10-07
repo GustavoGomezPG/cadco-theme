@@ -58,6 +58,24 @@
         "help": "The top-level menu item that opens the compact card menu.",
         "optionsSource": "cadco:nav-items"
       },
+      "menuDescriptions": {
+        "type": "repeater",
+        "label": "Menu item descriptions",
+        "itemLabel": "item",
+        "max": 24,
+        "help": "The line of text under an item inside a panel. Only the mega and mini panels show it; a plain menu item ignores it.",
+        "fields": {
+          "item": {
+            "type": "select",
+            "label": "Menu item",
+            "optionsSource": "cadco:nav-items-all"
+          },
+          "text": {
+            "type": "textarea",
+            "label": "Description"
+          }
+        }
+      },
       "showSearch": {
         "type": "toggle",
         "label": "Show search",

@@ -1,0 +1,73 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/block.json",
+  "apiVersion": 3,
+  "name": "proto-blocks/cadco-product-resources",
+  "title": "Cadco Product Resources",
+  "category": "proto",
+  "icon": "media-document",
+  "description": "The documents and videos tagged to the product being viewed: a two-column list of download cards, then a scrollable strip of video stills that play in a dialog. Placed once in the single product template.",
+  "keywords": [
+    "product",
+    "resources",
+    "downloads",
+    "videos",
+    "documents"
+  ],
+  "supports": {
+    "html": false,
+    "anchor": true,
+    "customClassName": true,
+    "align": [
+      "full"
+    ]
+  },
+  "protoBlocks": {
+    "version": "1.0",
+    "template": "template.php",
+    "useTailwind": true,
+    "controls": {
+      "heading": {
+        "type": "text",
+        "label": "Heading",
+        "default": "Resources & Downloads"
+      },
+      "showDocuments": {
+        "type": "toggle",
+        "label": "Show the download cards",
+        "default": true
+      },
+      "showVideos": {
+        "type": "toggle",
+        "label": "Show the video strip",
+        "default": true
+      },
+      "columns": {
+        "type": "select",
+        "label": "Card columns",
+        "default": "2",
+        "options": [
+          { "key": "1", "label": "One" },
+          { "key": "2", "label": "Two (design)" },
+          { "key": "3", "label": "Three" }
+        ],
+        "conditions": { "visible": { "showDocuments": true } },
+        "help": "One column on phones whatever this says."
+      },
+      "documentLimit": {
+        "type": "range",
+        "label": "Most cards to show",
+        "default": 12,
+        "min": 2,
+        "max": 40,
+        "step": 1,
+        "conditions": { "visible": { "showDocuments": true } }
+      },
+      "showDivider": {
+        "type": "toggle",
+        "label": "Rule along the bottom",
+        "default": true,
+        "help": "The design closes this section with a full-width rule before the related products."
+      }
+    }
+  }
+}

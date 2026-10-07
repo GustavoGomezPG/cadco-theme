@@ -1,0 +1,98 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/block.json",
+  "apiVersion": 3,
+  "name": "proto-blocks/cadco-prose-columns",
+  "title": "Cadco Prose Columns",
+  "category": "proto",
+  "icon": "editor-justify",
+  "description": "An optional section heading above two columns of rich text, with an optional button under the left column.",
+  "supports": {
+    "html": false,
+    "anchor": true,
+    "customClassName": true,
+    "align": [
+      "full"
+    ]
+  },
+  "protoBlocks": {
+    "version": "1.0",
+    "template": "template.php",
+    "useTailwind": true,
+    "fields": {
+      "heading": {
+        "type": "text",
+        "tagName": "h2",
+        "label": "Section heading",
+        "help": "Optional. Leave empty where the columns carry their own headings, as the warranty coverage section does."
+      },
+      "left": {
+        "type": "wysiwyg",
+        "label": "Left column",
+        "help": "Headings, paragraphs and lists together. Write it as one region rather than as separate fields, so the order is yours to change."
+      },
+      "right": {
+        "type": "wysiwyg",
+        "label": "Right column"
+      },
+      "callout": {
+        "type": "wysiwyg",
+        "label": "Callout under the right column",
+        "help": "Optional. Drawn as a tinted box with a blue rule, for a note that should not read as part of the column's prose."
+      },
+      "cta": {
+        "type": "link",
+        "label": "Button under the left column",
+        "help": "Optional. A telephone link is written as tel:8776037693."
+      }
+    },
+    "controls": {
+      "surface": {
+        "type": "select",
+        "label": "Background",
+        "default": "paper",
+        "options": [
+          {
+            "key": "paper",
+            "label": "Paper"
+          },
+          {
+            "key": "tint",
+            "label": "Tint"
+          }
+        ]
+      },
+      "ctaStyle": {
+        "type": "select",
+        "label": "Button style",
+        "default": "outline",
+        "options": [
+          {
+            "key": "outline",
+            "label": "Outlined with a telephone icon"
+          },
+          {
+            "key": "solid",
+            "label": "Solid"
+          }
+        ],
+        "help": "The warranty page draws its service line as an outlined button with a handset beside it."
+      },
+      "leftMeasure": {
+        "type": "select",
+        "label": "Left column measure",
+        "default": "wide",
+        "options": [
+          {
+            "key": "wide",
+            "label": "Wide (539px)"
+          },
+          {
+            "key": "narrow",
+            "label": "Narrow (490px)"
+          }
+        ],
+        "help": "How wide the left column runs before its copy wraps. The warranty page uses both: the coverage copy runs wide, the additional information narrow. The wide measure is set to the frame's own line breaks, which sit in a narrow band -- changing it a few pixels moves a word between lines."
+      }
+    }
+  }
+}

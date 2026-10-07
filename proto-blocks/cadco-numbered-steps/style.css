@@ -1,0 +1,13 @@
+/*
+ * Cadco Numbered Steps.
+ *
+ * Only the footnote needs styling: it is a rich-text region, so its paragraphs
+ * arrive without the margins Tailwind preflight strips.
+ */
+.cadco-steps-footnote p {
+    margin: 0 0 8px;
+}
+
+.cadco-steps-footnote p:last-child {
+    margin-bottom: 0;
+}

@@ -47,13 +47,63 @@ $ctaRow      = $centred ? 'flex justify-center' : '';
 
 // The design gives the centred statement a wider measure than the left one:
 // 998px against 913px, so its three lines break where they are drawn.
-$headingWide = $centred ? 'max-w-[998px]' : 'max-w-[913px]';
+/* Literal classes so Tailwind's scanner sees them. */
+$headingWide = ($attributes['headingMeasure'] ?? 'wide') === 'narrow'
+    ? 'max-w-[720px]'
+    : ($centred ? 'max-w-[998px]' : 'max-w-[913px]');
 
 // $block is null in the editor preview.
 $is_preview = ! isset($block) || $block === null;
 
+/*
+ * Two tones. "paper" is what every existing instance renders and stays the
+ * default; "dark" sets the closing call to action on the hero's gradient with
+ * the text inverted. Each class is literal so Tailwind's scanner sees it.
+ */
+$isDark = ($attributes['tone'] ?? 'paper') === 'dark';
+
+$surface   = $isDark
+    ? 'bg-gradient-to-b from-[#00203a] to-[#000000]'
+    : 'bg-paper';
+
+/* The dark tone is a closing panel and the frame gives it more air than the
+   paper one, and a slightly smaller headline. Scoped so the paper instances
+   keep exactly what they render today. */
+/* Literal classes so Tailwind's scanner sees them. */
+$density   = (string) ($attributes['density'] ?? 'normal');
+$compact   = 'compact' === $density;
+
+/*
+ * "flush" is the product pages' closing call to action. There the band is not a
+ * section of its own: the frame runs paper straight down from the related
+ * products rail, and the 109px between the rail's arrows and this heading is
+ * carried by the rail's section. So this band contributes no top space at all,
+ * and the eyebrow -- which those instances leave empty -- stops reserving the
+ * 36px it would normally put above the heading. The heading-to-button distance
+ * and the drop to the footer are the frame's own, measured on the 1440 frame
+ * rather than inherited from the paper instances, which space them differently.
+ *
+ * Every other density is untouched, so the six existing instances render
+ * exactly what they render today.
+ */
+$flush     = 'flush' === $density;
+
+$pad       = $flush
+    ? 'pt-0 pb-20 md:pb-[155px]'
+    : ($isDark
+        ? ($compact ? 'py-20 md:py-[158px]' : 'py-20 md:py-[169px]')
+        : ($compact ? 'py-20 md:py-[109px]' : 'py-20 md:py-[120px]'));
+
+$headGap   = $flush ? '' : 'mt-6 md:mt-9';
+$ctaGap    = $flush ? 'mt-10 md:mt-[76px]' : 'mt-10 md:mt-12';
+$sizePick  = (string) ($attributes['headingSize'] ?? 'auto');
+$headSize  = $sizePick === 'large'
+    ? 'md:text-[64px]'
+    : ($sizePick === 'medium' ? 'md:text-[56px]' : ($isDark ? 'md:text-[56px]' : 'md:text-[64px]'));
+$textMain  = $isDark ? 'text-white' : 'text-true-black';
+
 $wrapper = get_block_wrapper_attributes([
-    'class' => 'cadco-intro w-full bg-paper py-20 md:py-[120px]',
+    'class' => 'cadco-intro ' . ($isDark ? 'cadco-intro--dark ' : '') . 'w-full ' . $pad . ' ' . $surface,
 ]);
 
 /**
@@ -71,12 +121,12 @@ $wrapper = get_block_wrapper_attributes([
 $reveal = $is_preview ? '' : 'data-proto-animate="manual" data-cadco-reveal-group';
 ?>
 <section <?php echo $wrapper; ?> <?php echo $reveal; ?>>
-    <div class="mx-auto w-full max-w-[1106px] px-6">
+    <div class="mx-auto w-full max-w-[1140px] px-6">
 
         <?php // Always rendered, empty or not, so all four stay editable. ?>
         <p data-proto-field="eyebrow"
            data-cadco-reveal="rise"
-           class="m-0 font-display text-[16px] font-extrabold leading-tight text-true-black md:text-[20px] <?php echo esc_attr($alignText); ?>">
+           class="m-0 font-display text-[16px] font-extrabold leading-tight md:text-[20px] <?php echo esc_attr($textMain); ?> <?php echo esc_attr($alignText); ?>">
             <?php echo esc_html($eyebrow); ?>
         </p>
 
@@ -87,7 +137,7 @@ $reveal = $is_preview ? '' : 'data-proto-animate="manual" data-cadco-reveal-grou
                  visible text. */ ?>
         <h2 data-proto-field="heading"
             data-cadco-reveal="lines"
-            class="m-0 mt-6 font-display text-[36px] font-bold leading-[1.18] text-true-black md:mt-9 md:text-[64px] <?php echo esc_attr($headingWide . ' ' . $alignText . ' ' . $alignSelf); ?>">
+            class="m-0 font-display text-[36px] font-bold leading-[1.18] <?php echo esc_attr($headGap); ?> <?php echo esc_attr($headSize . ' ' . $textMain); ?> <?php echo esc_attr($headingWide . ' ' . $alignText . ' ' . $alignSelf); ?>">
             <?php echo wp_kses_post($heading); ?>
         </h2>
 
@@ -98,13 +148,13 @@ $reveal = $is_preview ? '' : 'data-proto-animate="manual" data-cadco-reveal-grou
         <?php if (trim(wp_strip_all_tags((string) $body)) !== '' || $is_preview) : ?>
             <div data-proto-field="body"
                  data-cadco-reveal="rise"
-                 class="cadco-intro__body mt-8 max-w-[745px] font-display text-[16px] font-normal leading-6 text-true-black md:mt-12 <?php echo esc_attr($alignText . ' ' . $alignSelf); ?>">
+                 class="cadco-intro__body mt-8 max-w-[745px] font-display text-[16px] font-normal leading-6 md:mt-12 <?php echo esc_attr($textMain); ?> <?php echo esc_attr($alignText . ' ' . $alignSelf); ?>">
                 <?php echo wp_kses_post($body); ?>
             </div>
         <?php endif; ?>
 
         <?php if (! empty($cta['url']) || $is_preview) : ?>
-            <div data-cadco-reveal="rise" class="mt-10 md:mt-12 <?php echo esc_attr($ctaRow); ?>">
+            <div data-cadco-reveal="rise" class="<?php echo esc_attr($ctaGap); ?> <?php echo esc_attr($ctaRow); ?>">
                 <a data-proto-field="cta"
                    class="inline-flex h-[58px] min-w-[157px] items-center justify-center rounded-[10px] bg-cadco-blue px-6 font-display text-[16px] font-bold leading-none text-white no-underline transition-colors hover:bg-[#00395a]"
                    href="<?php echo esc_url($cta['url'] ?? '#'); ?>"

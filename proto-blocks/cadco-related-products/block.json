@@ -1,0 +1,69 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/block.json",
+  "apiVersion": 3,
+  "name": "proto-blocks/cadco-related-products",
+  "title": "Cadco Related Products",
+  "category": "proto",
+  "icon": "images-alt2",
+  "description": "A scrollable row of product cards from the same category as the product being viewed, drawn with the same card as the catalogue grid. Placed once in the single product template.",
+  "keywords": [
+    "product",
+    "related",
+    "carousel",
+    "cards",
+    "woocommerce"
+  ],
+  "supports": {
+    "html": false,
+    "anchor": true,
+    "customClassName": true,
+    "align": [
+      "full"
+    ]
+  },
+  "protoBlocks": {
+    "version": "1.0",
+    "template": "template.php",
+    "useTailwind": true,
+    "controls": {
+      "heading": {
+        "type": "text",
+        "label": "Heading",
+        "default": "Related Products"
+      },
+      "limit": {
+        "type": "range",
+        "label": "Most products to show",
+        "default": 12,
+        "min": 2,
+        "max": 24,
+        "step": 1
+      },
+      "scope": {
+        "type": "select",
+        "label": "Related by",
+        "default": "deepest",
+        "options": [
+          { "key": "deepest", "label": "Its most specific category" },
+          { "key": "any", "label": "Any category it is in" },
+          { "key": "top", "label": "Its top-level category" }
+        ],
+        "help": "Most specific keeps the row tight — a Bakerlux oven suggests other Bakerlux ovens. It falls back outwards on its own when that leaves too few to fill the row."
+      },
+      "showPrice": {
+        "type": "toggle",
+        "label": "Show prices",
+        "default": true
+      },
+      "surface": {
+        "type": "select",
+        "label": "Section background",
+        "default": "paper",
+        "options": [
+          { "key": "paper", "label": "White (design)" },
+          { "key": "tint", "label": "Pale blue" }
+        ]
+      }
+    }
+  }
+}

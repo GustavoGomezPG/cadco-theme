@@ -382,19 +382,197 @@ Both lists are filterable — `cadco_disabled_wc_admin_features` and
 ### Product templates
 
 `templates/single-product.html` and `templates/archive-product.html` override
-WooCommerce's blockified templates. They are WooCommerce's markup wrapped in the
-`[data-taxi]` / `[data-taxi-view]` structure, so product pages transition like
-every other route instead of falling back to full page loads, with the
-add-to-cart form and loop button removed.
+WooCommerce's blockified templates. Both are wrapped in the `[data-taxi]` /
+`[data-taxi-view]` structure, so product pages transition like every other route
+instead of falling back to full page loads.
 
 Because those templates carry the wrapper, `inc/cadco-woocommerce.php` also
 removes the shop page from `proto_taxi_ignore_urls()` — the upstream theme
 excludes it precisely because stock WooCommerce templates have no wrapper, and
 that reasoning does not apply here.
 
-**If WooCommerce's templates change upstream, these copies do not.** Re-diff
-them against `plugins/woocommerce/templates/templates/blockified/` after a major
-WooCommerce upgrade.
+**single-product.html** is still WooCommerce's own markup, with the add-to-cart
+form and loop button removed. **If WooCommerce's templates change upstream, this
+copy does not.** Re-diff it against
+`plugins/woocommerce/templates/templates/blockified/` after a major WooCommerce
+upgrade.
+
+**archive-product.html** is no longer WooCommerce's markup. It is the designed
+catalogue listing: one `proto-blocks/cadco-product-archive` block above the
+closing `cadco-intro` call to action. That one block serves the shop page and
+every category and sub-category under it — the breadcrumb, title, rail and grid
+are all read from the query, so there is nothing per-category to author and
+nothing to keep in sync when a category is added.
+
+It runs **its own `WP_Query`** rather than the loop the archive already ran, so
+the same block also works on the shop page and on the editor canvas, where there
+is no loop to read. Paging therefore travels in `?ppage=`, not `paged`:
+borrowing the main query's parameter would mean every page link had to be a URL
+the main query could satisfy too. The refinement select travels in `?psize=`.
+
+The rail is headed by the category whose family it lists, which is not always
+the category being viewed: a leaf with no children of its own borrows its
+parent's family and highlights itself inside it, because that is the same
+picture one level down rather than an empty rail. **View All is drawn only when
+those two differ** — it is the way back out to the whole category, so on the
+category the rail is already headed by it would link to the page you are on. It
+carries no query string, so it clears the size refinement along with the
+sub-category.
+
+The rail's refinement select is driven by a product attribute taxonomy — by
+default `pa_size`, set by the **Refine by attribute** control. It is left out
+entirely when that attribute does not exist, or when no product in the category
+carries it, so it never offers a choice that would return nothing.
+
+Three deliberate departures from the Figma frame, all because the frame draws
+one fixed case and the block renders every case:
+
+- **It uses the 1440 site shell, not the 1140 column the page sections use.**
+  The archive sits directly under the header and above the footer, and both of
+  those cap at 1440; held to 1140 it read as pinched on any screen wider than
+  1440, where the chrome keeps growing and the listing would not. The cards
+  therefore run wider than the frame's 234px — the frame leaves ~200px of page
+  empty to the right of its last column, which reads as composition at one fixed
+  width and as a pinched listing at every other. The column count is still the
+  frame's three; the **Columns** control goes to four, which lands the cards back
+  on 234 at 1440.
+- **Product photographs are contained, not cropped.** The design's slot is
+  186×116 (1.6:1) with an image cut to fit; the real catalogue runs from 1:1 to
+  3.2:1, and `cover` would take the top and bottom off every square one.
+- **There is pagination.** The frame draws fifteen cards above a count of 28, so
+  it is already showing one page of a longer list without drawing the control
+  that reaches the rest.
+
+One known-stale setting it works around: `woocommerce_shop_page_id` currently
+names a post that no longer exists on this install, and
+`wc_get_page_permalink( 'shop' )` answers that with the **home page**. The block
+falls back to the page named by the product permalink base (`/products/`) so the
+first breadcrumb still points at the catalogue. Pointing the option at the real
+Products page would be the tidier fix, but it would also make `is_shop()` true
+there, which hands `/products/` to this template instead of its built page — so
+it is deliberately left alone.
+
+### The single product page
+
+`templates/single-product.html` is no longer WooCommerce's markup either. It is
+four blocks above the closing call to action:
+
+| Block | What it shows |
+|---|---|
+| `cadco-product-hero` | Breadcrumb, photograph, name, introduction, the short description as bullets, list price, call to action |
+| `cadco-product-specs` | The tinted band: specifications grouped under tags, features, the warranty note, spec sheet and manual |
+| `cadco-product-resources` | The documents tagged to the product, then a scrollable strip of video stills |
+| `cadco-related-products` | A scrollable row of the catalogue's own product cards |
+
+Each reads the product being viewed, so there is nothing per-product to author.
+On the editor canvas there is no product, so each falls back to a real one —
+the resources block picks the most recent product that actually *has*
+resources, because an empty section teaches an editor nothing.
+
+**Specifications are parsed back out of the product description**, because that
+is where the catalogue puts them: a `<h3>Specifications</h3>` list of
+label/value pairs and a `<h3>Features</h3>` list, which is also the shape an
+editor produces in the block editor. The design groups them — Size, Power,
+Freight Class — and that grouping is stated once in `inc/cadco-products.php`.
+A label no group claims lands in a trailing **Details** group rather than being
+silently dropped. If a future import carries them as real WooCommerce
+attributes, filter `cadco_product_spec_rows` and `cadco_product_features` and
+nothing above that file has to change.
+
+**Documents and videos come from the `resource` post type**, matched through
+`resource_product` — the same taxonomy the resource centre filters on, whose
+term slug matches the product's own slug. One document shared by a dozen ovens
+is one resource carrying a dozen product tags, not twelve copies. A consequence
+worth knowing: everything tagged to a product also appears in the resource
+centre's listing, because that page lists all resources.
+
+Three things are deliberately shared rather than copied, each with the same
+reasoning — a second copy is a second copy to get wrong:
+
+- **The product card** (`inc/cadco-products.php` + `assets/css/cadco-product-card.css`)
+  is drawn by both the catalogue grid and the related-products row.
+- **The video dialog** (`assets/js/cadco-video-modal.js` + its stylesheet) is
+  opened by both the resource centre and the product page. It was the resource
+  library's own and moved out when the product page needed it.
+- **The rails** (`assets/js/cadco-rail.js` + its stylesheet) drive the video
+  strip and the related-products row, which are the same control drawn twice.
+
+> **The card is styled in CSS, not Tailwind, and must stay that way.**
+> Proto-Blocks' Tailwind scanner only reads files inside a block's own folder
+> (`template.php`, `{block}.php`, `style.css`). A partial shared between two
+> blocks has no folder it could live in, so utilities written there compile to
+> nothing at all — which is how the card first shipped with no border, no shadow
+> and no padding. Anything shared between blocks needs real CSS.
+
+#### Vertical rhythm, and the "flush" call to action
+
+Every gap on these two templates is a measurement off the 1440 frames, and each
+one is owned by exactly one block — the section **above** the gap carries it in
+its bottom padding. That is why `cadco-product-resources` drops its bottom
+padding when it draws the closing rule (the rule is then the section's own
+bottom edge, full bleed like the tinted band above it), and why the two
+catalogue blocks end on an unusually large floor:
+
+| Boundary | Frame |
+|---|---|
+| Header → breadcrumb | 118 |
+| Hero call to action → specifications band | 129 |
+| Specifications band → *Resources & Downloads* | 119 |
+| Video arrows → closing rule | 105 |
+| Closing rule → *Related Products* | 95 |
+| Related cards → arrows | 62 |
+| Related arrows → closing call to action | 109 |
+| Catalogue grid → closing call to action | 160 |
+
+The frames run paper straight from the last rail into the closing call to
+action, so that band adds **no top space of its own**. `cadco-intro` has a
+`density` of `flush` for exactly that: no top padding, no dead margin above the
+heading from an eyebrow those instances leave empty, and the frame's own
+heading-to-button and button-to-footer distances. Every other density is
+untouched, so the six instances on the other pages render what they always did.
+
+### Test catalogue content
+
+`scripts/test-data/` holds throwaway catalogue content, so the archive has
+something real to lay out before the client's own import exists. Everything it
+writes carries a flag, and the removal script takes all of it back out again
+without touching anything hand-made — the six demo products and the four
+top-level categories that predate it survive.
+
+```bash
+# 50 products scraped from the live cadco-ltd.com catalogue
+wp eval-file scripts/test-data/import-test-products.php <products.json> [sync]
+
+# derive a Size attribute from what those products say about themselves
+wp eval-file scripts/test-data/assign-size-attribute.php        # dry run
+wp eval-file scripts/test-data/assign-size-attribute.php go
+
+# their documents and videos, as resources, plus the freight class
+wp eval-file scripts/test-data/import-test-resources.php <extras.json> <products.json>
+
+# take it all back out: products, resources, images and the terms they created
+wp eval-file scripts/test-data/remove-test-products.php         # dry run
+wp eval-file scripts/test-data/remove-test-products.php go
+```
+
+| Flag | On | Set by |
+|---|---|---|
+| `_cadco_test_product` | the product or resource, and any image sideloaded for it | import, resources |
+| `_cadco_test_source` | the product (the URL it was scraped from) | import |
+| `_cadco_test_term` | only the `product_cat`, `pa_size`, `resource_media` and `resource_product` terms the scripts had to **create** | import, size, resources |
+
+The import is idempotent: a product whose SKU is already in the catalogue is
+skipped, so an interrupted run can simply be repeated. `sync` pushes a changed
+JSON onto the products already imported, rewriting the name, price and
+descriptions and touching nothing else. Removal is permanent rather than to the
+trash — this is throwaway content, and leaving a hundred and fifty posts in the
+trash would only be a second cleanup.
+
+**The resource import grows the resource centre.** It adds ~100 resources, which
+the resource centre lists along with everything else, and ~50 more options to
+its "Show All Products" filter. That is the data model working as designed — the
+product page is the filtered view of the same set — but it does change a page
+that was signed off with 26 resources. The removal script takes them back out.
 
 ---
 

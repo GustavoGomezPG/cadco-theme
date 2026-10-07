@@ -6,8 +6,11 @@
 require_once get_stylesheet_directory() . '/inc/proto-required-plugins.php';
 require_once get_stylesheet_directory() . '/inc/proto-taxi.php';
 require_once get_stylesheet_directory() . '/inc/cadco-nav.php';
+require_once get_stylesheet_directory() . '/inc/cadco-resources.php';
 require_once get_stylesheet_directory() . '/inc/cadco-woocommerce.php';
-require_once get_stylesheet_directory() . '/inc/import/bootstrap.php';
+require_once get_stylesheet_directory() . '/inc/cadco-products.php';   // What the product blocks read.
+require_once get_stylesheet_directory() . '/inc/proto-yoast-jsonld.php'; // Inert unless Yoast SEO is active.
+require_once get_stylesheet_directory() . '/inc/import/bootstrap.php';   // Products > Import; registers only in wp-admin.
 
 add_action('after_setup_theme', function () {
     // Navigation is managed via the block-editor Navigation block in the Site
@@ -38,33 +41,20 @@ add_action('wp_head', function () {
 }, 1);
 
 /**
- * Web fonts — front end AND the block-editor canvas iframe.
+ * Web fonts are self-hosted — front end AND the block-editor canvas iframe.
  *
  * Inter carries body/UI, Barlow is the display face the Figma file uses for
  * headings, eyebrows and buttons (Tailwind `font-display`).
  *
- * Every weight in the family list is *declared*, but the browser only downloads
- * the faces a page actually renders — a requested-but-unused weight costs one
- * @font-face rule and no bandwidth. Listing the range up front therefore keeps
- * later blocks from needing a change here.
+ * The woff2 files live in assets/fonts/ and are declared as theme.json
+ * fontFace entries, so WordPress prints the @font-face rules itself for both
+ * the front end and the editor canvas. Nothing is fetched from Google: a
+ * third-party stylesheet on the critical path would stall every page load,
+ * and visual QA renders correctly with the font host unreachable.
+ *
+ * Regenerate with the tokens pipeline, never by hand:
+ *   tokens.mjs apply "$THEME" "$THEME/.protoblocks/tokens.json"
  */
-add_action('enqueue_block_assets', function () {
-    wp_enqueue_style(
-        'cadco-fonts',
-        'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Barlow:wght@400;500;600;700;800&display=swap',
-        [],
-        null
-    );
-});
-
-// Open the TLS connection to the font host while the HTML is still parsing;
-// without it the woff2 fetch waits on a cold connection after the CSS lands.
-add_filter('wp_resource_hints', function (array $urls, string $relation): array {
-    if ($relation === 'preconnect') {
-        $urls[] = ['href' => 'https://fonts.gstatic.com', 'crossorigin' => 'anonymous'];
-    }
-    return $urls;
-}, 10, 2);
 
 // Theme stylesheet for front end AND the block-editor canvas iframe.
 add_action('enqueue_block_assets', function () {
@@ -167,6 +157,170 @@ add_action('wp_enqueue_scripts', function () {
 }, 20);
 
 /**
+ * Layout-change notifier.
+ *
+ * Lenis caches the document's length and ScrollTrigger caches every trigger
+ * against it, and neither notices a block changing its own height -- a tab
+ * switch, an accordion, an image arriving late. Without a nudge the pinned
+ * sections release at the wrong point and the page's scrollable length is
+ * wrong until the next window resize.
+ *
+ * Exposes window.cadcoLayoutChanged() for any block that resizes itself.
+ * Registered after the vendored libraries so it can depend on what exists;
+ * with neither present it simply does nothing.
+ */
+add_action('wp_enqueue_scripts', function () {
+    $path = get_stylesheet_directory() . '/assets/js/cadco-layout.js';
+
+    if (! file_exists($path)) {
+        return;
+    }
+
+    $deps = array_values(array_filter(
+        ['proto-gsap', 'proto-scroll-trigger', 'proto-init'],
+        static fn(string $handle): bool => wp_script_is($handle, 'registered')
+    ));
+
+    wp_enqueue_script(
+        'cadco-layout',
+        get_stylesheet_directory_uri() . '/assets/js/cadco-layout.js',
+        $deps,
+        filemtime($path),
+        true
+    );
+}, 20);
+
+/**
+ * The video dialog.
+ *
+ * Shared by the resource centre's library and the single product page, which
+ * show the same resources. Loaded for every page rather than per block: both
+ * blocks render the same markup, and a second copy of a focus trap is a second
+ * copy to get wrong.
+ */
+add_action('wp_enqueue_scripts', function () {
+    $path = get_stylesheet_directory() . '/assets/js/cadco-video-modal.js';
+
+    if (! file_exists($path)) {
+        return;
+    }
+
+    wp_enqueue_script(
+        'cadco-video-modal',
+        get_stylesheet_directory_uri() . '/assets/js/cadco-video-modal.js',
+        [],
+        filemtime($path),
+        true
+    );
+
+    $css = get_stylesheet_directory() . '/assets/css/cadco-video-modal.css';
+
+    if (file_exists($css)) {
+        wp_enqueue_style(
+            'cadco-video-modal',
+            get_stylesheet_directory_uri() . '/assets/css/cadco-video-modal.css',
+            [],
+            filemtime($css)
+        );
+    }
+}, 20);
+
+/**
+ * The product card.
+ *
+ * Shared by the catalogue grid and the related-products row, so its styles are
+ * shared too. See the note at the top of the stylesheet for why it is written
+ * as CSS rather than as Tailwind utilities.
+ */
+add_action('wp_enqueue_scripts', function () {
+    $css = get_stylesheet_directory() . '/assets/css/cadco-product-card.css';
+
+    if (! file_exists($css)) {
+        return;
+    }
+
+    wp_enqueue_style(
+        'cadco-product-card',
+        get_stylesheet_directory_uri() . '/assets/css/cadco-product-card.css',
+        [],
+        filemtime($css)
+    );
+}, 20);
+
+/**
+ * Horizontal rails.
+ *
+ * Shared by the single product page's video strip and its related-products
+ * row, which are the same control drawn twice. No dependencies: the track is a
+ * native scroll container and the script only drives the arrow buttons, so it
+ * is safe to load everywhere and does nothing on a page with no rail.
+ */
+add_action('wp_enqueue_scripts', function () {
+    $path = get_stylesheet_directory() . '/assets/js/cadco-rail.js';
+
+    if (! file_exists($path)) {
+        return;
+    }
+
+    wp_enqueue_script(
+        'cadco-rail',
+        get_stylesheet_directory_uri() . '/assets/js/cadco-rail.js',
+        [],
+        filemtime($path),
+        true
+    );
+
+    $css = get_stylesheet_directory() . '/assets/css/cadco-rail.css';
+
+    if (file_exists($css)) {
+        wp_enqueue_style(
+            'cadco-rail',
+            get_stylesheet_directory_uri() . '/assets/css/cadco-rail.css',
+            [],
+            filemtime($css)
+        );
+    }
+}, 20);
+
+/**
+ * Page-transition curtain.
+ *
+ * Only with Taxi on: without it every navigation is a full document load, the
+ * browser holds the old page until the new one is ready, and there is no gap to
+ * cover. GSAP is a soft dependency -- the script falls back to an instant
+ * cover without it, so a missing library degrades to a plain curtain rather
+ * than to no curtain at all.
+ */
+add_action('wp_enqueue_scripts', function () {
+    if (! function_exists('proto_taxi_is_enabled') || ! proto_taxi_is_enabled()) {
+        return;
+    }
+
+    $path = get_stylesheet_directory() . '/assets/js/cadco-curtain.js';
+
+    if (! file_exists($path)) {
+        return;
+    }
+
+    $deps = wp_script_is('proto-gsap', 'registered') ? ['proto-gsap'] : [];
+
+    wp_enqueue_script(
+        'cadco-curtain',
+        get_stylesheet_directory_uri() . '/assets/js/cadco-curtain.js',
+        $deps,
+        filemtime($path),
+        true
+    );
+
+    // The mark is a theme asset rather than a media-library attachment, so the
+    // curtain does not depend on a particular upload existing in the database.
+    wp_localize_script('cadco-curtain', 'cadcoCurtain', [
+        'mark' => get_theme_file_uri('assets/img/cadco-mark.svg'),
+    ]);
+}, 20);
+
+
+/**
  * Block view.js files that animate must not run before their libraries exist.
  *
  * Proto-Blocks registers a block's view.js with no dependencies, and both it and
@@ -242,3 +396,9 @@ add_action('wp_body_open', function () {
 add_filter('proto_blocks_category_title', function () {
     return __('Cadco Blocks', 'cadco-theme');
 }, 20);
+
+// >>> protoblocks-site-builder (managed — do not edit between these markers)
+foreach ((glob(__DIR__ . '/inc/pb-*.php') ?: []) as $pb_file) {
+    require_once $pb_file;
+}
+// <<< protoblocks-site-builder

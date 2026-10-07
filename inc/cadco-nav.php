@@ -169,6 +169,37 @@ function cadco_resolve_nav_url(array $attrs): string
  * a menu item. The stored value is the item label, because that is what the
  * template matches on when deciding which item opens a panel.
  */
+/**
+ * Gravity Forms, as a select source.
+ *
+ * Registered here beside the navigation provider so every block that needs a
+ * form offers the same picker, rather than each one hard-coding an id that
+ * breaks the moment a form is rebuilt. The value stored is the form id, because
+ * a title is renamed far more often than an id changes.
+ */
+add_action('proto_blocks_register_options_providers', function ($providers) {
+    $providers->register('cadco:gravity-forms', function (): array {
+        $options = [['key' => '', 'label' => '— No form —']];
+
+        if (! class_exists('GFAPI')) {
+            return $options;
+        }
+
+        foreach (GFAPI::get_forms() as $form) {
+            if (! empty($form['is_trash'])) {
+                continue;
+            }
+
+            $options[] = [
+                'key'   => (string) $form['id'],
+                'label' => sprintf('%s (#%d)', $form['title'], $form['id']),
+            ];
+        }
+
+        return $options;
+    });
+});
+
 add_action('proto_blocks_register_options_providers', function ($providers) {
     $providers->register('cadco:nav-items', function (array $args): array {
         $options = [['key' => '', 'label' => '— None —']];
@@ -176,6 +207,43 @@ add_action('proto_blocks_register_options_providers', function ($providers) {
         foreach (cadco_get_nav_items((int) ($args['menu_id'] ?? 0)) as $item) {
             $options[] = ['key' => $item['label'], 'label' => $item['label']];
         }
+
+        return $options;
+    }, ['menu_id']);
+
+    /*
+     * Every item in the menu, not only the top level.
+     *
+     * The panel settings above choose which top-level item opens a panel, so
+     * they only ever need the top level. A description is written on the items
+     * *inside* a panel -- "Warranty", "Parts Ordering" -- which are children,
+     * so they need the whole tree. Children are indented in the label to keep
+     * the dropdown readable, while the stored key stays the bare label, since
+     * that is what the template matches on.
+     */
+    $providers->register('cadco:nav-items-all', function (array $args): array {
+        $options = [['key' => '', 'label' => '— None —']];
+
+        $walk = function (array $items, int $depth) use (&$walk, &$options): void {
+            foreach ($items as $item) {
+                $label = (string) ($item['label'] ?? '');
+
+                if ('' === $label) {
+                    continue;
+                }
+
+                $options[] = [
+                    'key'   => $label,
+                    'label' => ($depth > 0 ? str_repeat("\u{00a0}\u{00a0}", $depth) . "\u{2014} " : '') . $label,
+                ];
+
+                if (! empty($item['children'])) {
+                    $walk($item['children'], $depth + 1);
+                }
+            }
+        };
+
+        $walk(cadco_get_nav_items((int) ($args['menu_id'] ?? 0)), 0);
 
         return $options;
     }, ['menu_id']);

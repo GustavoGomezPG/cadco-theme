@@ -1,0 +1,29 @@
+{
+  "focusKeyword": {
+    "value": "cadco warranty",
+    "inferred": true,
+    "why": "the page states Cadco's warranty and service terms; 'Warranty & Service' is the hero eyebrow and 'warranty' recurs in every section heading"
+  },
+  "title": {
+    "value": "Warranty & Service %%sep%% %%sitename%%",
+    "inferred": true,
+    "why": "the page's own name first and the site name last, which renders well inside 60 characters"
+  },
+  "description": {
+    "value": "Cadco warranty and service: one year coverage on every product across the Fifty United States, plus return steps, exclusions and a model comparison.",
+    "inferred": true,
+    "why": "states the coverage, its territory and what else the page answers, with the keyword in the opening words"
+  },
+  "schemaPageType": {
+    "value": "WebPage",
+    "inferred": true,
+    "why": "an informational terms page, not a product or contact page"
+  },
+  "ogImage": {
+    "value": {
+      "file": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/warranty/og.png"
+    },
+    "inferred": true,
+    "why": "generated from the hero, which carries the page's headline"
+  }
+}

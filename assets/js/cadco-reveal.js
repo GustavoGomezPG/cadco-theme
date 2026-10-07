@@ -218,6 +218,37 @@
 			   arrived on screen was the tail of an animation nobody saw begin. */
 			var tl = gsap.timeline({ defaults: { ease: 'power3.out' }, paused: true });
 
+			/*
+			 * Dispose it with the view that owns it.
+			 *
+			 * Taxi removes this section on navigation and proto-taxi.js kills
+			 * the ScrollTriggers inside it, which is why the live trigger count
+			 * stays flat. This timeline is not one of them: it is built
+			 * standalone and paused, and the trigger is attached to it
+			 * afterwards, so nothing disposes the timeline itself. It stays on
+			 * gsap's global timeline holding its targets, and the resize
+			 * listener ScrollTrigger registered alongside it is never released.
+			 *
+			 * Measured over six navigations between two pages before this:
+			 * paused timelines 2 -> 8 and ScrollTrigger resize listeners
+			 * 7 -> 37, both still climbing, while live ScrollTriggers stayed
+			 * at 4-6 throughout.
+			 *
+			 * kill(false) on the trigger for the same reason proto-taxi.js uses
+			 * it: a bare kill() reverts, stripping the inline opacity the
+			 * pre-reveal state depends on.
+			 */
+			document.addEventListener('proto:page-leave', function off(e) {
+				var container = e && e.detail && e.detail.container;
+
+				if (container && !container.contains(section)) { return; }
+
+				if (tl.scrollTrigger) { tl.scrollTrigger.kill(false); }
+
+				tl.kill();
+				document.removeEventListener('proto:page-leave', off);
+			});
+
 			pieces.forEach(function (el, index) {
 				var kind = el.getAttribute('data-cadco-reveal');
 				var at = index === 0 ? 0 : OVERLAP;
@@ -335,9 +366,101 @@
 		});
 	}
 
-	ready(function () {
-		var sections = document.querySelectorAll('[data-cadco-reveal-group]');
+	/*
+	 * Taxi swaps the page container without reloading the document, so
+	 * DOMContentLoaded fires once per visit and never again: sections on a
+	 * navigated-to page were never set up, and the plugin's watchdog forced
+	 * them visible unanimated 1.5s later.
+	 *
+	 * proto-taxi.js dispatches proto:page-ready for the first load *and* every
+	 * NAVIGATE_END precisely so block code has one contract to bind to -- its
+	 * own comment says as much, and pb-motion.js and the header block already
+	 * use it. Binding here puts this script on the same contract.
+	 */
+	var BOUND = 'data-cadco-reveal-bound';
 
-		Array.prototype.forEach.call(sections, setUp);
+	function setUpAll(root) {
+		var scope    = (root && root.querySelectorAll) ? root : document;
+		var sections = scope.querySelectorAll('[data-cadco-reveal-group]');
+
+		/* The event carries the incoming container. If it ever hands us one the
+		   sections are not inside, fall back to the document rather than
+		   silently revealing nothing. */
+		if (!sections.length && scope !== document) {
+			sections = document.querySelectorAll('[data-cadco-reveal-group]');
+		}
+
+		Array.prototype.forEach.call(sections, function (section) {
+			if (section.hasAttribute(BOUND)) { return; }
+
+			section.setAttribute(BOUND, '');
+			setUp(section);
+		});
+	}
+
+	/**
+	 * Drop the plugin's no-JS fallback when it leaks into the live document.
+	 *
+	 * Proto-Blocks prints that fallback inside <noscript>, where it is inert for
+	 * anyone running JS. But Taxi parses the incoming page with scripting
+	 * disabled, and in that mode <noscript> contents parse as real elements — so
+	 * merging the new head promotes the fallback to a live <style> carrying
+	 * `[data-proto-animate]:not([data-proto-animate="done"]) { opacity:1
+	 * !important }`.
+	 *
+	 * That forces every not-yet-revealed section visible, beating both the
+	 * theme's start state and GSAP's inline styles, until the section flips to
+	 * "done". Which is precisely the reported flash: a navigated-to section
+	 * showing at full opacity, then being hidden, then animating in.
+	 *
+	 * Real no-JS visitors are unaffected: this only ever runs with JS on, and the
+	 * <noscript> they get is untouched.
+	 */
+	function isLeakedFallback(node) {
+		if (!node || node.tagName !== 'STYLE') { return false; }
+
+		var css = node.textContent || '';
+
+		return css.indexOf('[data-proto-animate]:not([data-proto-animate="done"])') !== -1
+			&& css.indexOf('!important') !== -1;
+	}
+
+	function dropLeakedFallback(root) {
+		if (isLeakedFallback(root)) { root.remove(); return; }
+
+		if (!root || !root.querySelectorAll) { return; }
+
+		Array.prototype.forEach.call(root.querySelectorAll('style'), function (style) {
+			if (isLeakedFallback(style)) { style.remove(); }
+		});
+	}
+
+	/* Watched across the whole document, not just the head. Taxi promotes the
+	   fallback out of its <noscript> and inserts it into the BODY, so a head-only
+	   observer never sees it. And it has to be an observer rather than a cleanup
+	   on page-ready: the merge happens during NAVIGATE_IN, well before
+	   NAVIGATE_END, so page-ready arrives half a second after the leaked rule has
+	   already forced the section visible. This removes it in the same microtask
+	   it is inserted, before a frame can paint with it. */
+	new MutationObserver(function (records) {
+		for (var i = 0; i < records.length; i++) {
+			var added = records[i].addedNodes;
+
+			for (var j = 0; j < added.length; j++) { dropLeakedFallback(added[j]); }
+		}
+	}).observe(document.documentElement, { childList: true, subtree: true });
+
+	dropLeakedFallback(document);
+
+	document.addEventListener('proto:page-ready', function (e) {
+		setUpAll((e.detail && e.detail.container) || document);
+	});
+
+	/* Taxi is optional -- functions.php drops its scripts when the transition is
+	   switched off, and then nothing dispatches proto:page-ready. The original
+	   DOMContentLoaded path stays as the fallback; the guard above makes both
+	   firing harmless. */
+	ready(function () {
+		setUpAll(document);
 	});
 })();

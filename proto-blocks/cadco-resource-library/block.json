@@ -1,0 +1,73 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/block.json",
+  "apiVersion": 3,
+  "name": "proto-blocks/cadco-resource-library",
+  "title": "Cadco Resource Library",
+  "category": "proto",
+  "icon": "grid-view",
+  "description": "The resource centre: filters for media type, product and text, a grid of resource cards, and pagination.",
+  "supports": {
+    "html": false,
+    "anchor": true,
+    "customClassName": true,
+    "align": ["full"]
+  },
+  "protoBlocks": {
+    "version": "1.0",
+    "template": "template.php",
+    "useTailwind": true,
+    "fields": {
+      "footnote": {
+        "type": "wysiwyg",
+        "label": "Note under the grid",
+        "help": "Shown centred beneath the pagination, for the reader who did not find what they came for."
+      }
+    },
+    "controls": {
+      "perPage": {
+        "type": "range",
+        "label": "Resources per page",
+        "default": 12,
+        "min": 3,
+        "max": 36,
+        "step": 3,
+        "help": "The frame shows eighteen cards, but they are the same six repeated three times; set this to what the library actually holds."
+      },
+      "columns": {
+        "type": "select",
+        "label": "Columns",
+        "default": "3",
+        "options": [
+          { "key": "2", "label": "Two" },
+          { "key": "3", "label": "Three" },
+          { "key": "4", "label": "Four" }
+        ]
+      },
+      "showFilters": {
+        "type": "toggle",
+        "label": "Show the filters",
+        "default": true,
+        "help": "Turn off to show a plain grid, for a page that lists one kind of resource."
+      },
+      "mediaLabel": {
+        "type": "text",
+        "label": "Media filter label",
+        "default": "Show All Media"
+      },
+      "productLabel": {
+        "type": "text",
+        "label": "Product filter label",
+        "default": "Show All Products"
+      },
+      "surface": {
+        "type": "select",
+        "label": "Background",
+        "default": "paper",
+        "options": [
+          { "key": "paper", "label": "Paper" },
+          { "key": "tint", "label": "Tint" }
+        ]
+      }
+    }
+  }
+}

@@ -1,0 +1,164 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/block.json",
+  "apiVersion": 3,
+  "name": "proto-blocks/cadco-product-archive",
+  "title": "Cadco Product Archive",
+  "category": "proto",
+  "icon": "screenoptions",
+  "description": "The catalogue listing: a breadcrumb and display title, a left rail carrying the category's sub-categories and a refinement select, and a grid of product cards with a result count. Everything on it is read from the query, so it is placed once in the product archive template and serves every category.",
+  "keywords": [
+    "products",
+    "archive",
+    "catalogue",
+    "category",
+    "grid",
+    "filter",
+    "woocommerce"
+  ],
+  "supports": {
+    "html": false,
+    "anchor": true,
+    "customClassName": true,
+    "align": [
+      "full"
+    ]
+  },
+  "protoBlocks": {
+    "version": "1.0",
+    "template": "template.php",
+    "useTailwind": true,
+    "controls": {
+      "titleFormat": {
+        "type": "text",
+        "label": "Page title",
+        "default": "Explore %s",
+        "help": "%s is replaced by the category being viewed. Leave %s out to use the same title everywhere."
+      },
+      "shopTitle": {
+        "type": "text",
+        "label": "Name for the whole catalogue",
+        "default": "All Products",
+        "help": "Used for the title, the rail and the breadcrumb when no category is being viewed — the shop page, and the editor canvas."
+      },
+      "showBreadcrumb": {
+        "type": "toggle",
+        "label": "Show the breadcrumb",
+        "default": true
+      },
+      "showRail": {
+        "type": "toggle",
+        "label": "Show the category rail",
+        "default": true,
+        "help": "The left-hand column: the category name, its sub-categories, View All, and the refinement select."
+      },
+      "viewAllLabel": {
+        "type": "text",
+        "label": "View All button",
+        "default": "View All",
+        "conditions": {
+          "visible": {
+            "showRail": true
+          }
+        }
+      },
+      "filterAttribute": {
+        "type": "text",
+        "label": "Refine by attribute",
+        "default": "pa_size",
+        "conditions": {
+          "visible": {
+            "showRail": true
+          }
+        },
+        "help": "A WooCommerce product attribute taxonomy, e.g. pa_size. The select is left out when the attribute does not exist, or when no product in view carries it."
+      },
+      "filterLabel": {
+        "type": "text",
+        "label": "Refinement select label",
+        "default": "Select Size",
+        "conditions": {
+          "visible": {
+            "showRail": true
+          }
+        }
+      },
+      "columns": {
+        "type": "select",
+        "label": "Columns",
+        "default": "3",
+        "options": [
+          {
+            "key": "2",
+            "label": "Two"
+          },
+          {
+            "key": "3",
+            "label": "Three (design)"
+          },
+          {
+            "key": "4",
+            "label": "Four"
+          }
+        ],
+        "help": "Narrower screens step down to two, then one."
+      },
+      "perPage": {
+        "type": "range",
+        "label": "Products per page",
+        "default": 15,
+        "min": 3,
+        "max": 60,
+        "step": 3,
+        "help": "The design draws five rows of three."
+      },
+      "orderBy": {
+        "type": "select",
+        "label": "Order by",
+        "default": "menu_order",
+        "options": [
+          {
+            "key": "menu_order",
+            "label": "Catalogue order"
+          },
+          {
+            "key": "title",
+            "label": "Name"
+          },
+          {
+            "key": "price_asc",
+            "label": "Price, low to high"
+          },
+          {
+            "key": "price_desc",
+            "label": "Price, high to low"
+          },
+          {
+            "key": "date",
+            "label": "Newest first"
+          }
+        ]
+      },
+      "showPrice": {
+        "type": "toggle",
+        "label": "Show prices",
+        "default": true,
+        "help": "This catalogue lists prices but sells nothing, so the price is a list price, not an offer."
+      },
+      "surface": {
+        "type": "select",
+        "label": "Section background",
+        "default": "paper",
+        "options": [
+          {
+            "key": "paper",
+            "label": "White (design)"
+          },
+          {
+            "key": "tint",
+            "label": "Pale blue"
+          }
+        ]
+      }
+    }
+  }
+}

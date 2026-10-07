@@ -235,9 +235,29 @@
 			}
 		});
 
-		window.addEventListener('resize', function () {
+		/*
+		 * Taxi re-runs this file on every navigation (Proto-Blocks stamps block
+		 * view scripts with data-taxi-reload), so a resize listener added here
+		 * outlives the section it was set up for: the old one keeps firing
+		 * against detached nodes and they accumulate for the whole visit.
+		 * Named so it can be taken off when this view leaves.
+		 */
+		var onResize = function () {
 			measure();
 			render();
+		};
+
+		window.addEventListener('resize', onResize);
+
+		document.addEventListener('proto:page-leave', function off(e) {
+			var container = e && e.detail && e.detail.container;
+
+			/* section is derived with closest(); fall back to the track so a miss
+			   cannot leave the listener attached for the rest of the visit. */
+			if (container && !container.contains(section || track)) { return; }
+
+			window.removeEventListener('resize', onResize);
+			document.removeEventListener('proto:page-leave', off);
 		});
 	}
 

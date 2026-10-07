@@ -1,0 +1,47 @@
+/*
+ * Cadco Product Spotlight.
+ *
+ * The body is one authored wysiwyg region, so its paragraph and specification
+ * list arrive as plain HTML with no classes to hang Tailwind utilities on.
+ * Tailwind's preflight resets list markers and margins to nothing, which is the
+ * right default for layout lists and the wrong one here — the design draws disc
+ * bullets. Restoring them is scoped to this block so no other list is affected.
+ */
+
+.cadco-spotlight-body > :first-child {
+	margin-top: 0;
+}
+
+.cadco-spotlight-body > :last-child {
+	margin-bottom: 0;
+}
+
+.cadco-spotlight-body p {
+	margin: 0 0 20px;
+}
+
+.cadco-spotlight-body ul {
+	list-style: disc outside;
+	margin: 0;
+	padding-left: 17px;
+}
+
+.cadco-spotlight-body ol {
+	list-style: decimal outside;
+	margin: 0;
+	padding-left: 17px;
+}
+
+/* The design sets the specification lines at 24px apart. */
+.cadco-spotlight-body li {
+	margin: 0;
+	line-height: 24px;
+}
+
+.cadco-spotlight-body li + li {
+	margin-top: 0;
+}
+
+.cadco-spotlight-body a {
+	text-decoration: underline;
+}

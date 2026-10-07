@@ -1,0 +1,58 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/block.json",
+  "apiVersion": 3,
+  "name": "proto-blocks/cadco-contact",
+  "title": "Cadco Contact",
+  "category": "proto",
+  "icon": "email",
+  "description": "An introduction and the ways to reach Cadco on the left, a chosen Gravity Forms form on the right.",
+  "supports": {
+    "html": false,
+    "anchor": true,
+    "customClassName": true,
+    "align": ["full"]
+  },
+  "protoBlocks": {
+    "version": "1.0",
+    "template": "template.php",
+    "useTailwind": true,
+    "fields": {
+      "heading": { "type": "text", "tagName": "h1", "label": "Heading" },
+      "body": { "type": "text", "label": "Line under the heading" },
+      "links": {
+        "type": "repeater",
+        "label": "Ways to get in touch",
+        "min": 0,
+        "max": 6,
+        "help": "A telephone number is written tel:8607382500 and an address mailto:sales@cadco-ltd.com; the icon follows from which one it is.",
+        "fields": {
+          "link": { "type": "link", "label": "Link" }
+        }
+      },
+      "formHeading": { "type": "text", "tagName": "h2", "label": "Heading above the form" }
+    },
+    "controls": {
+      "formId": {
+        "type": "select",
+        "label": "Form",
+        "optionsSource": "cadco:gravity-forms",
+        "help": "Gravity Forms supplies this list. Choosing none leaves the column empty, which is what an editor sees before a form exists."
+      },
+      "showTitle": {
+        "type": "toggle",
+        "label": "Show the form's own title",
+        "default": false,
+        "help": "Off by default: the heading above the form already names it, and Gravity Forms would repeat it."
+      },
+      "surface": {
+        "type": "select",
+        "label": "Background",
+        "default": "paper",
+        "options": [
+          { "key": "paper", "label": "Paper" },
+          { "key": "tint", "label": "Tint" }
+        ]
+      }
+    }
+  }
+}

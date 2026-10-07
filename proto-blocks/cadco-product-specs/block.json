@@ -1,0 +1,95 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/block.json",
+  "apiVersion": 3,
+  "name": "proto-blocks/cadco-product-specs",
+  "title": "Cadco Product Specifications",
+  "category": "proto",
+  "icon": "editor-table",
+  "description": "A tinted band carrying the product's specifications, grouped under labelled tags, its feature list, a warranty note and the buttons for its spec sheet and manual. Read from the product being viewed, so it is placed once in the single product template.",
+  "keywords": [
+    "product",
+    "specifications",
+    "features",
+    "warranty",
+    "downloads",
+    "woocommerce"
+  ],
+  "supports": {
+    "html": false,
+    "anchor": true,
+    "customClassName": true,
+    "align": [
+      "full"
+    ]
+  },
+  "protoBlocks": {
+    "version": "1.0",
+    "template": "template.php",
+    "useTailwind": true,
+    "controls": {
+      "heading": {
+        "type": "text",
+        "label": "Heading",
+        "default": "Specifications"
+      },
+      "featuresLabel": {
+        "type": "text",
+        "label": "Features tag",
+        "default": "Features"
+      },
+      "showWarranty": {
+        "type": "toggle",
+        "label": "Show the warranty note",
+        "default": true
+      },
+      "warrantyText": {
+        "type": "textarea",
+        "label": "Warranty note",
+        "default": "3 Year Warranty on ALL Bakerlux Convection Ovens",
+        "conditions": {
+          "visible": {
+            "showWarranty": true
+          }
+        },
+        "help": "The same note for every product. A per-product warranty would belong on the product, not here."
+      },
+      "warrantyLink": {
+        "type": "text",
+        "label": "Warranty note links to",
+        "default": "",
+        "conditions": {
+          "visible": {
+            "showWarranty": true
+          }
+        },
+        "help": "Optional. A path or URL — e.g. /support/warranty-info/ — which turns the note into a link."
+      },
+      "showDownloads": {
+        "type": "toggle",
+        "label": "Show the download buttons",
+        "default": true,
+        "help": "The product's spec sheet and manual, taken from the resources tagged to it. Each button is left out when there is no such resource."
+      },
+      "specSheetLabel": {
+        "type": "text",
+        "label": "Spec sheet button",
+        "default": "Spec Sheet",
+        "conditions": {
+          "visible": {
+            "showDownloads": true
+          }
+        }
+      },
+      "manualLabel": {
+        "type": "text",
+        "label": "Manual button",
+        "default": "Manual",
+        "conditions": {
+          "visible": {
+            "showDownloads": true
+          }
+        }
+      }
+    }
+  }
+}

@@ -32,6 +32,16 @@
 	}
 
 	function setUp(track) {
+		/* Set up once per track. The script is stamped data-taxi-reload so Taxi
+		   re-runs it on navigation, and it also listens for proto:page-ready --
+		   either can fire first, and running twice would clone the cards again
+		   and leave two autoplay timers driving one track. */
+		if (track.hasAttribute('data-featured-bound')) {
+			return;
+		}
+
+		track.setAttribute('data-featured-bound', '');
+
 		var originals = Array.prototype.slice.call(
 			track.querySelectorAll('.cadco-featured-products__card')
 		);
@@ -206,9 +216,27 @@
 		}
 
 		track.addEventListener('scroll', onScroll, { passive: true });
-		window.addEventListener('resize', function () {
+		/*
+		 * Taxi re-runs this file on every navigation (Proto-Blocks stamps block
+		 * view scripts with data-taxi-reload), so a resize listener added here
+		 * outlives the section it was set up for: the old one keeps firing
+		 * against detached nodes and they accumulate for the whole visit.
+		 * Named so it can be taken off when this view leaves.
+		 */
+		var onResize = function () {
 			measureLoop();
 			schedule();
+		};
+
+		window.addEventListener('resize', onResize);
+
+		document.addEventListener('proto:page-leave', function off(e) {
+			var container = e && e.detail && e.detail.container;
+
+			if (container && !container.contains(track)) { return; }
+
+			window.removeEventListener('resize', onResize);
+			document.removeEventListener('proto:page-leave', off);
 		});
 
 		measureLoop();
@@ -355,12 +383,26 @@
 			play();
 		});
 
-		document.addEventListener('visibilitychange', function () {
+		/* Named and removed with the view: this is a document-level listener on
+		   a per-track closure, so re-execution would otherwise accumulate one
+		   for every navigation made. */
+		var onVisibility = function () {
 			if (document.hidden) {
 				pause();
 			} else {
 				play();
 			}
+		};
+
+		document.addEventListener('visibilitychange', onVisibility);
+
+		document.addEventListener('proto:page-leave', function off(e) {
+			var container = e && e.detail && e.detail.container;
+
+			if (container && !container.contains(track)) { return; }
+
+			document.removeEventListener('visibilitychange', onVisibility);
+			document.removeEventListener('proto:page-leave', off);
 		});
 
 		/**
@@ -400,4 +442,10 @@
 	} else {
 		document.addEventListener('DOMContentLoaded', init, { once: true });
 	}
+
+	/* Taxi swaps the container without a document load, so DOMContentLoaded does
+	   not come round again. Re-running the script covers the usual case, but this
+	   does not depend on it: a track that arrives with a new page is set up here
+	   whether or not the script itself was executed again. */
+	document.addEventListener('proto:page-ready', init);
 })();
