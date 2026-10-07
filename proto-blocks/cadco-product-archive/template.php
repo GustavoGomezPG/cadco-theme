@@ -303,7 +303,12 @@ $wrapper = get_block_wrapper_attributes([
 ]);
 ?>
 <section <?php echo $wrapper; ?> <?php echo $reveal; ?>>
-    <div class="mx-auto w-full max-w-[1140px] px-6">
+    <?php /* The site shell, not the narrower 1140 column the page sections use:
+             the archive sits directly under the header and above the footer, and
+             both of those cap at 1440. Held to 1140 it read as pinched on any
+             screen wider than 1440, where the chrome keeps growing and the
+             listing would not. */ ?>
+    <div class="mx-auto w-full max-w-[1440px] px-6 lg:px-10">
 
         <?php // ---------- Breadcrumb and title ---------- ?>
         <div class="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between lg:gap-10">
@@ -351,10 +356,14 @@ $wrapper = get_block_wrapper_attributes([
             </h1>
         </div>
 
-        <?php /* 264px is the rail's width in the frame; the 88px gutter is what
-                 is left of the 1092 column once the 740 grid has its three
-                 234px cards and two 20px gaps. */ ?>
-        <div class="mt-12 grid grid-cols-1 gap-y-12 lg:mt-[146px] lg:grid-cols-[264px_minmax(0,1fr)] lg:gap-x-[88px]">
+        <?php /* 264px is the rail's width in the frame and 118px its gutter, both
+                 taken straight from it. The grid takes whatever is left, so the
+                 cards run wider than the frame's 234: the frame leaves ~200px of
+                 the page empty to the right of its last column, which reads as
+                 composition at one fixed width and as a pinched listing at every
+                 other. Three up is still the frame's count; the Columns control
+                 goes to four, which lands the cards back on 234 at 1440. */ ?>
+        <div class="mt-12 grid grid-cols-1 gap-y-12 lg:mt-[146px] lg:grid-cols-[264px_minmax(0,1fr)] lg:gap-x-[88px] xl:gap-x-[118px]">
 
             <?php // ---------- Category rail ---------- ?>
             <?php if ($showRail) : ?>

@@ -415,9 +415,18 @@ default `pa_size`, set by the **Refine by attribute** control. It is left out
 entirely when that attribute does not exist, or when no product in the category
 carries it, so it never offers a choice that would return nothing.
 
-Two deliberate departures from the Figma frame, both because the frame draws one
-fixed case and the block renders every case:
+Three deliberate departures from the Figma frame, all because the frame draws
+one fixed case and the block renders every case:
 
+- **It uses the 1440 site shell, not the 1140 column the page sections use.**
+  The archive sits directly under the header and above the footer, and both of
+  those cap at 1440; held to 1140 it read as pinched on any screen wider than
+  1440, where the chrome keeps growing and the listing would not. The cards
+  therefore run wider than the frame's 234px — the frame leaves ~200px of page
+  empty to the right of its last column, which reads as composition at one fixed
+  width and as a pinched listing at every other. The column count is still the
+  frame's three; the **Columns** control goes to four, which lands the cards back
+  on 234 at 1440.
 - **Product photographs are contained, not cropped.** The design's slot is
   186×116 (1.6:1) with an image cut to fit; the real catalogue runs from 1:1 to
   3.2:1, and `cover` would take the top and bottom off every square one.
