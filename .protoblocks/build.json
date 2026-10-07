@@ -2817,7 +2817,7 @@
       "title": "Contact",
       "status": "seo",
       "postId": 127,
-      "contentHash": "1546a75d3b7a1b525add9aabfd4b18f0dfdeca92d550ccbaf3156268a20af3f4",
+      "contentHash": "15d20932a6b3b454c7aec4b81c97e68d0e00d69472f666ea90c78ec592bbc0f3",
       "design": {
         "frames": [
           {
@@ -2980,13 +2980,7 @@
                 "phone": "781-449-1040",
                 "email": "support@spencewellsassociates.com",
                 "address": "34 Central Avenue Needham, Massachusetts 02494 781-449-1040 Fax 781-455-8592",
-                "link": {
-                  "url": "http://www.spencewellsassociates.com",
-                  "text": "",
-                  "target": "_blank",
-                  "rel": "noopener",
-                  "title": ""
-                }
+                "website": "http://www.spencewellsassociates.com"
               },
               {
                 "id": "rep2",
@@ -3002,13 +2996,7 @@
                 "phone": "800-545-5085",
                 "email": "joe@jwilsonmarketing.com",
                 "address": "34 Ray Road Greenwich, New York 12834 800-545-5085 Fax 518-692-8084",
-                "link": {
-                  "url": "http://www.jwilsonmarketing.com",
-                  "text": "",
-                  "target": "_blank",
-                  "rel": "noopener",
-                  "title": ""
-                }
+                "website": "http://www.jwilsonmarketing.com"
               },
               {
                 "id": "rep3",
@@ -3024,13 +3012,7 @@
                 "phone": "845-638-9306",
                 "email": "carol@oneillreps.com",
                 "address": "25 Smith St. Suite 201 Nanuet, NY 10954 845-638-9306 Fax 845-638-9031",
-                "link": {
-                  "url": "http://oneillreps.com",
-                  "text": "",
-                  "target": "_blank",
-                  "rel": "noopener",
-                  "title": ""
-                }
+                "website": "http://oneillreps.com"
               },
               {
                 "id": "rep4",
@@ -3046,13 +3028,7 @@
                 "phone": "610.363.5688",
                 "email": "CustomerService@starliperassociates.com",
                 "address": "481 Schuylkill Rd Bldg A Phoenixville, PA 19460 Phone: 610.363.5688 Fax: 610.363.6746",
-                "link": {
-                  "url": "https://www.starliperassociates.com/",
-                  "text": "",
-                  "target": "_blank",
-                  "rel": "noopener",
-                  "title": ""
-                }
+                "website": "https://www.starliperassociates.com/"
               },
               {
                 "id": "rep5",
@@ -3068,13 +3044,7 @@
                 "phone": "703-242-9710",
                 "email": "",
                 "address": "703-242-9710 Fax: 703-242-9717 info@esinc.us",
-                "link": {
-                  "url": "https://esinc.us/",
-                  "text": "",
-                  "target": "_blank",
-                  "rel": "noopener",
-                  "title": ""
-                }
+                "website": "https://esinc.us/"
               },
               {
                 "id": "rep6",
@@ -3090,13 +3060,7 @@
                 "phone": "980-263-4121",
                 "email": "bc@cc-fsr.com",
                 "address": "10420 Southern Loop Blvd Pineville, North Carolina 28134",
-                "link": {
-                  "url": "https://cc-fsr.com/",
-                  "text": "",
-                  "target": "_blank",
-                  "rel": "noopener",
-                  "title": ""
-                }
+                "website": "https://cc-fsr.com/"
               },
               {
                 "id": "rep7",
@@ -3112,13 +3076,7 @@
                 "phone": "800-860-1666",
                 "email": "sales@repsource.us",
                 "address": "5500 SW Longspur Ln. Palm City, FL 34990 800-860-1666; 772-463-7674 Fax 772-463-7675",
-                "link": {
-                  "url": "http://repsource.us/",
-                  "text": "",
-                  "target": "_blank",
-                  "rel": "noopener",
-                  "title": ""
-                }
+                "website": "http://repsource.us/"
               },
               {
                 "id": "rep8",
@@ -3134,13 +3092,7 @@
                 "phone": "614-404-7733",
                 "email": "melissa@greenwaldsales.com",
                 "address": "1220 Goodale Blvd Columbus, OH 43212",
-                "link": {
-                  "url": "http://www.jwilsonmarketing.com/",
-                  "text": "",
-                  "target": "_blank",
-                  "rel": "noopener",
-                  "title": ""
-                }
+                "website": "http://www.jwilsonmarketing.com/"
               },
               {
                 "id": "rep9",
@@ -3156,13 +3108,7 @@
                 "phone": "(612) 331-1251",
                 "email": "paul@vaderandlandgraf.com",
                 "address": "1047 10th Ave SE, Minneapolis, MN 55414",
-                "link": {
-                  "url": "https://vaderandlandgraf.com/",
-                  "text": "",
-                  "target": "_blank",
-                  "rel": "noopener",
-                  "title": ""
-                }
+                "website": "https://vaderandlandgraf.com/"
               },
               {
                 "id": "rep10",
@@ -3178,13 +3124,7 @@
                 "phone": "847.774.3628",
                 "email": "info@mirkgrp.com",
                 "address": "773 N Quentin Road Palatine, IL 60067",
-                "link": {
-                  "url": "https://www.mirkgrp.com/",
-                  "text": "",
-                  "target": "_blank",
-                  "rel": "noopener",
-                  "title": ""
-                }
+                "website": "https://www.mirkgrp.com/"
               },
               {
                 "id": "rep11",
@@ -3200,13 +3140,7 @@
                 "phone": "626.815.4200",
                 "email": "tbartell@accesspartners.biz",
                 "address": "9405 Haven Avenue Rancho Cucamonga, CA 91730 626.815.4200 Fax 510-786-3536",
-                "link": {
-                  "url": "http://www.pmareps.com/",
-                  "text": "",
-                  "target": "_blank",
-                  "rel": "noopener",
-                  "title": ""
-                }
+                "website": "http://www.pmareps.com/"
               },
               {
                 "id": "rep12",
@@ -3222,13 +3156,7 @@
                 "phone": "630-586-6864",
                 "email": "info@curateteam.com",
                 "address": "14 Inverness Drive East, Building F Suite 140 Englewood, CO 80112",
-                "link": {
-                  "url": "http://www.curateteam.com",
-                  "text": "",
-                  "target": "_blank",
-                  "rel": "noopener",
-                  "title": ""
-                }
+                "website": "http://www.curateteam.com"
               },
               {
                 "id": "rep13",
@@ -3244,13 +3172,7 @@
                 "phone": "905-825-9665",
                 "email": "info@tarrison.com",
                 "address": "2780 Coventry Road Oakville, Ontario, Canada L6H 6R1 905-825-9665 Fax 905-825-0965",
-                "link": {
-                  "url": "http://tarrison.com/",
-                  "text": "",
-                  "target": "_blank",
-                  "rel": "noopener",
-                  "title": ""
-                }
+                "website": "http://tarrison.com/"
               },
               {
                 "id": "rep14",
@@ -3266,13 +3188,7 @@
                 "phone": "203 847 6446",
                 "email": "derek@dsusa.biz",
                 "address": "24 Broad Street Norwalk, CT 06851 USA Tel +1 203 847 6446, ext 103",
-                "link": {
-                  "url": "",
-                  "text": "",
-                  "target": "",
-                  "rel": "",
-                  "title": ""
-                }
+                "website": ""
               }
             ],
             "filterLabel": "Select State",

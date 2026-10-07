@@ -63,6 +63,7 @@
 		var terr = modal.querySelector('[data-rep-modal-territory]');
 		var addr = modal.querySelector('[data-rep-modal-address]');
 		var links = modal.querySelector('[data-rep-modal-links]');
+		var site = modal.querySelector('[data-rep-modal-site]');
 		var closing = false;
 
 		function reduced() {
@@ -140,6 +141,18 @@
 
 				if (email) {
 					links.appendChild(linkTo('mailto:' + email, email, 'email'));
+				}
+
+				var website = card.getAttribute('data-rep-website') || '';
+
+				if (website) {
+					site.href = website;
+					/* Shown without the scheme and any trailing slash: the reader is
+					   being told which site, not handed a URL to read aloud. */
+					site.textContent = website.replace(/^https?:\/\//, '').replace(/\/$/, '');
+					site.parentElement.hidden = false;
+				} else {
+					site.parentElement.hidden = true;
 				}
 
 				if (typeof modal.showModal === 'function') {

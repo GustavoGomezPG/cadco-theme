@@ -90,15 +90,14 @@ $wrapper = get_block_wrapper_attributes([
                 $logo      = $rep['logo'] ?? [];
                 $name      = (string) ($rep['name'] ?? '');
                 $territory = (string) ($rep['territory'] ?? '');
-                $link      = $rep['link'] ?? [];
-                $url       = (string) ($link['url'] ?? '');
+                $website   = (string) ($rep['website'] ?? '');
                 $phone     = (string) ($rep['phone'] ?? '');
                 $email     = (string) ($rep['email'] ?? '');
                 $address   = (string) ($rep['address'] ?? '');
                 $states    = $states_of($territory);
 
                 /* A card is only worth opening when there is something behind it. */
-                $hasDetail = '' !== $phone || '' !== $email || '' !== $address;
+                $hasDetail = '' !== $phone || '' !== $email || '' !== $address || '' !== $website;
                 ?>
                 <div data-proto-repeater-item
                      data-cadco-rep
@@ -111,6 +110,7 @@ $wrapper = get_block_wrapper_attributes([
                          data-rep-phone="<?php echo esc_attr($phone); ?>"
                          data-rep-email="<?php echo esc_attr($email); ?>"
                          data-rep-address="<?php echo esc_attr($address); ?>"
+                         data-rep-website="<?php echo esc_attr($website); ?>"
                      <?php endif; ?>
                      class="flex flex-col rounded-[14px] bg-white px-[26px] pb-[30px] pt-[26px]<?php echo $hasDetail ? ' cadco-rep--openable' : ''; ?>">
 
@@ -125,17 +125,13 @@ $wrapper = get_block_wrapper_attributes([
                         </span>
                     </div>
 
+                    <?php /* Plain text, not a link. The card is the control: a link
+                             around the name would be a second target inside it,
+                             competing with the dialog and giving a keyboard two
+                             stops where the reader sees one thing. The website
+                             goes in the dialog with the phone and the email. */ ?>
                     <h3 class="m-0 mt-[14px] font-display text-[17px] font-bold leading-[1.25] text-true-black">
-                        <?php if ('' !== $url) : ?>
-                            <a data-proto-field="link" href="<?php echo esc_url($url); ?>"
-                               <?php if (! empty($link['target'])) : ?>target="<?php echo esc_attr($link['target']); ?>"<?php endif; ?>
-                               <?php if (! empty($link['rel'])) : ?>rel="<?php echo esc_attr($link['rel']); ?>"<?php endif; ?>
-                               class="inline-flex min-h-[44px] items-center text-true-black no-underline hover:text-cadco-blue hover:underline md:min-h-0">
-                                <span data-proto-field="name"><?php echo esc_html($name); ?></span>
-                            </a>
-                        <?php else : ?>
-                            <span data-proto-field="name"><?php echo esc_html($name); ?></span>
-                        <?php endif; ?>
+                        <span data-proto-field="name"><?php echo esc_html($name); ?></span>
                     </h3>
 
                     <p data-proto-field="territory"
@@ -193,6 +189,8 @@ $wrapper = get_block_wrapper_attributes([
                        class="m-0 mt-5 font-display text-[16px] leading-[24px] text-[#11181c]"></p>
 
                     <div class="mt-5 flex flex-col items-start gap-[10px]" data-rep-modal-links></div>
+                    <p class="m-0 mt-4"><a data-rep-modal-site target="_blank" rel="noopener noreferrer"
+                       class="font-display text-[15px] font-bold text-cadco-blue underline underline-offset-4"></a></p>
                 </div>
             </dialog>
         <?php endif; ?>

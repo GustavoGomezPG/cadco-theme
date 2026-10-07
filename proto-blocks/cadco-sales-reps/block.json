@@ -56,9 +56,10 @@
             "type": "text",
             "label": "Address"
           },
-          "link": {
-            "type": "link",
-            "label": "Link (optional)"
+          "website": {
+            "type": "text",
+            "label": "Website",
+            "help": "Shown in the card's dialog beside the phone and email. A plain address: the card itself is the link, so there is no separate link text to write."
           }
         }
       }
