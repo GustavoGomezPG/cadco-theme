@@ -161,8 +161,10 @@
     line-height: 22px;
 }
 
+/* The select keeps the 44px line-height the inputs use. `normal` let the browser
+   place the text against the top of the 46px box instead of centring it in it,
+   so the chevron sat level with the frame while the label sat above it. */
 .cadco-form .gform_wrapper .gfield select {
-    line-height: normal;
     padding-right: 46px;
 }
 
@@ -213,10 +215,17 @@
 }
 
 /* Below the breakpoint every control has to clear the tap target, which the
-   frame's 46px does not. */
+   frame's 46px does not. The inputs are matched by type here because the rule
+   that sizes them is typed too: `:is(input, select)` alone loses to
+   `input[type="text"]` and left the text fields at 46px while the select grew. */
 @media (max-width: 767px) {
-    .cadco-form .gform_wrapper .gfield :is(input, select) {
+    .cadco-form .gform_wrapper .gfield input[type="text"],
+    .cadco-form .gform_wrapper .gfield input[type="email"],
+    .cadco-form .gform_wrapper .gfield input[type="tel"],
+    .cadco-form .gform_wrapper .gfield select {
         min-height: 48px;
         height: 48px;
+        /* In step with the height, or the text sits 2px above centre here. */
+        line-height: 46px;
     }
 }
