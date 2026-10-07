@@ -249,6 +249,23 @@ $wrapper = get_block_wrapper_attributes([
                                 ]); ?>
                             <?php endif; ?>
 
+                            <?php /* Only where the card really plays. A video whose
+                                     link is empty opens its own page instead, and a
+                                     play button there would promise something the
+                                     click does not do. Decorative: the heading
+                                     already tells a screen reader it plays in a
+                                     dialog. */ ?>
+                            <?php if ($opensModal) : ?>
+                                <span aria-hidden="true"
+                                      class="pointer-events-none absolute inset-0 flex items-center justify-center">
+                                    <span class="flex h-[64px] w-[64px] items-center justify-center rounded-full bg-true-black/55 ring-1 ring-white/25 backdrop-blur-[2px] transition duration-200 group-hover:scale-110 group-hover:bg-true-black/70">
+                                        <svg class="ml-[3px] h-[26px] w-[26px]" viewBox="0 0 24 24" fill="white" aria-hidden="true">
+                                            <path d="M8 5.5v13a.75.75 0 0 0 1.14.64l10.5-6.5a.75.75 0 0 0 0-1.28l-10.5-6.5A.75.75 0 0 0 8 5.5Z" />
+                                        </svg>
+                                    </span>
+                                </span>
+                            <?php endif; ?>
+
                             <?php if ('' !== $kind) : ?>
                                 <span class="absolute bottom-3 right-3 rounded-[6px] bg-true-black px-3 py-1 font-display text-[14px] font-medium lowercase text-white">
                                     <?php echo esc_html($kind); ?>
