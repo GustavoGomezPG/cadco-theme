@@ -443,6 +443,58 @@ Products page would be the tidier fix, but it would also make `is_shop()` true
 there, which hands `/products/` to this template instead of its built page — so
 it is deliberately left alone.
 
+### The single product page
+
+`templates/single-product.html` is no longer WooCommerce's markup either. It is
+four blocks above the closing call to action:
+
+| Block | What it shows |
+|---|---|
+| `cadco-product-hero` | Breadcrumb, photograph, name, introduction, the short description as bullets, list price, call to action |
+| `cadco-product-specs` | The tinted band: specifications grouped under tags, features, the warranty note, spec sheet and manual |
+| `cadco-product-resources` | The documents tagged to the product, then a scrollable strip of video stills |
+| `cadco-related-products` | A scrollable row of the catalogue's own product cards |
+
+Each reads the product being viewed, so there is nothing per-product to author.
+On the editor canvas there is no product, so each falls back to a real one —
+the resources block picks the most recent product that actually *has*
+resources, because an empty section teaches an editor nothing.
+
+**Specifications are parsed back out of the product description**, because that
+is where the catalogue puts them: a `<h3>Specifications</h3>` list of
+label/value pairs and a `<h3>Features</h3>` list, which is also the shape an
+editor produces in the block editor. The design groups them — Size, Power,
+Freight Class — and that grouping is stated once in `inc/cadco-products.php`.
+A label no group claims lands in a trailing **Details** group rather than being
+silently dropped. If a future import carries them as real WooCommerce
+attributes, filter `cadco_product_spec_rows` and `cadco_product_features` and
+nothing above that file has to change.
+
+**Documents and videos come from the `resource` post type**, matched through
+`resource_product` — the same taxonomy the resource centre filters on, whose
+term slug matches the product's own slug. One document shared by a dozen ovens
+is one resource carrying a dozen product tags, not twelve copies. A consequence
+worth knowing: everything tagged to a product also appears in the resource
+centre's listing, because that page lists all resources.
+
+Three things are deliberately shared rather than copied, each with the same
+reasoning — a second copy is a second copy to get wrong:
+
+- **The product card** (`inc/cadco-products.php` + `assets/css/cadco-product-card.css`)
+  is drawn by both the catalogue grid and the related-products row.
+- **The video dialog** (`assets/js/cadco-video-modal.js` + its stylesheet) is
+  opened by both the resource centre and the product page. It was the resource
+  library's own and moved out when the product page needed it.
+- **The rails** (`assets/js/cadco-rail.js` + its stylesheet) drive the video
+  strip and the related-products row, which are the same control drawn twice.
+
+> **The card is styled in CSS, not Tailwind, and must stay that way.**
+> Proto-Blocks' Tailwind scanner only reads files inside a block's own folder
+> (`template.php`, `{block}.php`, `style.css`). A partial shared between two
+> blocks has no folder it could live in, so utilities written there compile to
+> nothing at all — which is how the card first shipped with no border, no shadow
+> and no padding. Anything shared between blocks needs real CSS.
+
 ### Test catalogue content
 
 `scripts/test-data/` holds throwaway catalogue content, so the archive has
@@ -453,27 +505,38 @@ top-level categories that predate it survive.
 
 ```bash
 # 50 products scraped from the live cadco-ltd.com catalogue
-wp eval-file scripts/test-data/import-test-products.php <products.json>
+wp eval-file scripts/test-data/import-test-products.php <products.json> [sync]
 
 # derive a Size attribute from what those products say about themselves
 wp eval-file scripts/test-data/assign-size-attribute.php        # dry run
 wp eval-file scripts/test-data/assign-size-attribute.php go
 
-# take it all back out: products, their images, and the terms they created
+# their documents and videos, as resources, plus the freight class
+wp eval-file scripts/test-data/import-test-resources.php <extras.json> <products.json>
+
+# take it all back out: products, resources, images and the terms they created
 wp eval-file scripts/test-data/remove-test-products.php         # dry run
 wp eval-file scripts/test-data/remove-test-products.php go
 ```
 
 | Flag | On | Set by |
 |---|---|---|
-| `_cadco_test_product` | the product, and the image sideloaded for it | import |
+| `_cadco_test_product` | the product or resource, and any image sideloaded for it | import, resources |
 | `_cadco_test_source` | the product (the URL it was scraped from) | import |
-| `_cadco_test_term` | only the `product_cat` and `pa_size` terms the scripts had to **create** | import, size |
+| `_cadco_test_term` | only the `product_cat`, `pa_size`, `resource_media` and `resource_product` terms the scripts had to **create** | import, size, resources |
 
 The import is idempotent: a product whose SKU is already in the catalogue is
-skipped, so an interrupted run can simply be repeated. Removal is permanent
-rather than to the trash — this is throwaway content, and leaving fifty products
-in the trash would only be a second cleanup.
+skipped, so an interrupted run can simply be repeated. `sync` pushes a changed
+JSON onto the products already imported, rewriting the name, price and
+descriptions and touching nothing else. Removal is permanent rather than to the
+trash — this is throwaway content, and leaving a hundred and fifty posts in the
+trash would only be a second cleanup.
+
+**The resource import grows the resource centre.** It adds ~100 resources, which
+the resource centre lists along with everything else, and ~50 more options to
+its "Show All Products" filter. That is the data model working as designed — the
+product page is the filtered view of the same set — but it does change a page
+that was signed off with 26 resources. The removal script takes them back out.
 
 ---
 

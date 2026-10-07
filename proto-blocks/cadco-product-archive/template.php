@@ -468,62 +468,13 @@ $wrapper = get_block_wrapper_attributes([
                     <ul data-cadco-reveal="items"
                         class="m-0 grid list-none grid-cols-1 gap-x-5 gap-y-[14.8px] p-0 <?php echo esc_attr($gridCols); ?>">
                         <?php while ($query->have_posts()) : $query->the_post(); ?>
-                            <?php
-                            $id      = get_the_ID();
-                            $product = function_exists('wc_get_product') ? wc_get_product($id) : null;
-                            $spec    = (string) get_the_excerpt($id);
-                            $price   = $product ? (string) $product->get_price_html() : '';
-                            ?>
                             <li class="m-0">
-                                <?php /* The whole card is the link, as it is in the frame:
-                                         one target rather than a name you have to hit. */ ?>
-                                <a href="<?php the_permalink(); ?>"
-                                   class="group flex h-full min-h-[386px] flex-col rounded-[15px] border-2 border-white bg-white/80 px-[22px] pt-[22px] pb-[41px] no-underline shadow-[0_0_8.9px_0_rgba(0,0,0,0.25)] transition-shadow hover:shadow-[0_2px_18px_0_rgba(0,0,0,0.3)]">
-
-                                    <?php /* Contained, not cropped -- see the note at the top
-                                             of this file. The frame's 186x116 slot is kept as a
-                                             ratio rather than a fixed 116px: a two-up card is
-                                             half as wide again, and a fixed height would strand
-                                             the photograph in the middle of it. At the design's
-                                             width the two agree to within 2px. */ ?>
-                                    <div class="flex aspect-[186/116] w-full items-center justify-center overflow-hidden">
-                                        <?php if (has_post_thumbnail($id)) : ?>
-                                            <?php echo wp_get_attachment_image(get_post_thumbnail_id($id), 'medium_large', false, [
-                                                'class'    => 'h-full w-full object-contain transition-transform duration-500 ease-out will-change-transform group-hover:scale-[1.04] motion-reduce:transition-none motion-reduce:group-hover:scale-100',
-                                                'alt'      => the_title_attribute(['echo' => false]),
-                                                'loading'  => 'lazy',
-                                                'decoding' => 'async',
-                                                /* The slot is 186px wide on the design's grid. Stated
-                                                   explicitly or the browser reads wp's default `sizes`
-                                                   and pulls the 768px file for every card. */
-                                                'sizes'    => '(min-width: 1024px) 190px, (min-width: 640px) 44vw, 78vw',
-                                            ]); ?>
-                                        <?php else : ?>
-                                            <img src="<?php echo esc_url(get_theme_file_uri('assets/img/cadco-mark.svg')); ?>"
-                                                 class="h-1/2 w-auto opacity-25" alt="" aria-hidden="true"
-                                                 loading="lazy" decoding="async" />
-                                        <?php endif; ?>
-                                    </div>
-
-                                    <h3 class="mt-6 mb-0 font-display text-[16px] font-semibold leading-[20px] text-true-black transition-colors group-hover:text-cadco-blue">
-                                        <?php the_title(); ?>
-                                    </h3>
-
-                                    <?php if ('' !== $spec) : ?>
-                                        <p class="mt-[20px] mb-0 font-display text-[15px] font-normal leading-[27px] text-true-black">
-                                            <?php echo esc_html($spec); ?>
-                                        </p>
-                                    <?php endif; ?>
-
-                                    <?php /* Pushed to the foot so the price sits on one
-                                             line across the row however long the names
-                                             above it run. */ ?>
-                                    <?php if ($showPrice && '' !== $price) : ?>
-                                        <p class="mt-auto pt-[22px] mb-0 font-display text-[15px] font-semibold leading-none text-true-black">
-                                            <?php echo wp_kses_post($price); ?>
-                                        </p>
-                                    <?php endif; ?>
-                                </a>
+                                <?php /* The card is shared with the related-products
+                                         carousel on a single product -- see
+                                         inc/cadco-products.php. Two grids drawing the
+                                         same card from two copies of the markup is how
+                                         they drift apart. */ ?>
+                                <?php echo cadco_product_card_html(get_the_ID(), ['showPrice' => $showPrice]); ?>
                             </li>
                         <?php endwhile; ?>
                         <?php /* Reset before the pagination: the_post() left the last

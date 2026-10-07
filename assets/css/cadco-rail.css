@@ -1,0 +1,46 @@
+/**
+ * Horizontal rails: the single product page's video strip and its
+ * related-products row.
+ *
+ * Shared because they are the same control drawn twice. Driven by
+ * assets/js/cadco-rail.js.
+ */
+
+/*
+ * The scrollbar is hidden, not removed.
+ *
+ * The track stays a real scroll container -- a trackpad, a swipe, Shift+wheel
+ * and the keyboard all still drive it, and that is what makes the arrows an
+ * addition rather than the only way through. What is hidden is the bar itself,
+ * which the design does not draw and which would sit under the cards' shadow.
+ */
+.cadco-rail__track {
+	scrollbar-width: none;
+	-ms-overflow-style: none;
+	/* Firefox and Safari ignore the last item's margin inside a scroll
+	   container, so the padding goes on the track rather than on the items. */
+	scroll-padding-inline: 3px;
+}
+
+.cadco-rail__track::-webkit-scrollbar {
+	display: none;
+}
+
+/*
+ * A rail whose items already fit needs no controls.
+ *
+ * Hidden rather than left disabled: two permanently dead buttons under a short
+ * row read as something broken. The class is set by the script, so a rail whose
+ * script never runs keeps its buttons -- disabled, which is how they render.
+ */
+.cadco-rail--static [data-cadco-rail-prev],
+.cadco-rail--static [data-cadco-rail-next] {
+	display: none;
+}
+
+/* The track is focusable so a keyboard can scroll it; it needs to say so. */
+.cadco-rail__track:focus-visible {
+	outline: 2px solid #00476e;
+	outline-offset: 4px;
+	border-radius: 4px;
+}

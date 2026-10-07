@@ -2,7 +2,7 @@
  {
   "sku": "OV-003",
   "title": "Medium-Duty Quarter Size OV-003",
-  "short": "3 Shelf Manual Control 120v",
+  "short": "3 Shelf, Manual Control, 120v",
   "subtitle": "MEDIUM-DUTY Quarter Size, 3 Shelf, Manual Control, 120v",
   "price": "1720.00",
   "image": "https://www.cadco-ltd.com/edit/resources/products/ov-003nlt-300dpirgb5innl.jpg",
@@ -62,7 +62,7 @@
  {
   "sku": "OV-013",
   "title": "Medium-Duty Half Size OV-013",
-  "short": "3 Shelf Manual Control 120v",
+  "short": "3 Shelf, Manual Control, 120v",
   "subtitle": "MEDIUM-DUTY Half Size, 3 Shelf, Manual Control, 120v",
   "price": "2150.00",
   "image": "https://www.cadco-ltd.com/edit/resources/products/ov-013nlt-300dpi-rgb-55innl.jpg",
@@ -122,7 +122,7 @@
  {
   "sku": "OV-023",
   "title": "Medium-Duty Half Size OV-023",
-  "short": "4 Shelf Manual Control 220v",
+  "short": "4 Shelf, Manual Control, 220v",
   "subtitle": "MEDIUM-DUTY Half Size, 4 Shelf, Manual Control, 220v",
   "price": "2600.00",
   "image": "https://www.cadco-ltd.com/edit/resources/products/ov-023nlt-300dpi-rgb-55innl.jpg",
@@ -182,7 +182,7 @@
  {
   "sku": "XAF-113",
   "title": "Heavy-Duty Half Size XAF-113",
-  "short": "3 Shelf Manual Control 120v (With Humidity)",
+  "short": "3 Shelf, Manual Control, 120v (With Humidity)",
   "subtitle": "HEAVY-DUTY Half Size, 3 Shelf, Manual Control, 120v (With Humidity)",
   "price": "3030.00",
   "image": "https://www.cadco-ltd.com/edit/resources/products/xaf-113-300dpi-rgb-5in.jpg",
@@ -257,7 +257,7 @@
  {
   "sku": "XAF-133",
   "title": "Heavy-Duty Half Size XAF-133",
-  "short": "4 Shelf Manual Control 220v (With Humidity)",
+  "short": "4 Shelf, Manual Control, 220v (With Humidity)",
   "subtitle": "HEAVY-DUTY Half Size, 4 Shelf, Manual Control, 220v (With Humidity)",
   "price": "3216.00",
   "image": "https://www.cadco-ltd.com/edit/resources/products/xaft-133-300dpi-rgb-5in-1.jpg",
@@ -332,7 +332,7 @@
  {
   "sku": "XAF-183",
   "title": "Heavy-Duty Full Size XAF-183",
-  "short": "3 Shelf Manual Control 220v (With Humidity)",
+  "short": "3 Shelf, Manual Control, 220v (With Humidity)",
   "subtitle": "HEAVY-DUTY Full Size, 3 Shelf, Manual Control, 220v (With Humidity)",
   "price": "4850.00",
   "image": "https://www.cadco-ltd.com/edit/resources/products/xaft-183-rgb-300dpi-55in.jpg",
@@ -408,7 +408,7 @@
  {
   "sku": "XAF-193",
   "title": "Heavy-Duty Full Size XAF-193",
-  "short": "4 Shelf Manual Control 220v (With Humidity)",
+  "short": "4 Shelf, Manual Control, 220v (With Humidity)",
   "subtitle": "HEAVY-DUTY Full Size, 4 Shelf, Manual Control, 220v (With Humidity)",
   "price": "5770.00",
   "image": "https://www.cadco-ltd.com/edit/resources/products/xaf-193-rgb-300dpi-55in.jpg",
@@ -484,7 +484,7 @@
  {
   "sku": "XAFT-03HS-GD",
   "title": "Bakerlux Half Size XAFT-03HS-GD",
-  "short": "3 shelf 120v (No Humidity) GO Panel",
+  "short": "3 shelf, 120v (No Humidity), GO Panel",
   "subtitle": "BAKERLUX Half Size, 3 shelf, 120v (No Humidity), GO Panel",
   "price": "3750.00",
   "image": "https://www.cadco-ltd.com/edit/resources/products/xaft-03hs-gd-300dpi-rgb-5in-.jpg",
@@ -548,7 +548,7 @@
  {
   "sku": "XAFT-03HS-LD",
   "title": "Bakerlux Half Size XAFT-03HS-LD",
-  "short": "3 shelf 220v (With Humidity) LED Panel",
+  "short": "3 shelf, 220v (With Humidity), LED Panel",
   "subtitle": "BAKERLUX Half Size, 3 shelf, 220v (With Humidity), LED Panel",
   "price": "4090.00",
   "image": "https://www.cadco-ltd.com/edit/resources/products/xaft-03hs-ld-300dpi-rgb-5in-.jpg",
@@ -571,7 +571,7 @@
  {
   "sku": "XAFT-03HS-LD(120)",
   "title": "Bakerlux Half Size XAFT-03HS-LD(120)",
-  "short": "3 shelf 120v (With Humidity) LED Panel",
+  "short": "3 shelf, 120v (With Humidity), LED Panel",
   "subtitle": "BAKERLUX Half Size, 3 shelf, 120v (With Humidity), LED Panel",
   "price": "4390.00",
   "image": "https://www.cadco-ltd.com/edit/resources/products/xaft-03hs-ld-120v-300dpi-cmyk-5in.jpg",
@@ -594,7 +594,7 @@
  {
   "sku": "XAFT-03HS-TD",
   "title": "Bakerlux Half Size XAFT-03HS-TD",
-  "short": "3 shelf 220v (With Humidity) Touch Panel",
+  "short": "3 shelf, 220v (With Humidity), Touch Panel",
   "subtitle": "BAKERLUX Half Size, 3 shelf, 220v (With Humidity), TOUCH Panel",
   "price": "4610.00",
   "image": "https://www.cadco-ltd.com/edit/resources/products/xaft-03-hs-td-300dpi-rgb-5in-.jpg",
@@ -662,7 +662,7 @@
  {
   "sku": "XAFT-04HS-LD",
   "title": "Bakerlux Half Size XAFT-04HS-LD",
-  "short": "4 shelf 220v (With Humidity) LED Panel",
+  "short": "4 shelf, 220v (With Humidity), LED Panel",
   "subtitle": "BAKERLUX Half Size, 4 shelf, 220v (With Humidity), LED Panel",
   "price": "4720.00",
   "image": "https://www.cadco-ltd.com/edit/resources/products/xaft-04hs-ld-300dpi-rgb-5in-.jpg",
@@ -727,7 +727,7 @@
  {
   "sku": "XAFT-04HS-TD",
   "title": "Bakerlux Half Size XAFT-04HS-TD",
-  "short": "4 shelf 220v (with Humidity) Touch Panel",
+  "short": "4 shelf, 220v (with Humidity), Touch Panel",
   "subtitle": "BAKERLUX Half Size, 4 shelf, 220v (with Humidity), TOUCH Panel",
   "price": "5220.00",
   "image": "https://www.cadco-ltd.com/edit/resources/products/xaft-04hs-td-300dpi-rgb-5in-.jpg",
@@ -795,7 +795,7 @@
  {
   "sku": "XAFT-04HS-TR",
   "title": "Bakerlux Half Size XAFT-04HS-TR",
-  "short": "4 shelf RH Door 220v (w/ Humidity) Touch Panel",
+  "short": "4 shelf, RH Door, 220v (w/ Humidity), Touch Panel",
   "subtitle": "BAKERLUX Half Size, 4 shelf, RH Door, 220v (w/ Humidity), TOUCH Panel",
   "price": "6380.00",
   "image": "https://www.cadco-ltd.com/edit/resources/products/xaft-04hs-tr-300dpi-rgb-5in-.jpg",
@@ -865,7 +865,7 @@
  {
   "sku": "XAFT-04FS-LD",
   "title": "Bakerlux Full Size XAFT-04FS-LD",
-  "short": "4 shelf 220v (With Humidity) LED Panel",
+  "short": "4 shelf, 220v (With Humidity), LED Panel",
   "subtitle": "BAKERLUX Full Size, 4 shelf, 220v (With Humidity), LED Panel",
   "price": "7500.00",
   "image": "https://www.cadco-ltd.com/edit/resources/products/xaft-04fs-ld-300dpi-rgb-5in-.jpg",
@@ -930,7 +930,7 @@
  {
   "sku": "XAFT-04FS-TD",
   "title": "Bakerlux Full Size XAFT-04FS-TD",
-  "short": "4 shelf 220v (With Humidity) Touch Panel",
+  "short": "4 shelf, 220v (With Humidity), Touch Panel",
   "subtitle": "BAKERLUX Full Size, 4 shelf, 220v (With Humidity), TOUCH Panel",
   "price": "8480.00",
   "image": "https://www.cadco-ltd.com/edit/resources/products/xaft-04fs-td-300dpi-rgb-5in-.jpg",
@@ -998,7 +998,7 @@
  {
   "sku": "XAFT-04FS-TR",
   "title": "Bakerlux Full Size XAFT-04FS-TR",
-  "short": "4 shelf RH Door 220v (w/ Humidity) Touch Panel",
+  "short": "4 shelf, RH Door, 220v (w/ Humidity), Touch Panel",
   "subtitle": "BAKERLUX Full Size, 4 shelf, RH Door, 220v (w/ Humidity), TOUCH Panel",
   "price": "9710.00",
   "image": "https://www.cadco-ltd.com/edit/resources/products/xaft-04fs-tr-300dpi-rgb-5in-.jpg",
@@ -1068,7 +1068,7 @@
  {
   "sku": "XAFT-04FS-TL",
   "title": "Bakerlux Full Size XAFT-04FS-TL",
-  "short": "4 shelf LH Door 220v (w/ Humidity) Touch Panel",
+  "short": "4 shelf, LH Door, 220v (w/ Humidity), Touch Panel",
   "subtitle": "BAKERLUX Full Size, 4 shelf, LH Door, 220v (w/ Humidity), TOUCH Panel",
   "price": "10920.00",
   "image": "https://www.cadco-ltd.com/edit/resources/products/xaft-04fs-tl-w-panel-1.png",
@@ -1138,7 +1138,7 @@
  {
   "sku": "XAKHT-HCHS",
   "title": "Bakerlux Half Size XAKHT-HCHS",
-  "short": "Ventless System 220v",
+  "short": "Ventless System, 220v",
   "subtitle": "BAKERLUX Half Size, Ventless System, 220v",
   "price": "4040.00",
   "image": "https://www.cadco-ltd.com/edit/resources/products/xakht-hchs-300dpi-rgb-5in-.jpg",
@@ -1191,7 +1191,7 @@
  {
   "sku": "XAKHT-HCFS",
   "title": "Bakerlux Full Size XAKHT-HCFS",
-  "short": "Ventless System 220v",
+  "short": "Ventless System, 220v",
   "subtitle": "BAKERLUX Full Size, Ventless System, 220v",
   "price": "4390.00",
   "image": "https://www.cadco-ltd.com/edit/resources/products/xakht-hcfs-300dpi-rgb-5in-.jpg",
@@ -1661,7 +1661,7 @@
  {
   "sku": "VKII-220+ (Plus)",
   "title": "VariKwik: fast without microwave VKII-220+ (Plus)",
-  "short": "220v 7-inch Touchscreen 2 IR elements 14\"x14\" cooking area",
+  "short": "220v, 7-inch Touchscreen, 2 IR elements, 14\"x14\" cooking area",
   "subtitle": "220v, 7-inch Touchscreen, 2 IR elements, 14\"x14\" cooking area",
   "price": "8700.00",
   "image": "https://www.cadco-ltd.com/edit/resources/products/ss.png",
@@ -1689,7 +1689,7 @@
  {
   "sku": "VKII-220",
   "title": "VariKwik: fast without microwave VKII-220",
-  "short": "220v Stainless 2 IR elements 14\"x14\" cooking area",
+  "short": "220v, Stainless, 2 IR elements, 14\"x14\" cooking area",
   "subtitle": "220v, Stainless, 2 IR elements, 14\"x14\" cooking area",
   "price": "8000.00",
   "image": "https://www.cadco-ltd.com/edit/resources/products/vkii-220-ss-1-1.png",
@@ -1717,7 +1717,7 @@
  {
   "sku": "VK-120+ (Plus)",
   "title": "VariKwik: fast without microwave VK-120+ (Plus)",
-  "short": "120v 7-inch Touchscreen 1 IR element 14\"x10\" cooking area",
+  "short": "120v, 7-inch Touchscreen, 1 IR element, 14\"x10\" cooking area",
   "subtitle": "120v, 7-inch Touchscreen, 1 IR element, 14\"x10\" cooking area",
   "price": "7700.00",
   "image": "https://www.cadco-ltd.com/edit/resources/products/varikwik-120-image.png",
@@ -1745,7 +1745,7 @@
  {
   "sku": "VK-120",
   "title": "VariKwik: fast without microwave VK-120",
-  "short": "120v Stainless Steel 1 IR element 14\"x10\" cooking area",
+  "short": "120v, Stainless Steel, 1 IR element, 14\"x10\" cooking area",
   "subtitle": "120v, Stainless Steel, 1 IR element, 14\"x10\" cooking area",
   "price": "7100.00",
   "image": "https://www.cadco-ltd.com/edit/resources/products/vk-120-ss.png",

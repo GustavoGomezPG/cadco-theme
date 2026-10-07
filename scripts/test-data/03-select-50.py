@@ -104,7 +104,10 @@ def short_for(p):
     keep_head = bool(re.fullmatch(r"\d+\s*v", head, re.I) or (head and len(head) < 5))
     rest = [_clean(x) for x in (parts if keep_head else parts[1:])]
     if rest:
-        return " ".join(rest)
+        # Comma-separated, not space-joined: the card renders these as separate
+        # lines and the product hero as bullets, so the segment boundaries have
+        # to survive into the stored short description.
+        return ", ".join(rest)
     # single-segment subtitle: fall back to the product's own headline specs
     keep = [v for k, v in p["specs"] if k.lower() in ("size", "shelves", "volts", "watts", "capacity")]
     if keep:

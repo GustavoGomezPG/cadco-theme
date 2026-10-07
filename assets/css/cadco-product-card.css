@@ -1,0 +1,153 @@
+/**
+ * The product card.
+ *
+ * Drawn by the catalogue grid and by the related-products row on a single
+ * product, from one function in inc/cadco-products.php.
+ *
+ * Real CSS rather than Tailwind utilities, deliberately: Proto-Blocks' Tailwind
+ * scanner only reads files inside a block's own folder, so a partial shared
+ * between two blocks has no folder it could live in and have its classes
+ * compiled. Utilities in a shared partial silently produce no CSS at all --
+ * which is exactly how this card first shipped with no border, no shadow and no
+ * padding. A component shared by two blocks gets a stylesheet; it is also the
+ * clearer place to read its measurements against the design.
+ *
+ * Figma "Products Convection Oven Page" (1440 frame):
+ *
+ *   card    234 x 386.23, r15, #fff @ .81, 2px white border
+ *   shadow  0 0 8.9px rgba(0,0,0,.25)      image  186.4 x 116 (1.606:1)
+ *   padding 23 left, 19 right, 22.5 top, 41.4 bottom
+ *   name    Barlow SemiBold 16/20, 24 below the image
+ *   lines   Barlow Regular 15/27, 20 below the name
+ *   price   Barlow SemiBold 15, 22 above the card's foot
+ */
+
+.cadco-card {
+	display: flex;
+	flex-direction: column;
+	height: 100%;
+	min-height: 386px;
+	padding: 22px 22px 41px;
+	border: 2px solid #fff;
+	border-radius: 15px;
+	background: rgb(255 255 255 / 81%);
+	box-shadow: 0 0 8.9px 0 rgb(0 0 0 / 25%);
+	text-decoration: none;
+	transition: box-shadow 0.3s ease;
+	/* The card clips a child that is being transformed on hover, and WebKit
+	   drops that clip mid-animation, so the photograph's square corners flash
+	   outside the radius. Promoting the card to its own layer keeps the clip
+	   and the transform on one surface. */
+	transform: translateZ(0);
+}
+
+.cadco-card:hover,
+.cadco-card:focus-visible {
+	box-shadow: 0 2px 18px 0 rgb(0 0 0 / 30%);
+}
+
+/*
+ * The image slot.
+ *
+ * Contained, not cropped: the frame's slot is 1.6:1 with an image cut to fit,
+ * and the real catalogue runs from 1:1 to 3.2:1 -- `cover` would take the top
+ * and bottom off every square one. Kept as a ratio rather than the frame's
+ * fixed 116px so a wider card does not strand the photograph in the middle.
+ */
+.cadco-card__media {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 100%;
+	aspect-ratio: 186 / 116;
+	overflow: hidden;
+}
+
+.cadco-card__media img {
+	width: 100%;
+	height: 100%;
+	object-fit: contain;
+	transition: transform 0.5s cubic-bezier(0.16, 0.84, 0.44, 1);
+	will-change: transform;
+}
+
+.cadco-card:hover .cadco-card__media img {
+	transform: scale(1.04);
+}
+
+/* No photograph: the site mark, quiet enough to read as a placeholder. */
+.cadco-card__media--empty img {
+	width: auto;
+	height: 50%;
+	opacity: 0.25;
+	transform: none;
+}
+
+.cadco-card__title {
+	margin: 24px 0 0;
+	font-family: var(--wp--preset--font-family--display, "Barlow", sans-serif);
+	font-size: 16px;
+	font-weight: 600;
+	line-height: 20px;
+	color: #000;
+	transition: color 0.3s ease;
+}
+
+.cadco-card:hover .cadco-card__title {
+	color: #00476e;
+}
+
+/* One claim per line, as the frame sets it -- not a wrapped sentence that
+   happens to break in three places. */
+.cadco-card__lines {
+	margin: 20px 0 0;
+	padding: 0;
+	list-style: none;
+	font-family: var(--wp--preset--font-family--display, "Barlow", sans-serif);
+	font-size: 15px;
+	font-weight: 400;
+	line-height: 27px;
+	color: #000;
+}
+
+.cadco-card__lines li {
+	margin: 0;
+}
+
+/* Pushed to the foot so the price sits on one line across the row however long
+   the names above it run. */
+.cadco-card__price {
+	margin: auto 0 0;
+	padding-top: 22px;
+	font-family: var(--wp--preset--font-family--display, "Barlow", sans-serif);
+	font-size: 15px;
+	font-weight: 600;
+	line-height: 1;
+	color: #000;
+}
+
+/*
+ * WooCommerce wraps the price in its own markup -- .woocommerce-Price-amount, a
+ * <bdi>, and an <ins>/<del> pair for a range -- which carries the store's
+ * styles, not this card's.
+ */
+.cadco-card__price .price,
+.cadco-card__price .woocommerce-Price-amount,
+.cadco-card__price bdi,
+.cadco-card__price ins {
+	color: inherit;
+	font: inherit;
+	text-decoration: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.cadco-card {
+		transform: none;
+	}
+
+	.cadco-card__media img,
+	.cadco-card:hover .cadco-card__media img {
+		transition: none;
+		transform: none;
+	}
+}

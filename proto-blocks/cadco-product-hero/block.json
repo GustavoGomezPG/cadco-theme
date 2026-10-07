@@ -1,0 +1,72 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/block.json",
+  "apiVersion": 3,
+  "name": "proto-blocks/cadco-product-hero",
+  "title": "Cadco Product Hero",
+  "category": "proto",
+  "icon": "format-image",
+  "description": "The top of a product page: a breadcrumb, the product's photograph, its name, its introduction, the claims from its short description as bullets, the list price and a call to action. Everything is read from the product being viewed, so it is placed once in the single product template.",
+  "keywords": [
+    "product",
+    "single",
+    "hero",
+    "price",
+    "woocommerce"
+  ],
+  "supports": {
+    "html": false,
+    "anchor": true,
+    "customClassName": true,
+    "align": [
+      "full"
+    ]
+  },
+  "protoBlocks": {
+    "version": "1.0",
+    "template": "template.php",
+    "useTailwind": true,
+    "fields": {
+      "cta": {
+        "type": "link",
+        "label": "Call to action",
+        "help": "The design's “Contact Cadco” button. Left out when it has no address."
+      }
+    },
+    "controls": {
+      "showBreadcrumb": {
+        "type": "toggle",
+        "label": "Show the breadcrumb",
+        "default": true
+      },
+      "shopTitle": {
+        "type": "text",
+        "label": "Name for the whole catalogue",
+        "default": "All Products",
+        "help": "The breadcrumb's first step. Falls back to this only when the catalogue page cannot be resolved; otherwise that page's own title is used."
+      },
+      "showGallery": {
+        "type": "toggle",
+        "label": "Show the other gallery images",
+        "default": true,
+        "help": "Thumbnails under the main photograph, for a product whose gallery has more than one image. Nothing is shown for a product with a single photograph."
+      },
+      "showPrice": {
+        "type": "toggle",
+        "label": "Show the list price",
+        "default": true,
+        "help": "This catalogue lists prices but sells nothing, so the price is a list price, not an offer."
+      },
+      "priceNote": {
+        "type": "text",
+        "label": "Price label",
+        "default": "",
+        "conditions": {
+          "visible": {
+            "showPrice": true
+          }
+        },
+        "help": "Optional, printed before the figure — e.g. “List price”. The design shows the figure alone."
+      }
+    }
+  }
+}

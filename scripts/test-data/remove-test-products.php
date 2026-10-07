@@ -1,6 +1,8 @@
 <?php
 /**
- * Take back out everything import-test-products.php put in.
+ * Take back out everything the importers put in -- products, the resources
+ * attached to them, the images sideloaded for either, and the terms they had
+ * to create.
  *
  *   wp eval-file scripts/test-data/remove-test-products.php          # dry run
  *   wp eval-file scripts/test-data/remove-test-products.php go  # delete
@@ -18,7 +20,7 @@ const CADCO_TEST_FLAG = '_cadco_test_product';
 const CADCO_TEST_TERM = '_cadco_test_term';
 
 $products = get_posts([
-    'post_type'      => 'product',
+    'post_type'      => ['product', 'resource'],
     'post_status'    => 'any',
     'posts_per_page' => -1,
     'fields'         => 'ids',
@@ -35,10 +37,10 @@ $attachments = get_posts([
     'meta_value'     => '1',
 ]);
 
-/* Both taxonomies the import writes to: the catalogue tree, and the Size
-   attribute's terms that assign-size-attribute.php added. */
+/* Every taxonomy the importers write to: the catalogue tree, the Size
+   attribute's terms, and the two the resource importer tags with. */
 $taxonomies = array_values(array_filter(
-    ['product_cat', 'pa_size'],
+    ['product_cat', 'pa_size', 'resource_media', 'resource_product'],
     'taxonomy_exists'
 ));
 
@@ -51,7 +53,7 @@ $terms = get_terms([
 $terms = is_wp_error($terms) ? [] : $terms;
 
 WP_CLI::log(sprintf(
-    '%d products, %d images, %d terms carry the test flag.',
+    '%d posts, %d images, %d terms carry the test flag.',
     count($products),
     count($attachments),
     count($terms)
@@ -59,7 +61,7 @@ WP_CLI::log(sprintf(
 
 if (!$go) {
     foreach ($products as $id) {
-        WP_CLI::log('  product  ' . get_the_title($id));
+        WP_CLI::log(sprintf('  %-8s %s', get_post_type($id), get_the_title($id)));
     }
     foreach ($terms as $t) {
         WP_CLI::log('  term     ' . $t->taxonomy . ' / ' . $t->name . ' (' . $t->slug . ')');
@@ -90,7 +92,7 @@ wc_delete_product_transients();
 delete_transient('wc_term_counts');
 
 WP_CLI::success(sprintf(
-    'deleted %d products, %d images, %d terms',
+    'deleted %d posts, %d images, %d terms',
     count($products),
     count($attachments),
     count($terms)

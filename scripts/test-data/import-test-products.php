@@ -6,10 +6,12 @@
  * images it sideloaded — is tagged, so remove-test-products.php can take all of
  * it back out again without touching anything hand-made.
  *
- *   wp eval-file scripts/test-data/import-test-products.php <products.json>
+ *   wp eval-file scripts/test-data/import-test-products.php <products.json> [sync]
  *
  * Re-running is safe: a product whose SKU is already in the catalogue is left
- * alone, so an interrupted run can simply be repeated.
+ * alone, so an interrupted run can simply be repeated. Pass `sync` to push a
+ * changed JSON onto the products already imported -- it rewrites the name,
+ * price and descriptions and touches nothing else.
  *
  * Source data is scraped from the live cadco-ltd.com catalogue; each product
  * keeps the URL it came from in _cadco_test_source.
@@ -21,6 +23,7 @@ if (!class_exists('WooCommerce')) {
 
 $args = $args ?? [];
 $file = $args[0] ?? '';
+$sync = in_array('sync', $args, true);
 
 if (!$file || !is_readable($file)) {
     WP_CLI::error('Pass a readable products JSON file.');
@@ -79,9 +82,10 @@ function cadco_test_description(array $row): string
 {
     $out = '';
 
-    if ($row['short']) {
-        $out .= '<p>' . esc_html($row['subtitle']) . '</p>';
-    }
+    /* Deliberately no opening paragraph. It would repeat the short description
+       word for word, and the product hero treats the description's leading
+       prose as the product's intro -- so a repeat would print the same line
+       twice, once as bullets and once as a paragraph above them. */
 
     if (!empty($row['specs'])) {
         $out .= '<h3>Specifications</h3><ul>';
@@ -104,13 +108,31 @@ function cadco_test_description(array $row): string
 
 $made = 0;
 $skipped = 0;
+$synced = 0;
 $images = 0;
 
 foreach ($rows as $row) {
     $sku = (string) $row['sku'];
 
-    if (wc_get_product_id_by_sku($sku)) {
-        $skipped++;
+    $existing = wc_get_product_id_by_sku($sku);
+
+    if ($existing) {
+        if (!$sync) {
+            $skipped++;
+            continue;
+        }
+
+        /* Sync rewrites only what this file is the source of -- name, price and
+           the two descriptions. Categories, images and the Size attribute are
+           left alone: they are set elsewhere and a sync must not undo them. */
+        $product = wc_get_product($existing);
+        $product->set_name($row['title']);
+        $product->set_regular_price($row['price']);
+        $product->set_short_description($row['short']);
+        $product->set_description(cadco_test_description($row));
+        $product->save();
+
+        $synced++;
         continue;
     }
 
@@ -166,4 +188,4 @@ foreach ($rows as $row) {
 wc_delete_product_transients();
 delete_transient('wc_term_counts');
 
-WP_CLI::success("created {$made}, skipped {$skipped} already present, {$images} images");
+WP_CLI::success("created {$made}, synced {$synced}, skipped {$skipped} already present, {$images} images");

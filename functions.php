@@ -8,6 +8,7 @@ require_once get_stylesheet_directory() . '/inc/proto-taxi.php';
 require_once get_stylesheet_directory() . '/inc/cadco-nav.php';
 require_once get_stylesheet_directory() . '/inc/cadco-resources.php';
 require_once get_stylesheet_directory() . '/inc/cadco-woocommerce.php';
+require_once get_stylesheet_directory() . '/inc/cadco-products.php';   // What the product blocks read.
 require_once get_stylesheet_directory() . '/inc/proto-yoast-jsonld.php'; // Inert unless Yoast SEO is active.
 
 add_action('after_setup_theme', function () {
@@ -186,6 +187,98 @@ add_action('wp_enqueue_scripts', function () {
         filemtime($path),
         true
     );
+}, 20);
+
+/**
+ * The video dialog.
+ *
+ * Shared by the resource centre's library and the single product page, which
+ * show the same resources. Loaded for every page rather than per block: both
+ * blocks render the same markup, and a second copy of a focus trap is a second
+ * copy to get wrong.
+ */
+add_action('wp_enqueue_scripts', function () {
+    $path = get_stylesheet_directory() . '/assets/js/cadco-video-modal.js';
+
+    if (! file_exists($path)) {
+        return;
+    }
+
+    wp_enqueue_script(
+        'cadco-video-modal',
+        get_stylesheet_directory_uri() . '/assets/js/cadco-video-modal.js',
+        [],
+        filemtime($path),
+        true
+    );
+
+    $css = get_stylesheet_directory() . '/assets/css/cadco-video-modal.css';
+
+    if (file_exists($css)) {
+        wp_enqueue_style(
+            'cadco-video-modal',
+            get_stylesheet_directory_uri() . '/assets/css/cadco-video-modal.css',
+            [],
+            filemtime($css)
+        );
+    }
+}, 20);
+
+/**
+ * The product card.
+ *
+ * Shared by the catalogue grid and the related-products row, so its styles are
+ * shared too. See the note at the top of the stylesheet for why it is written
+ * as CSS rather than as Tailwind utilities.
+ */
+add_action('wp_enqueue_scripts', function () {
+    $css = get_stylesheet_directory() . '/assets/css/cadco-product-card.css';
+
+    if (! file_exists($css)) {
+        return;
+    }
+
+    wp_enqueue_style(
+        'cadco-product-card',
+        get_stylesheet_directory_uri() . '/assets/css/cadco-product-card.css',
+        [],
+        filemtime($css)
+    );
+}, 20);
+
+/**
+ * Horizontal rails.
+ *
+ * Shared by the single product page's video strip and its related-products
+ * row, which are the same control drawn twice. No dependencies: the track is a
+ * native scroll container and the script only drives the arrow buttons, so it
+ * is safe to load everywhere and does nothing on a page with no rail.
+ */
+add_action('wp_enqueue_scripts', function () {
+    $path = get_stylesheet_directory() . '/assets/js/cadco-rail.js';
+
+    if (! file_exists($path)) {
+        return;
+    }
+
+    wp_enqueue_script(
+        'cadco-rail',
+        get_stylesheet_directory_uri() . '/assets/js/cadco-rail.js',
+        [],
+        filemtime($path),
+        true
+    );
+
+    $css = get_stylesheet_directory() . '/assets/css/cadco-rail.css';
+
+    if (file_exists($css)) {
+        wp_enqueue_style(
+            'cadco-rail',
+            get_stylesheet_directory_uri() . '/assets/css/cadco-rail.css',
+            [],
+            filemtime($css)
+        );
+    }
 }, 20);
 
 /**
