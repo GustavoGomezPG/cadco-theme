@@ -382,19 +382,89 @@ Both lists are filterable — `cadco_disabled_wc_admin_features` and
 ### Product templates
 
 `templates/single-product.html` and `templates/archive-product.html` override
-WooCommerce's blockified templates. They are WooCommerce's markup wrapped in the
-`[data-taxi]` / `[data-taxi-view]` structure, so product pages transition like
-every other route instead of falling back to full page loads, with the
-add-to-cart form and loop button removed.
+WooCommerce's blockified templates. Both are wrapped in the `[data-taxi]` /
+`[data-taxi-view]` structure, so product pages transition like every other route
+instead of falling back to full page loads.
 
 Because those templates carry the wrapper, `inc/cadco-woocommerce.php` also
 removes the shop page from `proto_taxi_ignore_urls()` — the upstream theme
 excludes it precisely because stock WooCommerce templates have no wrapper, and
 that reasoning does not apply here.
 
-**If WooCommerce's templates change upstream, these copies do not.** Re-diff
-them against `plugins/woocommerce/templates/templates/blockified/` after a major
-WooCommerce upgrade.
+**single-product.html** is still WooCommerce's own markup, with the add-to-cart
+form and loop button removed. **If WooCommerce's templates change upstream, this
+copy does not.** Re-diff it against
+`plugins/woocommerce/templates/templates/blockified/` after a major WooCommerce
+upgrade.
+
+**archive-product.html** is no longer WooCommerce's markup. It is the designed
+catalogue listing: one `proto-blocks/cadco-product-archive` block above the
+closing `cadco-intro` call to action. That one block serves the shop page and
+every category and sub-category under it — the breadcrumb, title, rail and grid
+are all read from the query, so there is nothing per-category to author and
+nothing to keep in sync when a category is added.
+
+It runs **its own `WP_Query`** rather than the loop the archive already ran, so
+the same block also works on the shop page and on the editor canvas, where there
+is no loop to read. Paging therefore travels in `?ppage=`, not `paged`:
+borrowing the main query's parameter would mean every page link had to be a URL
+the main query could satisfy too. The refinement select travels in `?psize=`.
+
+The rail's refinement select is driven by a product attribute taxonomy — by
+default `pa_size`, set by the **Refine by attribute** control. It is left out
+entirely when that attribute does not exist, or when no product in the category
+carries it, so it never offers a choice that would return nothing.
+
+Two deliberate departures from the Figma frame, both because the frame draws one
+fixed case and the block renders every case:
+
+- **Product photographs are contained, not cropped.** The design's slot is
+  186×116 (1.6:1) with an image cut to fit; the real catalogue runs from 1:1 to
+  3.2:1, and `cover` would take the top and bottom off every square one.
+- **There is pagination.** The frame draws fifteen cards above a count of 28, so
+  it is already showing one page of a longer list without drawing the control
+  that reaches the rest.
+
+One known-stale setting it works around: `woocommerce_shop_page_id` currently
+names a post that no longer exists on this install, and
+`wc_get_page_permalink( 'shop' )` answers that with the **home page**. The block
+falls back to the page named by the product permalink base (`/products/`) so the
+first breadcrumb still points at the catalogue. Pointing the option at the real
+Products page would be the tidier fix, but it would also make `is_shop()` true
+there, which hands `/products/` to this template instead of its built page — so
+it is deliberately left alone.
+
+### Test catalogue content
+
+`scripts/test-data/` holds throwaway catalogue content, so the archive has
+something real to lay out before the client's own import exists. Everything it
+writes carries a flag, and the removal script takes all of it back out again
+without touching anything hand-made — the six demo products and the four
+top-level categories that predate it survive.
+
+```bash
+# 50 products scraped from the live cadco-ltd.com catalogue
+wp eval-file scripts/test-data/import-test-products.php <products.json>
+
+# derive a Size attribute from what those products say about themselves
+wp eval-file scripts/test-data/assign-size-attribute.php        # dry run
+wp eval-file scripts/test-data/assign-size-attribute.php go
+
+# take it all back out: products, their images, and the terms they created
+wp eval-file scripts/test-data/remove-test-products.php         # dry run
+wp eval-file scripts/test-data/remove-test-products.php go
+```
+
+| Flag | On | Set by |
+|---|---|---|
+| `_cadco_test_product` | the product, and the image sideloaded for it | import |
+| `_cadco_test_source` | the product (the URL it was scraped from) | import |
+| `_cadco_test_term` | only the `product_cat` and `pa_size` terms the scripts had to **create** | import, size |
+
+The import is idempotent: a product whose SKU is already in the catalogue is
+skipped, so an interrupted run can simply be repeated. Removal is permanent
+rather than to the trash — this is throwaway content, and leaving fifty products
+in the trash would only be a second cleanup.
 
 ---
 

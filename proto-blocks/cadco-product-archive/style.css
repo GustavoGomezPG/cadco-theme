@@ -1,0 +1,66 @@
+/**
+ * Cadco product archive.
+ *
+ * Everything visual is Tailwind in template.php. What is left here is what
+ * utilities cannot express.
+ */
+
+/*
+ * The select's arrow.
+ *
+ * `appearance: none` takes the browser's own arrow away, and the design draws
+ * a solid chevron in brand blue rather than the platform one. It has to be a
+ * background image: a sibling element cannot be put inside a <select>, and an
+ * overlay on top of one swallows the click that opens it.
+ *
+ * The URL is relative to this file, which Proto-Blocks enqueues from the
+ * block's own folder — so it resolves to the theme's assets directory.
+ */
+.cadco-product-archive .cadco-archive-select {
+	background-image: url("../../assets/img/cadco-chevron-down.svg");
+	background-repeat: no-repeat;
+	background-position: right 15px center;
+	background-size: 15px 9.25px;
+}
+
+/* Safari and Firefox draw their own arrow over the background one unless the
+   prefixed appearance is reset too. */
+.cadco-product-archive .cadco-archive-select {
+	-webkit-appearance: none;
+	-moz-appearance: none;
+}
+
+/* Firefox keeps a focus ring inside the control that sits over the border. */
+.cadco-product-archive .cadco-archive-select:-moz-focusring {
+	color: transparent;
+	text-shadow: 0 0 0 #00476e;
+}
+
+/*
+ * The price comes from WooCommerce, which wraps it in its own markup
+ * (.woocommerce-Price-amount, a <bdi>, and for a range an <ins>/<del> pair).
+ * Those carry the store's styles, not this card's, so the type is pinned here
+ * rather than left to whatever the WooCommerce stylesheet last said.
+ */
+.cadco-product-archive .price,
+.cadco-product-archive .woocommerce-Price-amount {
+	color: inherit;
+	font: inherit;
+	text-decoration: none;
+}
+
+/*
+ * The card clips a child that is being transformed on hover, and WebKit drops
+ * that clip mid-animation, so the photograph's square corners flash outside
+ * the 15px radius. Promoting the card to its own layer keeps the clip and the
+ * transform on one surface, which is what actually fixes it.
+ */
+.cadco-product-archive a.group {
+	transform: translateZ(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.cadco-product-archive a.group {
+		transform: none;
+	}
+}
