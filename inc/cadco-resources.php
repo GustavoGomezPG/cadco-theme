@@ -92,6 +92,17 @@ add_action('init', static function (): void {
         'auth_callback'     => static fn (): bool => current_user_can('edit_posts'),
     ]);
 
+    /* A file lives in this site's own media library, not on whoever is hosting
+       it today. The attachment id is what is stored; the URL is derived from it,
+       so moving the site or changing the uploads path cannot break the link. */
+    register_post_meta('resource', 'cadco_resource_file_id', [
+        'type'              => 'integer',
+        'single'            => true,
+        'show_in_rest'      => true,
+        'sanitize_callback' => 'absint',
+        'auth_callback'     => static fn (): bool => current_user_can('edit_posts'),
+    ]);
+
     register_post_meta('resource', 'cadco_resource_url', [
         'type'              => 'string',
         'single'            => true,
@@ -100,6 +111,33 @@ add_action('init', static function (): void {
         'auth_callback'     => static fn (): bool => current_user_can('edit_posts'),
     ]);
 });
+
+/**
+ * The address a resource's card should open.
+ *
+ * A file prefers its attachment: the id survives a move between environments and
+ * an uploads path change, where a stored URL does not. The stored URL remains
+ * the answer for a link and a video, and the fallback if an attachment is ever
+ * deleted out from under the resource.
+ */
+function cadco_resource_destination(int $post_id): string
+{
+    $kind = (string) get_post_meta($post_id, 'cadco_resource_link_type', true);
+
+    if ('file' === $kind) {
+        $file_id = (int) get_post_meta($post_id, 'cadco_resource_file_id', true);
+
+        if ($file_id > 0) {
+            $url = wp_get_attachment_url($file_id);
+
+            if ($url) {
+                return (string) $url;
+            }
+        }
+    }
+
+    return (string) get_post_meta($post_id, 'cadco_resource_url', true);
+}
 
 /** The meta box, so the link is editable without touching code. */
 add_action('add_meta_boxes', static function (): void {
@@ -137,6 +175,19 @@ add_action('add_meta_boxes', static function (): void {
             );
 
             echo '</div>';
+
+            $file_id = (int) get_post_meta($post->ID, 'cadco_resource_file_id', true);
+
+            if ($file_id > 0) {
+                printf(
+                    '<p style="margin-top:14px"><strong>%s</strong> <a href="%s" target="_blank" rel="noopener">%s</a> &mdash; <a href="%s">%s</a></p>',
+                    esc_html__('In the media library:', 'cadco-theme'),
+                    esc_url((string) wp_get_attachment_url($file_id)),
+                    esc_html(basename((string) get_attached_file($file_id))),
+                    esc_url(get_edit_post_link($file_id) ?: '#'),
+                    esc_html__('edit', 'cadco-theme')
+                );
+            }
 
             printf(
                 '<p class="description" style="margin-top:14px;max-width:900px">%s</p>',

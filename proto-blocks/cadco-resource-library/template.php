@@ -193,7 +193,12 @@ $wrapper = get_block_wrapper_attributes([
             <div class="grid grid-cols-1 gap-[21px] <?php echo esc_attr($gridCols); ?>" data-cadco-reveal="items">
                 <?php while ($query->have_posts()) : $query->the_post();
                     $id    = get_the_ID();
-                    $link  = (string) get_post_meta($id, 'cadco_resource_url', true);
+                    /* Resolved rather than read straight from meta, so a file
+                       answers from its attachment and keeps working if the uploads
+                       URL ever changes. */
+                    $link  = function_exists('cadco_resource_destination')
+                        ? cadco_resource_destination($id)
+                        : (string) get_post_meta($id, 'cadco_resource_url', true);
                     $href  = '' !== $link && '#' !== $link ? $link : get_permalink($id);
                     $terms = get_the_terms($id, 'resource_media');
                     $kind  = (! is_wp_error($terms) && $terms) ? $terms[0]->name : '';
