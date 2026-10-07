@@ -32,6 +32,16 @@
 	}
 
 	function setUp(track) {
+		/* Set up once per track. The script is stamped data-taxi-reload so Taxi
+		   re-runs it on navigation, and it also listens for proto:page-ready --
+		   either can fire first, and running twice would clone the cards again
+		   and leave two autoplay timers driving one track. */
+		if (track.hasAttribute('data-featured-bound')) {
+			return;
+		}
+
+		track.setAttribute('data-featured-bound', '');
+
 		var originals = Array.prototype.slice.call(
 			track.querySelectorAll('.cadco-featured-products__card')
 		);
@@ -432,4 +442,10 @@
 	} else {
 		document.addEventListener('DOMContentLoaded', init, { once: true });
 	}
+
+	/* Taxi swaps the container without a document load, so DOMContentLoaded does
+	   not come round again. Re-running the script covers the usual case, but this
+	   does not depend on it: a track that arrives with a new page is set up here
+	   whether or not the script itself was executed again. */
+	document.addEventListener('proto:page-ready', init);
 })();
