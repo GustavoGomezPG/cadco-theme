@@ -85,3 +85,12 @@ dialog[data-cadco-rep-modal].is-closing::backdrop { animation: cadco-backdrop-ou
     background-repeat: no-repeat;
     background-position: right 16px center;
 }
+
+/* The filter hides a card with the `hidden` attribute, but the card is also a
+   flex container, and `display: flex` from a utility class beats the browser's
+   own `[hidden] { display: none }` -- same specificity, and the utility comes
+   later. Without this the attribute is set on every non-matching card and none
+   of them disappear. */
+.cadco-sales-reps [data-cadco-rep][hidden] {
+	display: none;
+}

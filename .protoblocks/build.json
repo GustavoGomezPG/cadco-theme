@@ -2979,7 +2979,7 @@
                 "territory": "Connecticut, Rhode Island, Mass., Vermont, Maine, New Hampshire",
                 "phone": "781-449-1040",
                 "email": "support@spencewellsassociates.com",
-                "address": "34 Central Avenue Needham, Massachusetts 02494 781-449-1040 Fax 781-455-8592",
+                "address": "34 Central Avenue Needham, Massachusetts 02494 Fax 781-455-8592",
                 "website": "http://www.spencewellsassociates.com"
               },
               {
@@ -2995,7 +2995,7 @@
                 "territory": "Upstate New York",
                 "phone": "800-545-5085",
                 "email": "joe@jwilsonmarketing.com",
-                "address": "34 Ray Road Greenwich, New York 12834 800-545-5085 Fax 518-692-8084",
+                "address": "34 Ray Road Greenwich, New York 12834 Fax 518-692-8084",
                 "website": "http://www.jwilsonmarketing.com"
               },
               {
@@ -3011,7 +3011,7 @@
                 "territory": "Metro New York, New Jersey (north of Trenton)",
                 "phone": "845-638-9306",
                 "email": "carol@oneillreps.com",
-                "address": "25 Smith St. Suite 201 Nanuet, NY 10954 845-638-9306 Fax 845-638-9031",
+                "address": "25 Smith St. Suite 201 Nanuet, NY 10954 Fax 845-638-9031",
                 "website": "http://oneillreps.com"
               },
               {
@@ -3027,7 +3027,7 @@
                 "territory": "New Jersey (from Trenton south), Delaware, Eastern Pennsylvania",
                 "phone": "610.363.5688",
                 "email": "CustomerService@starliperassociates.com",
-                "address": "481 Schuylkill Rd Bldg A Phoenixville, PA 19460 Phone: 610.363.5688 Fax: 610.363.6746",
+                "address": "481 Schuylkill Rd Bldg A Phoenixville, PA 19460 Fax: 610.363.6746",
                 "website": "https://www.starliperassociates.com/"
               },
               {
@@ -3042,8 +3042,8 @@
                 "name": "Equipment Solutions Inc.",
                 "territory": "Maryland, Virginia, Washington, DC",
                 "phone": "703-242-9710",
-                "email": "",
-                "address": "703-242-9710 Fax: 703-242-9717 info@esinc.us",
+                "email": "info@esinc.us",
+                "address": "Fax: 703-242-9717",
                 "website": "https://esinc.us/"
               },
               {
@@ -3075,7 +3075,7 @@
                 "territory": "Florida",
                 "phone": "800-860-1666",
                 "email": "sales@repsource.us",
-                "address": "5500 SW Longspur Ln. Palm City, FL 34990 800-860-1666; 772-463-7674 Fax 772-463-7675",
+                "address": "5500 SW Longspur Ln. Palm City, FL 34990 772-463-7674 Fax 772-463-7675",
                 "website": "http://repsource.us/"
               },
               {
@@ -3139,7 +3139,7 @@
                 "territory": "Texas, Oklahoma",
                 "phone": "626.815.4200",
                 "email": "tbartell@accesspartners.biz",
-                "address": "9405 Haven Avenue Rancho Cucamonga, CA 91730 626.815.4200 Fax 510-786-3536",
+                "address": "9405 Haven Avenue Rancho Cucamonga, CA 91730 Fax 510-786-3536",
                 "website": "http://www.pmareps.com/"
               },
               {
@@ -3171,7 +3171,7 @@
                 "territory": "Canada (All)",
                 "phone": "905-825-9665",
                 "email": "info@tarrison.com",
-                "address": "2780 Coventry Road Oakville, Ontario, Canada L6H 6R1 905-825-9665 Fax 905-825-0965",
+                "address": "2780 Coventry Road Oakville, Ontario, Canada L6H 6R1 Fax 905-825-0965",
                 "website": "http://tarrison.com/"
               },
               {
@@ -3187,7 +3187,7 @@
                 "territory": "Middle East & Africa, Asia Pacific",
                 "phone": "203 847 6446",
                 "email": "derek@dsusa.biz",
-                "address": "24 Broad Street Norwalk, CT 06851 USA Tel +1 203 847 6446, ext 103",
+                "address": "24 Broad Street Norwalk, CT 06851 USA Ext. 103",
                 "website": ""
               }
             ],
