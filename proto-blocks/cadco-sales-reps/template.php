@@ -139,6 +139,36 @@ $wrapper = get_block_wrapper_attributes([
                         <?php echo esc_html($territory); ?>
                     </p>
 
+                    <?php /* ---------- Editable in the editor, data on the page ----------
+                             The dialog reads these four off the card's data
+                             attributes, which means the template consumes them
+                             rather than printing them -- and a value that is never
+                             printed has no element to carry data-proto-field, so
+                             there is nowhere to type it. Rendered here for the
+                             editor only: the author gets a labelled row per value,
+                             and the front end still carries them as attributes
+                             alone, so the card looks exactly as the frame draws it. */ ?>
+                    <?php if ($is_preview) : ?>
+                        <div class="mt-4 flex flex-col gap-1 rounded-[8px] bg-[#f3f6f9] p-3 text-[13px] leading-[19px] text-[#4a5a63]">
+                            <label class="flex gap-2">
+                                <span class="w-[62px] shrink-0 font-bold"><?php esc_html_e('Phone', 'cadco-theme'); ?></span>
+                                <span data-proto-field="phone" class="flex-1"><?php echo esc_html($phone); ?></span>
+                            </label>
+                            <label class="flex gap-2">
+                                <span class="w-[62px] shrink-0 font-bold"><?php esc_html_e('Email', 'cadco-theme'); ?></span>
+                                <span data-proto-field="email" class="flex-1"><?php echo esc_html($email); ?></span>
+                            </label>
+                            <label class="flex gap-2">
+                                <span class="w-[62px] shrink-0 font-bold"><?php esc_html_e('Address', 'cadco-theme'); ?></span>
+                                <span data-proto-field="address" class="flex-1"><?php echo esc_html($address); ?></span>
+                            </label>
+                            <label class="flex gap-2">
+                                <span class="w-[62px] shrink-0 font-bold"><?php esc_html_e('Website', 'cadco-theme'); ?></span>
+                                <span data-proto-field="website" class="flex-1"><?php echo esc_html($website); ?></span>
+                            </label>
+                        </div>
+                    <?php endif; ?>
+
                     <?php /* A real button rather than a click handler on the card, so
                              it is reachable by keyboard and announced as a control.
                              It covers the card through CSS, which keeps the card's own
