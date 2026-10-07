@@ -1,0 +1,89 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/block.json",
+  "apiVersion": 3,
+  "name": "proto-blocks/cadco-sales-reps",
+  "title": "Cadco Sales Reps",
+  "category": "proto",
+  "icon": "groups",
+  "description": "A heading, a state filter, and a card for each sales representative with the territory they cover.",
+  "supports": {
+    "html": false,
+    "anchor": true,
+    "customClassName": true,
+    "align": [
+      "full"
+    ]
+  },
+  "protoBlocks": {
+    "version": "1.0",
+    "template": "template.php",
+    "useTailwind": true,
+    "fields": {
+      "heading": {
+        "type": "text",
+        "tagName": "h2",
+        "label": "Heading"
+      },
+      "reps": {
+        "type": "repeater",
+        "label": "Representatives",
+        "min": 1,
+        "max": 24,
+        "itemLabel": "name",
+        "help": "The territory is a comma separated list of states; the filter above the cards is built from these, so a state only appears once it belongs to somebody. The phone and email are what the card's dialog offers, each one clickable.",
+        "fields": {
+          "logo": {
+            "type": "image",
+            "label": "Logo"
+          },
+          "name": {
+            "type": "text",
+            "label": "Name"
+          },
+          "territory": {
+            "type": "text",
+            "label": "States covered"
+          },
+          "phone": {
+            "type": "text",
+            "label": "Phone"
+          },
+          "email": {
+            "type": "text",
+            "label": "Email"
+          },
+          "address": {
+            "type": "text",
+            "label": "Address"
+          },
+          "link": {
+            "type": "link",
+            "label": "Link (optional)"
+          }
+        }
+      }
+    },
+    "controls": {
+      "filterLabel": {
+        "type": "text",
+        "label": "Filter label",
+        "default": "Select State"
+      },
+      "surface": {
+        "type": "select",
+        "label": "Background",
+        "default": "tint",
+        "options": [
+          {
+            "key": "paper",
+            "label": "Paper"
+          },
+          {
+            "key": "tint",
+            "label": "Tint"
+          }
+        ]
+      }
+    }
+  }
+}

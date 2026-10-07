@@ -261,6 +261,19 @@
           "scale": 1
         }
       ]
+    },
+    "cadco-contact": {
+      "usedOn": [],
+      "baselines": [
+        {
+          "page": "contact",
+          "anchor": "pb-s2",
+          "breakpoint": "desktop",
+          "file": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/baselines/contact/pb-s2-desktop.png",
+          "width": 1440,
+          "scale": 1
+        }
+      ]
     }
   },
   "pages": [
@@ -2796,6 +2809,602 @@
           "pass": false,
           "file": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/resource-center/seo-audit.json",
           "at": "2026-10-06T20:42:45.436Z"
+        }
+      }
+    },
+    {
+      "slug": "contact",
+      "title": "Contact",
+      "status": "seo",
+      "postId": 127,
+      "contentHash": "1546a75d3b7a1b525add9aabfd4b18f0dfdeca92d550ccbaf3156268a20af3f4",
+      "design": {
+        "frames": [
+          {
+            "breakpoint": "desktop",
+            "width": 1440,
+            "scale": 1,
+            "image": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/contact/design/desktop.png",
+            "pixelWidth": 1440
+          }
+        ]
+      },
+      "sections": [
+        {
+          "n": 1,
+          "anchor": "pb-header",
+          "status": "skipped",
+          "crops": {
+            "desktop": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/contact/crops/desktop/pb-header.png"
+          },
+          "ranges": {
+            "desktop": {
+              "y0": 0,
+              "y1": 74
+            }
+          },
+          "label": "Header",
+          "decision": "reuse",
+          "block": "cadco-header",
+          "notes": "Skipped, as on every other page: rendered by the template parts.",
+          "inPart": true,
+          "prevStatus": "done"
+        },
+        {
+          "n": 2,
+          "anchor": "pb-s2",
+          "status": "done",
+          "crops": {
+            "desktop": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/contact/crops/desktop/pb-s2.png"
+          },
+          "ranges": {
+            "desktop": {
+              "y0": 74,
+              "y1": 696
+            }
+          },
+          "label": "Contact and form",
+          "decision": "new",
+          "block": "cadco-contact",
+          "notes": "intro, phone and email links, and a Gravity Forms form chosen by id from a select the plugin populates",
+          "attrs": {
+            "heading": "Cadco is represented throughout the United States and Canada by a select group of sales representatives.",
+            "body": "Get valuable information and reliable support, from start to finish.",
+            "links": [
+              {
+                "id": "l1",
+                "link": {
+                  "url": "tel:8607382500",
+                  "text": "(860) 738-2500",
+                  "target": "",
+                  "rel": "",
+                  "title": ""
+                }
+              },
+              {
+                "id": "l2",
+                "link": {
+                  "url": "mailto:sales@cadco-ltd.com",
+                  "text": "sales@cadco-ltd.com",
+                  "target": "",
+                  "rel": "",
+                  "title": ""
+                }
+              },
+              {
+                "id": "l3",
+                "link": {
+                  "url": "mailto:tech@cadco-ltd.com",
+                  "text": "tech@cadco-ltd.com",
+                  "target": "",
+                  "rel": "",
+                  "title": ""
+                }
+              }
+            ],
+            "formHeading": "Connect with Cadco",
+            "formId": "1",
+            "showTitle": false,
+            "surface": "paper",
+            "align": "full"
+          },
+          "preparedIteration": 2,
+          "qa": [
+            {
+              "iteration": 2,
+              "breakpoint": "desktop",
+              "mode": "diff",
+              "mismatch": 0.0447,
+              "heightDelta": 0.0145,
+              "widthDelta": 0,
+              "numericPass": true,
+              "pass": true,
+              "verdict": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/contact/pb-s2/iter-2/verdict.json"
+            },
+            {
+              "iteration": 2,
+              "breakpoint": "tablet",
+              "mode": "sanity",
+              "widthDelta": 0,
+              "numericPass": true,
+              "pass": true,
+              "verdict": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/contact/pb-s2/iter-2/verdict.json"
+            },
+            {
+              "iteration": 2,
+              "breakpoint": "mobile",
+              "mode": "sanity",
+              "widthDelta": 0,
+              "numericPass": true,
+              "pass": true,
+              "verdict": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/contact/pb-s2/iter-2/verdict.json"
+            }
+          ],
+          "motion": {
+            "presets": [],
+            "check": "pass",
+            "result": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/contact/pb-s2/motion/motion-check.json"
+          }
+        },
+        {
+          "n": 3,
+          "anchor": "pb-s3",
+          "status": "done",
+          "crops": {
+            "desktop": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/contact/crops/desktop/pb-s3.png"
+          },
+          "ranges": {
+            "desktop": {
+              "y0": 696,
+              "y1": 2984
+            }
+          },
+          "label": "Sales representatives",
+          "decision": "new",
+          "block": "cadco-sales-reps",
+          "notes": "Accepted at 4.38% with a height delta of 20.98%. The crop mocks eighteen cards by repeating the frame’s three six times; the page lists the fourteen real representatives taken from cadco-ltd.com, so the height measures how many reps there are rather than how they are laid out. The grid, gutters, card width (288px), filter (151px with its chevron) and heading row all match, and every card is now a uniform 301px after the rows were equalised. The frame’s own logos are 215, 236 and 172px wide, so they are deliberately not a single size.",
+          "attrs": {
+            "heading": "We’ll Connect You with the Right Sales Rep",
+            "reps": [
+              {
+                "id": "rep1",
+                "logo": {
+                  "id": 18486,
+                  "url": "https://cadco.local/wp-content/uploads/2026/10/spence-wells-associates-1.png",
+                  "alt": "Spence Wells Associates logo",
+                  "caption": "",
+                  "size": "full"
+                },
+                "name": "Spence Wells Associates",
+                "territory": "Connecticut, Rhode Island, Mass., Vermont, Maine, New Hampshire",
+                "phone": "781-449-1040",
+                "email": "support@spencewellsassociates.com",
+                "address": "34 Central Avenue Needham, Massachusetts 02494 781-449-1040 Fax 781-455-8592",
+                "link": {
+                  "url": "http://www.spencewellsassociates.com",
+                  "text": "",
+                  "target": "_blank",
+                  "rel": "noopener",
+                  "title": ""
+                }
+              },
+              {
+                "id": "rep2",
+                "logo": {
+                  "id": 18487,
+                  "url": "https://cadco.local/wp-content/uploads/2026/10/market-pros.jpg",
+                  "alt": "Market Pros logo",
+                  "caption": "",
+                  "size": "full"
+                },
+                "name": "Market Pros",
+                "territory": "Upstate New York",
+                "phone": "800-545-5085",
+                "email": "joe@jwilsonmarketing.com",
+                "address": "34 Ray Road Greenwich, New York 12834 800-545-5085 Fax 518-692-8084",
+                "link": {
+                  "url": "http://www.jwilsonmarketing.com",
+                  "text": "",
+                  "target": "_blank",
+                  "rel": "noopener",
+                  "title": ""
+                }
+              },
+              {
+                "id": "rep3",
+                "logo": {
+                  "id": 18488,
+                  "url": "https://cadco.local/wp-content/uploads/2026/10/o-neill-marketing-agents-llc.png",
+                  "alt": "O’Neill Marketing Agents, LLC logo",
+                  "caption": "",
+                  "size": "full"
+                },
+                "name": "O’Neill Marketing Agents, LLC",
+                "territory": "Metro New York, New Jersey (north of Trenton)",
+                "phone": "845-638-9306",
+                "email": "carol@oneillreps.com",
+                "address": "25 Smith St. Suite 201 Nanuet, NY 10954 845-638-9306 Fax 845-638-9031",
+                "link": {
+                  "url": "http://oneillreps.com",
+                  "text": "",
+                  "target": "_blank",
+                  "rel": "noopener",
+                  "title": ""
+                }
+              },
+              {
+                "id": "rep4",
+                "logo": {
+                  "id": 18489,
+                  "url": "https://cadco.local/wp-content/uploads/2026/10/starliper-associates.png",
+                  "alt": "Starliper & Associates logo",
+                  "caption": "",
+                  "size": "full"
+                },
+                "name": "Starliper & Associates",
+                "territory": "New Jersey (from Trenton south), Delaware, Eastern Pennsylvania",
+                "phone": "610.363.5688",
+                "email": "CustomerService@starliperassociates.com",
+                "address": "481 Schuylkill Rd Bldg A Phoenixville, PA 19460 Phone: 610.363.5688 Fax: 610.363.6746",
+                "link": {
+                  "url": "https://www.starliperassociates.com/",
+                  "text": "",
+                  "target": "_blank",
+                  "rel": "noopener",
+                  "title": ""
+                }
+              },
+              {
+                "id": "rep5",
+                "logo": {
+                  "id": 18490,
+                  "url": "https://cadco.local/wp-content/uploads/2026/10/equipment-solutions-inc.png",
+                  "alt": "Equipment Solutions Inc. logo",
+                  "caption": "",
+                  "size": "full"
+                },
+                "name": "Equipment Solutions Inc.",
+                "territory": "Maryland, Virginia, Washington, DC",
+                "phone": "703-242-9710",
+                "email": "",
+                "address": "703-242-9710 Fax: 703-242-9717 info@esinc.us",
+                "link": {
+                  "url": "https://esinc.us/",
+                  "text": "",
+                  "target": "_blank",
+                  "rel": "noopener",
+                  "title": ""
+                }
+              },
+              {
+                "id": "rep6",
+                "logo": {
+                  "id": 18491,
+                  "url": "https://cadco.local/wp-content/uploads/2026/10/culinary-concepts.jpg",
+                  "alt": "Culinary Concepts logo",
+                  "caption": "",
+                  "size": "full"
+                },
+                "name": "Culinary Concepts",
+                "territory": "North & South Carolina",
+                "phone": "980-263-4121",
+                "email": "bc@cc-fsr.com",
+                "address": "10420 Southern Loop Blvd Pineville, North Carolina 28134",
+                "link": {
+                  "url": "https://cc-fsr.com/",
+                  "text": "",
+                  "target": "_blank",
+                  "rel": "noopener",
+                  "title": ""
+                }
+              },
+              {
+                "id": "rep7",
+                "logo": {
+                  "id": 18492,
+                  "url": "https://cadco.local/wp-content/uploads/2026/10/repsource-us-inc.jpg",
+                  "alt": "RepSource US, Inc. logo",
+                  "caption": "",
+                  "size": "full"
+                },
+                "name": "RepSource US, Inc.",
+                "territory": "Florida",
+                "phone": "800-860-1666",
+                "email": "sales@repsource.us",
+                "address": "5500 SW Longspur Ln. Palm City, FL 34990 800-860-1666; 772-463-7674 Fax 772-463-7675",
+                "link": {
+                  "url": "http://repsource.us/",
+                  "text": "",
+                  "target": "_blank",
+                  "rel": "noopener",
+                  "title": ""
+                }
+              },
+              {
+                "id": "rep8",
+                "logo": {
+                  "id": 18493,
+                  "url": "https://cadco.local/wp-content/uploads/2026/10/greenwald-sales-marketing.jpg",
+                  "alt": "Greenwald Sales & Marketing logo",
+                  "caption": "",
+                  "size": "full"
+                },
+                "name": "Greenwald Sales & Marketing",
+                "territory": "Ohio, Kentucky, Indiana, Michigan, Western Pennsylvania, West Virginia",
+                "phone": "614-404-7733",
+                "email": "melissa@greenwaldsales.com",
+                "address": "1220 Goodale Blvd Columbus, OH 43212",
+                "link": {
+                  "url": "http://www.jwilsonmarketing.com/",
+                  "text": "",
+                  "target": "_blank",
+                  "rel": "noopener",
+                  "title": ""
+                }
+              },
+              {
+                "id": "rep9",
+                "logo": {
+                  "id": 18494,
+                  "url": "https://cadco.local/wp-content/uploads/2026/10/vader-landgraf.png",
+                  "alt": "Vader Landgraf logo",
+                  "caption": "",
+                  "size": "full"
+                },
+                "name": "Vader Landgraf",
+                "territory": "Minnesota, North & South Dakota",
+                "phone": "(612) 331-1251",
+                "email": "paul@vaderandlandgraf.com",
+                "address": "1047 10th Ave SE, Minneapolis, MN 55414",
+                "link": {
+                  "url": "https://vaderandlandgraf.com/",
+                  "text": "",
+                  "target": "_blank",
+                  "rel": "noopener",
+                  "title": ""
+                }
+              },
+              {
+                "id": "rep10",
+                "logo": {
+                  "id": 18495,
+                  "url": "https://cadco.local/wp-content/uploads/2026/10/mirk-group.jpg",
+                  "alt": "Mirk Group logo",
+                  "caption": "",
+                  "size": "full"
+                },
+                "name": "Mirk Group",
+                "territory": "Illinois",
+                "phone": "847.774.3628",
+                "email": "info@mirkgrp.com",
+                "address": "773 N Quentin Road Palatine, IL 60067",
+                "link": {
+                  "url": "https://www.mirkgrp.com/",
+                  "text": "",
+                  "target": "_blank",
+                  "rel": "noopener",
+                  "title": ""
+                }
+              },
+              {
+                "id": "rep11",
+                "logo": {
+                  "id": 18496,
+                  "url": "https://cadco.local/wp-content/uploads/2026/10/access-partners.jpg",
+                  "alt": "Access Partners logo",
+                  "caption": "",
+                  "size": "full"
+                },
+                "name": "Access Partners",
+                "territory": "Texas, Oklahoma",
+                "phone": "626.815.4200",
+                "email": "tbartell@accesspartners.biz",
+                "address": "9405 Haven Avenue Rancho Cucamonga, CA 91730 626.815.4200 Fax 510-786-3536",
+                "link": {
+                  "url": "http://www.pmareps.com/",
+                  "text": "",
+                  "target": "_blank",
+                  "rel": "noopener",
+                  "title": ""
+                }
+              },
+              {
+                "id": "rep12",
+                "logo": {
+                  "id": 18497,
+                  "url": "https://cadco.local/wp-content/uploads/2026/10/curate.png",
+                  "alt": "Curate logo",
+                  "caption": "",
+                  "size": "full"
+                },
+                "name": "Curate",
+                "territory": "Colorado, Utah",
+                "phone": "630-586-6864",
+                "email": "info@curateteam.com",
+                "address": "14 Inverness Drive East, Building F Suite 140 Englewood, CO 80112",
+                "link": {
+                  "url": "http://www.curateteam.com",
+                  "text": "",
+                  "target": "_blank",
+                  "rel": "noopener",
+                  "title": ""
+                }
+              },
+              {
+                "id": "rep13",
+                "logo": {
+                  "id": 18498,
+                  "url": "https://cadco.local/wp-content/uploads/2026/10/tarrison-products-ltd.jpg",
+                  "alt": "Tarrison Products Ltd. logo",
+                  "caption": "",
+                  "size": "full"
+                },
+                "name": "Tarrison Products Ltd.",
+                "territory": "Canada (All)",
+                "phone": "905-825-9665",
+                "email": "info@tarrison.com",
+                "address": "2780 Coventry Road Oakville, Ontario, Canada L6H 6R1 905-825-9665 Fax 905-825-0965",
+                "link": {
+                  "url": "http://tarrison.com/",
+                  "text": "",
+                  "target": "_blank",
+                  "rel": "noopener",
+                  "title": ""
+                }
+              },
+              {
+                "id": "rep14",
+                "logo": {
+                  "id": 18499,
+                  "url": "https://cadco.local/wp-content/uploads/2026/10/d-s-exports.png",
+                  "alt": "D&S Exports logo",
+                  "caption": "",
+                  "size": "full"
+                },
+                "name": "D&S Exports",
+                "territory": "Middle East & Africa, Asia Pacific",
+                "phone": "203 847 6446",
+                "email": "derek@dsusa.biz",
+                "address": "24 Broad Street Norwalk, CT 06851 USA Tel +1 203 847 6446, ext 103",
+                "link": {
+                  "url": "",
+                  "text": "",
+                  "target": "",
+                  "rel": "",
+                  "title": ""
+                }
+              }
+            ],
+            "filterLabel": "Select State",
+            "surface": "tint",
+            "align": "full"
+          },
+          "prevStatus": "building",
+          "preparedIteration": 2,
+          "motion": {
+            "presets": [],
+            "check": "pass",
+            "result": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/contact/pb-s3/motion/motion-check.json"
+          }
+        },
+        {
+          "n": 4,
+          "anchor": "pb-footer",
+          "status": "skipped",
+          "crops": {
+            "desktop": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/contact/crops/desktop/pb-footer.png"
+          },
+          "ranges": {
+            "desktop": {
+              "y0": 2984,
+              "y1": 3589
+            }
+          },
+          "label": "Footer",
+          "decision": "reuse",
+          "block": "cadco-footer",
+          "notes": "Skipped, as on every other page: rendered by the template parts.",
+          "inPart": true,
+          "prevStatus": "done"
+        }
+      ],
+      "plan": {
+        "approvedAt": "2026-10-07T03:18:44.021Z",
+        "by": "developer"
+      },
+      "url": "https://cadco.local/contact/",
+      "written": {
+        "title": "Contact",
+        "slug": "contact",
+        "postStatus": "publish"
+      },
+      "pageQa": {
+        "pass": false,
+        "accepted": true,
+        "note": "The design frame mocks eighteen sales rep cards by repeating three of them six times; the page lists the fourteen real representatives from cadco-ltd.com, so the mismatch and height delta measure how many reps exist rather than how the page is laid out. Accessibility is clean and there are no page errors.",
+        "by": "developer",
+        "file": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/contact/page-qa/page-qa.json",
+        "at": "2026-10-07T03:36:30.476Z"
+      },
+      "notes": {
+        "pageQa": "accepted by developer: The design frame mocks eighteen sales rep cards by repeating three of them six times; the page lists the fourteen real representatives from cadco-ltd.com, so the mismatch and height delta measure how many reps exist rather than how the page is laid out. Accessibility is clean and there are no page errors."
+      },
+      "seo": {
+        "focusKeyword": {
+          "value": "contact cadco",
+          "inferred": true,
+          "why": "the page is the contact route; its form heading reads 'Connect with Cadco' and the submit button 'Contact Cadco'"
+        },
+        "title": {
+          "value": "Contact Cadco",
+          "inferred": true,
+          "why": "the page's own purpose, leading with the keyword"
+        },
+        "description": {
+          "value": "Contact Cadco for product information, quotes, parts and service, or find the sales representative covering your state across the US and Canada.",
+          "inferred": true,
+          "why": "leads with the keyword and names both routes the page offers: the enquiry form and the sales representative list"
+        },
+        "ogTitle": {
+          "value": "Contact Cadco",
+          "inferred": true,
+          "why": "the SEO title"
+        },
+        "ogDescription": {
+          "value": "Contact Cadco for product information, quotes, parts and service, or find the sales representative covering your state across the US and Canada.",
+          "inferred": true,
+          "why": "same summary as the meta description"
+        },
+        "twitterTitle": {
+          "value": "Contact Cadco",
+          "inferred": true,
+          "why": "matches the Open Graph title"
+        },
+        "twitterDescription": {
+          "value": "Contact Cadco for product information, quotes, parts and service, or find the sales representative covering your state across the US and Canada.",
+          "inferred": true,
+          "why": "matches the Open Graph description"
+        },
+        "ogImage": {
+          "value": {
+            "file": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/contact/og.png"
+          },
+          "inferred": true,
+          "why": "generated from the contact section, the page's first content section"
+        },
+        "schemaPageType": {
+          "value": "ContactPage",
+          "inferred": true,
+          "why": "the page exists to put the reader in touch, which is exactly what ContactPage describes"
+        },
+        "schema": {
+          "value": {
+            "@type": "ContactPage",
+            "name": "Contact Cadco",
+            "description": "Contact Cadco for product information, quotes, parts and service, or find the sales representative covering your state across the US and Canada."
+          },
+          "inferred": true,
+          "why": "states only what the page shows"
+        },
+        "applied": "2026-10-07T03:36:59.721Z",
+        "ogImageId": 18501,
+        "appliedValues": {
+          "focuskw": "contact cadco",
+          "title": "Contact Cadco",
+          "metadesc": "Contact Cadco for product information, quotes, parts and service, or find the sales representative covering your state across the US and Canada.",
+          "opengraph-title": "Contact Cadco",
+          "opengraph-description": "Contact Cadco for product information, quotes, parts and service, or find the sales representative covering your state across the US and Canada.",
+          "opengraph-image-id": "18501",
+          "twitter-title": "Contact Cadco",
+          "twitter-description": "Contact Cadco for product information, quotes, parts and service, or find the sales representative covering your state across the US and Canada.",
+          "twitter-image-id": "18501",
+          "schema_page_type": "ContactPage",
+          "jsonld": "[\n    {\n        \"@type\": \"ContactPage\",\n        \"name\": \"Contact Cadco\",\n        \"description\": \"Contact Cadco for product information, quotes, parts and service, or find the sales representative covering your state across the US and Canada.\"\n    }\n]"
+        },
+        "audit": {
+          "pass": false,
+          "file": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/contact/seo-audit.json",
+          "at": "2026-10-07T03:37:01.723Z"
         }
       }
     }

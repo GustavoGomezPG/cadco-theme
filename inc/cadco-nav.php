@@ -169,6 +169,37 @@ function cadco_resolve_nav_url(array $attrs): string
  * a menu item. The stored value is the item label, because that is what the
  * template matches on when deciding which item opens a panel.
  */
+/**
+ * Gravity Forms, as a select source.
+ *
+ * Registered here beside the navigation provider so every block that needs a
+ * form offers the same picker, rather than each one hard-coding an id that
+ * breaks the moment a form is rebuilt. The value stored is the form id, because
+ * a title is renamed far more often than an id changes.
+ */
+add_action('proto_blocks_register_options_providers', function ($providers) {
+    $providers->register('cadco:gravity-forms', function (): array {
+        $options = [['key' => '', 'label' => '— No form —']];
+
+        if (! class_exists('GFAPI')) {
+            return $options;
+        }
+
+        foreach (GFAPI::get_forms() as $form) {
+            if (! empty($form['is_trash'])) {
+                continue;
+            }
+
+            $options[] = [
+                'key'   => (string) $form['id'],
+                'label' => sprintf('%s (#%d)', $form['title'], $form['id']),
+            ];
+        }
+
+        return $options;
+    });
+});
+
 add_action('proto_blocks_register_options_providers', function ($providers) {
     $providers->register('cadco:nav-items', function (array $args): array {
         $options = [['key' => '', 'label' => '— None —']];

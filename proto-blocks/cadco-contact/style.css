@@ -1,0 +1,222 @@
+/*
+ * Cadco Contact — the Gravity Forms side.
+ *
+ * Gravity Forms ships its own stylesheet and its own markup, neither of which
+ * this theme controls. Rather than fight it field by field, the few things the
+ * frame actually specifies are set here: the field's shape, the two-column rows,
+ * and the submit button. Everything else is left to Gravity Forms, so an added
+ * field looks right without another rule being written.
+ *
+ * Scoped to .cadco-form so no other form on the site is touched. The selectors
+ * carry .gform_wrapper as well, because Gravity Forms' orbital theme ships four
+ * stylesheets that load after this one and win on specificity otherwise -- the
+ * first attempt here was simply never applied.
+ */
+.cadco-form .gform_wrapper form { margin: 0; }
+
+.cadco-form .gform_fields {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 15px;
+}
+
+/* A field spans the row unless the frame halves it. */
+.cadco-form .gfield { grid-column: 1 / -1; min-width: 0; }
+.cadco-form .gfield.cadco-half { grid-column: span 1; }
+
+@media (max-width: 640px) {
+    .cadco-form .gform_fields { grid-template-columns: minmax(0, 1fr); }
+    .cadco-form .gfield.cadco-half { grid-column: 1 / -1; }
+}
+
+.cadco-form .gfield input[type="text"],
+.cadco-form .gfield input[type="email"],
+.cadco-form .gfield input[type="tel"],
+.cadco-form .gfield select,
+.cadco-form .gfield textarea {
+    width: 100%;
+    border: 1px solid #00476e;
+    border-radius: 10px;
+    padding: 12px 18px;
+    font-family: var(--font-display, inherit);
+    font-size: 16px;
+    line-height: 22px;
+    color: #11181c;
+    background: #fff;
+    -webkit-appearance: none;
+    appearance: none;
+}
+
+.cadco-form .gfield textarea { min-height: 90px; resize: vertical; }
+
+.cadco-form .gfield input::placeholder,
+.cadco-form .gfield textarea::placeholder { color: #11181c; opacity: 1; }
+
+/* The select carries its own chevron, since appearance:none removed the one the
+   platform draws. */
+.cadco-form .gfield select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='15' height='9' fill='none'%3E%3Cpath d='M1 1l6.5 6.5L14 1' stroke='%2300476e' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 18px center;
+    padding-right: 46px;
+}
+
+.cadco-form .gfield :is(input, select, textarea):focus {
+    outline: 2px solid #2087d0;
+    outline-offset: 1px;
+    border-color: #2087d0;
+}
+
+/* A required field that failed validation has to read as wrong without relying
+   on colour alone, so the border thickens as well as reddening. */
+.cadco-form .gfield_error :is(input, select, textarea) {
+    border-color: #b3261e;
+    border-width: 2px;
+}
+
+.cadco-form .gfield_validation_message,
+.cadco-form .validation_message {
+    margin-top: 6px;
+    font-family: var(--font-display, inherit);
+    font-size: 14px;
+    color: #b3261e;
+}
+
+.cadco-form .gform_footer { margin: 26px 0 0; padding: 0; }
+
+.cadco-form .gform_button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 58px;
+    padding: 0 26px;
+    border: 0;
+    border-radius: 10px;
+    background: #00476e;
+    color: #fff;
+    font-family: var(--font-display, inherit);
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 1;
+    cursor: pointer;
+    transition: background-color 150ms ease;
+}
+
+.cadco-form .gform_button:hover { background: #00395a; }
+
+.cadco-form .gform_confirmation_message {
+    font-family: var(--font-display, inherit);
+    font-size: 17px;
+    line-height: 26px;
+    color: #11181c;
+}
+
+/* ---------- Beating the orbital theme ----------
+   Everything below exists because Gravity Forms' own theme sets the same
+   properties from a later stylesheet. The extra .gform_wrapper in each selector
+   is what wins; where that is still not enough the declaration is marked, and
+   only there. */
+
+/* The frame labels each field by its placeholder, so the label is kept in the
+   markup for screen readers and taken out of the visual flow rather than
+   removed -- display:none would take it from the accessibility tree too. */
+.cadco-form .gform_wrapper .gfield_label,
+.cadco-form .gform_wrapper .gform_fileupload_rules,
+.cadco-form .gform_wrapper .gfield_required {
+    position: absolute !important;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+.cadco-form .gform_wrapper .gform_fields {
+    grid-row-gap: 15px;
+    grid-column-gap: 15px;
+}
+
+.cadco-form .gform_wrapper .gfield input[type="text"],
+.cadco-form .gform_wrapper .gfield input[type="email"],
+.cadco-form .gform_wrapper .gfield input[type="tel"],
+.cadco-form .gform_wrapper .gfield select,
+.cadco-form .gform_wrapper .gfield textarea {
+    min-height: 46px;
+    height: 46px;
+    padding: 0 18px;
+    border: 1px solid #00476e;
+    border-radius: 10px;
+    font-size: 16px;
+    line-height: 44px;
+    background-color: #fff;
+}
+
+.cadco-form .gform_wrapper .gfield textarea {
+    height: 90px;
+    min-height: 90px;
+    padding: 12px 18px;
+    line-height: 22px;
+}
+
+.cadco-form .gform_wrapper .gfield select {
+    line-height: normal;
+    padding-right: 46px;
+}
+
+/*
+ * The submit button is themed through orbital's own variables rather than by
+ * overriding its rules.
+ *
+ * Setting background-color directly did nothing: orbital paints the button from
+ * var(--gf-ctrl-btn-bg-color-primary) in a rule more specific than anything
+ * reasonable to write here, so the declaration matched and still lost. Setting
+ * the variable is how the theme is meant to be dressed, and it carries the hover
+ * and focus states with it instead of needing a rule each.
+ */
+.cadco-form .gform_wrapper {
+    --gf-ctrl-btn-bg-color-primary: #00476e;
+    --gf-ctrl-btn-bg-color-hover-primary: #00395a;
+    --gf-ctrl-btn-bg-color-focus-primary: #00395a;
+    --gf-ctrl-btn-border-color-primary: #00476e;
+    --gf-ctrl-btn-border-color-hover-primary: #00395a;
+    --gf-ctrl-btn-border-color-focus-primary: #00395a;
+    --gf-ctrl-btn-color-primary: #fff;
+    --gf-ctrl-btn-color-hover-primary: #fff;
+    --gf-ctrl-btn-color-focus-primary: #fff;
+    --gf-ctrl-btn-font-size: 16px;
+    --gf-ctrl-btn-font-weight: 700;
+    --gf-ctrl-btn-padding-x: 26px;
+    --gf-ctrl-btn-radius: 10px;
+    --gf-ctrl-btn-border-radius: 10px;
+    /* The height comes from here, not from a height declaration: orbital sizes
+       the button with the logical block-size property, which a later rule of
+       its own wins outright however specific ours is. --gf-ctrl-btn-size is the
+       lever the theme actually reads. */
+    --gf-ctrl-btn-size: 58px;
+}
+
+/*
+ * The size variable is set on the button, not on an ancestor.
+ *
+ * Orbital's reset declares --gf-ctrl-btn-size: unset on every element inside the
+ * form, which wipes anything inherited from the wrapper, and then re-declares it
+ * on the wrapper from an id selector. Setting it on the wrapper therefore never
+ * reaches the button. Setting it here does, and outranks the reset.
+ */
+.cadco-form .gform_wrapper .gform_footer .gform_button,
+.cadco-form .gform_wrapper .gform_button {
+    --gf-ctrl-btn-size: 58px;
+    padding: 0 26px;
+}
+
+/* Below the breakpoint every control has to clear the tap target, which the
+   frame's 46px does not. */
+@media (max-width: 767px) {
+    .cadco-form .gform_wrapper .gfield :is(input, select) {
+        min-height: 48px;
+        height: 48px;
+    }
+}
