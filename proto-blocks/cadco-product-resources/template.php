@@ -138,7 +138,7 @@ $mediaName = static function (WP_Post $resource): string {
 $reveal = $is_preview ? '' : 'data-proto-animate="manual" data-cadco-reveal-group';
 
 $wrapper = get_block_wrapper_attributes([
-    'class' => 'cadco-product-resources w-full bg-paper pt-[100px] pb-[92px]',
+    'class' => 'cadco-product-resources w-full bg-paper pt-[118px] ' . ($showRule ? 'pb-0' : 'pb-[92px]'),
 ]);
 ?>
 <section <?php echo $wrapper; ?> <?php echo $reveal; ?>>
@@ -288,10 +288,16 @@ $wrapper = get_block_wrapper_attributes([
             </div>
         <?php endif; ?>
 
-        <?php if ($showRule) : ?>
-            <hr class="mt-[88px] h-[6px] w-full border-0 bg-[#e8edf4]" />
-        <?php endif; ?>
     </div>
+
+    <?php /* Outside the 1440 column on purpose: the frame draws the rule edge to
+             edge, like the tinted specifications band above it, and it is the
+             section's own bottom edge -- the wrapper drops its bottom padding
+             when the rule is shown, so the next section measures its top space
+             from the rule rather than from an invisible gap below it. */ ?>
+    <?php if ($showRule) : ?>
+        <hr class="mt-[105px] mb-0 h-[6px] w-full border-0 bg-[#e8edf4]" />
+    <?php endif; ?>
 
     <?php /* One dialog for the strip rather than one per still: only one video can
              play at a time, and a <dialog> gives the focus trap, the Escape key

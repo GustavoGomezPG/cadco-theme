@@ -298,8 +298,12 @@ $viewUrl = static function (array $changes) use ($selfUrl, $filterSlug, $paged):
 
 $reveal = $is_preview ? '' : 'data-proto-animate="manual" data-cadco-reveal-group';
 
+/* 160px below the catalogue is the frame's gap between the last row and the
+   closing call to action, which sits on the same paper and so adds no top space
+   of its own ("flush" in cadco-intro). Carrying it here rather than there also
+   means the catalogue still has a floor when it is the last thing on a page. */
 $wrapper = get_block_wrapper_attributes([
-    'class' => 'cadco-product-archive w-full ' . $surface . ' pt-[100px] pb-[120px]',
+    'class' => 'cadco-product-archive w-full ' . $surface . ' pt-[100px] pb-[160px]',
 ]);
 ?>
 <section <?php echo $wrapper; ?> <?php echo $reveal; ?>>

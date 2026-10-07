@@ -134,8 +134,13 @@ if (! $found) {
 
 $reveal = $is_preview ? '' : 'data-proto-animate="manual" data-cadco-reveal-group';
 
+/* 109px below the arrows is the frame's gap between this rail and whatever
+   follows it -- on the product page, the closing call to action, which sits on
+   the same paper and so adds no top space of its own ("flush" in cadco-intro).
+   Carrying it here rather than there also means the rail still has a floor when
+   it is the last thing on a page. */
 $wrapper = get_block_wrapper_attributes([
-    'class' => 'cadco-related-products w-full ' . $surface . ' pt-[92px] pb-[110px]',
+    'class' => 'cadco-related-products w-full ' . $surface . ' pt-[95px] pb-[109px]',
 ]);
 ?>
 <section <?php echo $wrapper; ?> <?php echo $reveal; ?>>
@@ -181,7 +186,7 @@ $wrapper = get_block_wrapper_attributes([
                 <?php
             };
             ?>
-            <div class="mt-[34px] flex gap-5">
+            <div class="mt-[56px] flex gap-5">
                 <?php $arrow('prev', __('Previous products', 'cadco-theme')); ?>
                 <?php $arrow('next', __('More products', 'cadco-theme')); ?>
             </div>

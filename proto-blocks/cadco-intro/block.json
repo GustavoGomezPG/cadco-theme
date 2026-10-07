@@ -130,9 +130,13 @@
           {
             "key": "compact",
             "label": "Compact"
+          },
+          {
+            "key": "flush",
+            "label": "Flush"
           }
         ],
-        "help": "How much room the band takes above and below its content. The frames differ by about twenty pixels between pages, so it is chosen here rather than fixed in the block."
+        "help": "How much room the band takes above and below its content. The frames differ by about twenty pixels between pages, so it is chosen here rather than fixed in the block. \"Flush\" is for a closing call to action whose own top space is already supplied by the section above it: it adds none of its own, and spaces the heading and button the way the product frames do."
       }
     }
   }

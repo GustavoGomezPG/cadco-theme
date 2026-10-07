@@ -495,6 +495,33 @@ reasoning — a second copy is a second copy to get wrong:
 > nothing at all — which is how the card first shipped with no border, no shadow
 > and no padding. Anything shared between blocks needs real CSS.
 
+#### Vertical rhythm, and the "flush" call to action
+
+Every gap on these two templates is a measurement off the 1440 frames, and each
+one is owned by exactly one block — the section **above** the gap carries it in
+its bottom padding. That is why `cadco-product-resources` drops its bottom
+padding when it draws the closing rule (the rule is then the section's own
+bottom edge, full bleed like the tinted band above it), and why the two
+catalogue blocks end on an unusually large floor:
+
+| Boundary | Frame |
+|---|---|
+| Header → breadcrumb | 118 |
+| Hero call to action → specifications band | 129 |
+| Specifications band → *Resources & Downloads* | 119 |
+| Video arrows → closing rule | 105 |
+| Closing rule → *Related Products* | 95 |
+| Related cards → arrows | 62 |
+| Related arrows → closing call to action | 109 |
+| Catalogue grid → closing call to action | 160 |
+
+The frames run paper straight from the last rail into the closing call to
+action, so that band adds **no top space of its own**. `cadco-intro` has a
+`density` of `flush` for exactly that: no top padding, no dead margin above the
+heading from an eyebrow those instances leave empty, and the frame's own
+heading-to-button and button-to-footer distances. Every other density is
+untouched, so the six instances on the other pages render what they always did.
+
 ### Test catalogue content
 
 `scripts/test-data/` holds throwaway catalogue content, so the archive has

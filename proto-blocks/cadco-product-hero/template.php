@@ -158,7 +158,7 @@ $ctaText = isset($cta['text']) && '' !== trim((string) $cta['text'])
 $reveal = $is_preview ? '' : 'data-proto-animate="manual" data-cadco-reveal-group';
 
 $wrapper = get_block_wrapper_attributes([
-    'class' => 'cadco-product-hero w-full bg-paper pt-[100px] pb-[120px]',
+    'class' => 'cadco-product-hero w-full bg-paper pt-[118px] pb-[129px]',
 ]);
 ?>
 <section <?php echo $wrapper; ?> <?php echo $reveal; ?>>
