@@ -165,8 +165,13 @@ $railName = $railTerm ? $railTerm->name : $shopTitle;
 $railUrl  = $railTerm ? get_term_link($railTerm) : $shopUrl;
 $railUrl  = is_wp_error($railUrl) ? $shopUrl : (string) $railUrl;
 
-// View All is the current view whenever no child below it has been picked.
-$railIsCurrent = ! $term || ! $railTerm || (int) $term->term_id === (int) $railTerm->term_id;
+/* View All is the way back out of a sub-category, so it is drawn only when
+   there is something to come back out of: the rail is headed by one category
+   and a different, narrower one is filtering the products. On the category the
+   rail is already headed by -- the shop, a top level category, or a
+   sub-category deep enough to head its own rail -- it would link to the page it
+   is on, so it is not drawn at all. */
+$railDrilled = $term && $railTerm && (int) $term->term_id !== (int) $railTerm->term_id;
 
 /* -------------------------------------------------------------------------
    The query.
@@ -395,18 +400,21 @@ $wrapper = get_block_wrapper_attributes([
                         </nav>
                     <?php endif; ?>
 
-                    <?php /* Filled while it is the view you are on, outlined once a
-                             sub-category has taken over, so the rail always shows
-                             which of its entries is current. */ ?>
-                    <div class="mt-6 flex lg:justify-end">
-                        <a href="<?php echo esc_url($railUrl); ?>"
-                           <?php echo $railIsCurrent && ! $filterSlug ? 'aria-current="page"' : ''; ?>
-                           class="inline-flex h-[36px] min-w-[88px] items-center justify-center rounded-[10px] border border-cadco-blue px-4 font-display text-[16px] font-bold leading-none no-underline transition-colors <?php echo $railIsCurrent
-                                ? 'bg-cadco-blue text-white hover:bg-[#00395a]'
-                                : 'bg-transparent text-cadco-blue hover:bg-cadco-blue hover:text-white'; ?>">
-                            <?php echo esc_html($viewAll); ?>
-                        </a>
-                    </div>
+                    <?php if ($railDrilled) : ?>
+                        <div class="mt-6 flex lg:justify-end">
+                            <?php /* No query string on purpose: this is the way back
+                                     to the whole category, so it clears the size
+                                     refinement along with the sub-category. */ ?>
+                            <a href="<?php echo esc_url($railUrl); ?>"
+                               class="inline-flex h-[36px] min-w-[88px] items-center justify-center rounded-[10px] border border-cadco-blue bg-cadco-blue px-4 font-display text-[16px] font-bold leading-none text-white no-underline transition-colors hover:bg-[#00395a]">
+                                <?php echo esc_html($viewAll); ?>
+                                <span class="sr-only"><?php
+                                    /* translators: %s: category name. */
+                                    echo ' ' . esc_html(sprintf(__('of %s', 'cadco-theme'), $railName));
+                                ?></span>
+                            </a>
+                        </div>
+                    <?php endif; ?>
 
                     <?php if ($filterTerms) : ?>
                         <?php /* A GET form, so a refined view has its own address and

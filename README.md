@@ -410,6 +410,15 @@ is no loop to read. Paging therefore travels in `?ppage=`, not `paged`:
 borrowing the main query's parameter would mean every page link had to be a URL
 the main query could satisfy too. The refinement select travels in `?psize=`.
 
+The rail is headed by the category whose family it lists, which is not always
+the category being viewed: a leaf with no children of its own borrows its
+parent's family and highlights itself inside it, because that is the same
+picture one level down rather than an empty rail. **View All is drawn only when
+those two differ** — it is the way back out to the whole category, so on the
+category the rail is already headed by it would link to the page you are on. It
+carries no query string, so it clears the size refinement along with the
+sub-category.
+
 The rail's refinement select is driven by a product attribute taxonomy — by
 default `pa_size`, set by the **Refine by attribute** control. It is left out
 entirely when that attribute does not exist, or when no product in the category
