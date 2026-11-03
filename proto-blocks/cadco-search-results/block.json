@@ -1,0 +1,77 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/block.json",
+  "apiVersion": 3,
+  "name": "proto-blocks/cadco-search-results",
+  "title": "Cadco Search Results",
+  "category": "proto",
+  "icon": "search",
+  "description": "Site search results, grouped by what was found: products as cards, resources as downloadable rows, pages as links. Filter chips narrow to one kind. Placed once in the search template.",
+  "keywords": ["search", "results", "products", "resources", "woocommerce"],
+  "supports": {
+    "html": false,
+    "anchor": true,
+    "customClassName": true,
+    "align": ["full"]
+  },
+  "protoBlocks": {
+    "version": "1.0",
+    "template": "template.php",
+    "useTailwind": true,
+    "controls": {
+      "eyebrow": {
+        "type": "text",
+        "label": "Label above the term",
+        "default": "Search results"
+      },
+      "emptyTitle": {
+        "type": "text",
+        "label": "Title with no search term",
+        "default": "Search"
+      },
+      "productsPerPage": {
+        "type": "range",
+        "label": "Products per page, filtered to products",
+        "default": 16,
+        "min": 4,
+        "max": 48,
+        "step": 4
+      },
+      "productPreview": {
+        "type": "range",
+        "label": "Products shown in the combined view",
+        "default": 8,
+        "min": 2,
+        "max": 24,
+        "step": 2
+      },
+      "resourcePreview": {
+        "type": "range",
+        "label": "Resources shown in the combined view",
+        "default": 6,
+        "min": 2,
+        "max": 24,
+        "step": 2
+      },
+      "showPrice": {
+        "type": "toggle",
+        "label": "Show prices",
+        "default": true
+      },
+      "showRelated": {
+        "type": "toggle",
+        "label": "Show category links",
+        "default": true,
+        "help": "The largest categories the matching products are filed under, biggest first — shown only when the search found products."
+      },
+      "surface": {
+        "type": "select",
+        "label": "Section background",
+        "default": "paper",
+        "options": [
+          { "key": "paper", "label": "White (design)" },
+          { "key": "tint", "label": "Pale blue" }
+        ]
+      }
+    }
+  }
+}
