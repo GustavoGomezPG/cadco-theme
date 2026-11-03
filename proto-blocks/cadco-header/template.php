@@ -208,7 +208,12 @@ $panel_id = static function (string $key): string {
                         id="cadco-search-field"
                         type="search"
                         name="s"
-                        value="<?php echo esc_attr(get_search_query()); ?>"
+                        <?php /* Angle brackets are stripped as a belt (the value then carries
+                                 no tag even if some layer re-parses it); esc_attr() handles the
+                                 quotes. Quotes stay because searches carry them (9 7/8"). Needs
+                                 Proto-Blocks 2.14.5+, whose renderer no longer entity-decodes the
+                                 finished markup and so no longer undoes esc_attr(). */ ?>
+                        value="<?php echo esc_attr(trim(str_replace(['<', '>'], '', wp_strip_all_tags((string) get_query_var('s'))))); ?>"
                         placeholder="<?php esc_attr_e('Search Cadco…', 'cadco-theme'); ?>"
                         class="min-w-0 flex-1 rounded-md border-0 bg-white px-4 py-3 text-[16px] text-ink outline-none focus:ring-2 focus:ring-cadco-blue"
                     />
