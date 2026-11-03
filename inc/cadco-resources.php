@@ -219,3 +219,61 @@ add_action('save_post_resource', static function (int $post_id): void {
     $kind = sanitize_key(wp_unslash($_POST['cadco_resource_link_type'] ?? ''));
     update_post_meta($post_id, 'cadco_resource_link_type', array_key_exists($kind, cadco_resource_link_types()) ? $kind : '');
 });
+
+/**
+ * A resource URL is the document, not a page about it.
+ *
+ * A resource carries no content of its own: it is a title, a media type and a
+ * file. The cards in the resource library and on a product already link
+ * straight to that file, so /resources/{slug}/ was only ever reachable by
+ * typing it, by a search result, or by a card whose own link was missing --
+ * and it rendered the empty post as though it were an article.
+ *
+ * Redirected rather than 404'd, because the address is in the wild: it is what
+ * get_permalink() returns, so it has gone out in sitemaps and anywhere a card
+ * fell back to it. Sending it to the document keeps those working.
+ *
+ * 302 rather than 301: the destination changes when CADCO re-host a spec sheet
+ * or swap an attachment, and a permanent redirect would be cached by browsers
+ * long after the file moved.
+ */
+add_action('template_redirect', static function (): void {
+    if (! is_singular('resource')) {
+        return;
+    }
+
+    $post_id = get_queried_object_id();
+
+    if (! $post_id) {
+        return;
+    }
+
+    $destination = cadco_resource_destination($post_id);
+
+    /* No file on the resource is a content problem, not a reason to show an
+       empty page: 404 says plainly that there is nothing here. Editors keep
+       the rendered post so the missing file is visible from the front end. */
+    if ('' === $destination || '#' === $destination) {
+        if (current_user_can('edit_post', $post_id)) {
+            return;
+        }
+
+        global $wp_query;
+        $wp_query->set_404();
+        status_header(404);
+        nocache_headers();
+
+        return;
+    }
+
+    /* A destination that resolves back to this same address would redirect to
+       itself for ever. */
+    $self = (string) get_permalink($post_id);
+
+    if (untrailingslashit($destination) === untrailingslashit($self)) {
+        return;
+    }
+
+    wp_redirect($destination, 302);
+    exit;
+}, 1);
