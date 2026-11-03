@@ -86,6 +86,28 @@ $hidden = taxonomy_exists('product_visibility') ? [
 $found = [];
 $seen  = [$productId => true];
 
+/* This product's own children lead the row when Display Settings puts them
+   here. They are the most relevant thing it can suggest, and with the listing
+   hiding them this row is how they are reached at all. */
+if (class_exists('CADCO_Display_Settings')
+    && CADCO_Display_Settings::children_placement() === CADCO_Display_Settings::PLACEMENT_RELATED
+) {
+    foreach (cadco_product_children($productId) as $childId) {
+        if (count($found) >= $limit) {
+            break;
+        }
+
+        $seen[$childId] = true;
+        $found[]        = $childId;
+    }
+}
+
+/* Whatever the category fill then adds must respect the same rule as the
+   catalogue listing, or this row becomes a way into the products the listing
+   is hiding. A product's own children are added above, before this applies,
+   so they are never excluded by it. */
+$catalogueMeta = cadco_product_catalogue_meta_query();
+
 foreach ($terms as $term) {
     if (count($found) >= $limit) {
         break;
@@ -109,6 +131,7 @@ foreach ($terms as $term) {
             ],
             $hidden,
         ])),
+        'meta_query'       => $catalogueMeta ?: null,
     ]);
 
     foreach ($ids as $id) {

@@ -609,3 +609,83 @@ add_filter('woocommerce_get_block_types', function ($types) {
         static fn($type) => !preg_match($disabled, (string) $type)
     ));
 });
+
+/**
+ * Category counts follow the catalogue, not the database.
+ *
+ * With Products → Display Settings hiding products that belong to another
+ * product, a category's stored count still includes them. Two things go wrong
+ * on the front end: a count that disagrees with the "N results" on the page it
+ * links to, and — the one that actually shows — a category kept alive by
+ * nothing but hidden products, which survives `hide_empty` and then lands the
+ * visitor on an empty listing.
+ *
+ * Front end only. A shop manager looking at Products → Categories is asking
+ * how many products are in a category, not how many of them the catalogue
+ * chooses to list, so wp-admin keeps WordPress's own figure.
+ *
+ * Terms are dropped here rather than in SQL because `hide_empty` is applied to
+ * the stored count inside the query, before this runs. That is also why the
+ * caller's `hide_empty` has to be re-read and honoured a second time.
+ */
+add_filter('get_terms', function ($terms, $taxonomies, $args) {
+    static $running = false;
+
+    // cadco_product_term_counts() runs its own queries; this is what stops
+    // one of them re-entering this filter and recursing.
+    if ($running || is_admin() || !is_array($terms) || $terms === []) {
+        return $terms;
+    }
+
+    $taxonomies = (array) ($taxonomies ?: ($args['taxonomy'] ?? []));
+
+    if (!in_array('product_cat', $taxonomies, true)) {
+        return $terms;
+    }
+
+    /* 'ids', 'names' and 'count' return no objects to correct. Taken from the
+       first element whatever its key: get_terms() is not always a list, and
+       indexing [0] warned on the arrays keyed by term id. */
+    if (!(reset($terms) instanceof WP_Term)) {
+        return $terms;
+    }
+
+    if (!function_exists('cadco_product_term_counts')) {
+        return $terms;
+    }
+
+    $running = true;
+    $counts  = cadco_product_term_counts();
+    $running = false;
+
+    if ($counts === []) {
+        return $terms;
+    }
+
+    $hideEmpty = !empty($args['hide_empty']);
+    $wasList   = array_is_list($terms);
+
+    foreach ($terms as $key => $term) {
+        if (!$term instanceof WP_Term) {
+            continue;
+        }
+
+        /* Cloned, not written to in place. get_terms() hands out the objects
+           held in the term cache, so assigning to ->count would leave the
+           corrected figure on the shared object for everything else in the
+           request to find — including code this filter deliberately does not
+           cover. */
+        $copy        = clone $term;
+        $copy->count = $counts[(int) $term->term_id] ?? 0;
+
+        if ($hideEmpty && $copy->count === 0) {
+            unset($terms[$key]);
+            continue;
+        }
+
+        $terms[$key] = $copy;
+    }
+
+    // Only re-index what arrived as a list; the keys carry meaning otherwise.
+    return $wasList ? array_values($terms) : $terms;
+}, 10, 3);

@@ -1,0 +1,54 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/block.json",
+  "apiVersion": 3,
+  "name": "proto-blocks/cadco-product-children",
+  "title": "Cadco Product Children",
+  "category": "proto",
+  "icon": "screenoptions",
+  "description": "A scrollable row of the products that name this one as their Parent Product — its accessories. Drawn with the catalogue's own card. Appears only when Products → Display Settings gives children their own row; its heading is set there too.",
+  "keywords": [
+    "product",
+    "children",
+    "accessories",
+    "parent",
+    "woocommerce"
+  ],
+  "supports": {
+    "html": false,
+    "anchor": true,
+    "customClassName": true,
+    "align": [
+      "full"
+    ]
+  },
+  "protoBlocks": {
+    "version": "1.0",
+    "template": "template.php",
+    "useTailwind": true,
+    "controls": {
+      "limit": {
+        "type": "range",
+        "label": "Most products to show",
+        "default": 24,
+        "min": 2,
+        "max": 48,
+        "step": 1
+      },
+      "showPrice": {
+        "type": "toggle",
+        "label": "Show prices",
+        "default": true
+      },
+      "surface": {
+        "type": "select",
+        "label": "Section background",
+        "default": "tint",
+        "options": [
+          { "key": "tint", "label": "Pale blue" },
+          { "key": "paper", "label": "White" }
+        ],
+        "help": "Pale blue by default so this row and Related Products below it read as two sections rather than one long one."
+      }
+    }
+  }
+}

@@ -330,3 +330,163 @@ function cadco_download_icon(string $classes = 'h-[15px] w-[15px]'): string
         . ' 13.4239 14.581 13.8583 14.2197 14.2197C13.8583 14.581 13.4239 14.7617 12.9165 14.7617H1.84521Z" />'
         . '</svg>';
 }
+
+/**
+ * The published products that name this product as their Parent Product.
+ *
+ * Read from `_cadco_related_children`, which the importer rebuilds on every
+ * run from the workbook's Parent Product column (see
+ * CADCO_Import_Applier::link_related_products()). Reading the stored list
+ * rather than searching the children's own `_cadco_parent_model` keeps this to
+ * one meta read: an accessory names several parents in one cell, so finding
+ * children the other way round means a LIKE across the whole catalogue.
+ *
+ * Re-checked against the posts table on the way out, because the list is only
+ * as fresh as the last import — a child trashed or unpublished since then is
+ * still in it, and would otherwise be rendered as a card linking to nothing.
+ *
+ * @return list<int>
+ */
+function cadco_product_children(int $product_id): array
+{
+    $stored = get_post_meta($product_id, '_cadco_related_children', true);
+
+    if (!is_array($stored) || $stored === []) {
+        return [];
+    }
+
+    $ids = array_values(array_unique(array_filter(array_map('intval', $stored))));
+
+    if ($ids === []) {
+        return [];
+    }
+
+    $live = get_posts([
+        'post_type'              => 'product',
+        'post_status'            => 'publish',
+        'post__in'               => $ids,
+        'orderby'                => 'post__in',
+        'posts_per_page'         => count($ids),
+        'fields'                 => 'ids',
+        'no_found_rows'          => true,
+        'ignore_sticky_posts'    => true,
+        'update_post_term_cache' => false,
+    ]);
+
+    return array_map('intval', $live);
+}
+
+/**
+ * Whether this product names a Parent Product in the workbook.
+ */
+function cadco_product_has_parent(int $product_id): bool
+{
+    return '' !== trim((string) get_post_meta($product_id, '_cadco_parent_model', true));
+}
+
+/**
+ * The meta_query clause that keeps products with a parent out of a listing.
+ *
+ * Empty when the setting is off, so a caller can merge it unconditionally:
+ * an empty array added to a meta_query changes nothing, where a null or a
+ * malformed clause would match no rows at all.
+ *
+ * 'NOT EXISTS' alone is not enough. A product whose Parent Product cell was
+ * filled and later emptied keeps the meta key with an empty string, so it
+ * exists and is blank — the OR is what lets it back into the catalogue.
+ *
+ * @return array<int|string, mixed>
+ */
+function cadco_product_catalogue_meta_query(): array
+{
+    if (!class_exists('CADCO_Display_Settings') || !CADCO_Display_Settings::hide_children()) {
+        return [];
+    }
+
+    return [
+        'relation' => 'OR',
+        ['key' => '_cadco_parent_model', 'compare' => 'NOT EXISTS'],
+        ['key' => '_cadco_parent_model', 'value' => '', 'compare' => '='],
+    ];
+}
+
+/**
+ * Product counts per product_cat term, with hidden children left out.
+ *
+ * Counted the way the archive lists: a term's figure includes everything in
+ * its descendants, because that is what clicking it shows and what the
+ * listing's own "N results" reports. WordPress stores `count` as direct
+ * assignments only, which is the same number here — the importer puts a
+ * product in its sub-category and its top-level category both — but the two
+ * part company the moment a product is filed only in a leaf, and the count
+ * that matters is the one that matches the page.
+ *
+ * One query for the visible products and one for their terms, then the
+ * ancestors are walked in PHP. Per-term queries would be 25 of them on a page
+ * that is already drawing a category rail.
+ *
+ * Returns an empty array when the setting is off: there is nothing to correct,
+ * and the caller leaves WordPress's own counts alone.
+ *
+ * @return array<int, int> term_id => number of visible products
+ */
+function cadco_product_term_counts(): array
+{
+    /* Keyed on whether the exclusion is active, not a plain static: saving the
+       setting and rendering in the same request would otherwise answer from
+       the cache the old setting filled. */
+    static $cache = [];
+
+    $exclusion = cadco_product_catalogue_meta_query();
+    $key       = $exclusion === [] ? 'off' : 'on';
+
+    if (isset($cache[$key])) {
+        return $cache[$key];
+    }
+
+    if ($exclusion === [] || !taxonomy_exists('product_cat')) {
+        return $cache[$key] = [];
+    }
+
+    $ids = get_posts([
+        'post_type'              => 'product',
+        'post_status'            => 'publish',
+        'posts_per_page'         => -1,
+        'fields'                 => 'ids',
+        'no_found_rows'          => true,
+        'ignore_sticky_posts'    => true,
+        'update_post_meta_cache' => false,
+        'update_post_term_cache' => false,
+        'meta_query'             => $exclusion,
+    ]);
+
+    if (!$ids) {
+        return $cache[$key] = [];
+    }
+
+    $assigned = wp_get_object_terms($ids, 'product_cat', ['fields' => 'all_with_object_id']);
+
+    if (is_wp_error($assigned)) {
+        return $cache[$key] = [];
+    }
+
+    /* Counted as a set per term rather than incremented, because a product
+       filed in two sub-categories of the same parent reaches that parent
+       twice and must still count once. */
+    $seen      = [];
+    $ancestors = [];
+
+    foreach ($assigned as $term) {
+        $termId = (int) $term->term_id;
+
+        if (!isset($ancestors[$termId])) {
+            $ancestors[$termId] = array_map('intval', get_ancestors($termId, 'product_cat', 'taxonomy'));
+        }
+
+        foreach (array_merge([$termId], $ancestors[$termId]) as $id) {
+            $seen[$id][(int) $term->object_id] = true;
+        }
+    }
+
+    return $cache[$key] = array_map('count', $seen);
+}

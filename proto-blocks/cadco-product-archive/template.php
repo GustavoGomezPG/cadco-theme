@@ -215,6 +215,13 @@ if (count($taxQuery) > 1) {
     $taxQuery['relation'] = 'AND';
 }
 
+/* Products that belong to another product are kept out of the listing when
+   Products > Display Settings says so. They keep their page and are reached
+   from the product they attach to -- an accessory sold for six warming tables
+   is a product, but as a catalogue entry it buries the equipment. Empty when
+   the setting is off, so this is safe to merge unconditionally. */
+$metaQuery = cadco_product_catalogue_meta_query();
+
 $args = [
     'post_type'           => 'product',
     'post_status'         => 'publish',
@@ -222,6 +229,7 @@ $args = [
     'paged'               => $paged,
     'ignore_sticky_posts' => true,
     'tax_query'           => $taxQuery ?: null,
+    'meta_query'          => $metaQuery ?: null,
 ];
 
 switch ($orderBy) {
@@ -273,6 +281,9 @@ if ($showRail && $filterOn) {
             'terms'            => (int) $term->term_id,
             'include_children' => true,
         ]] : null,
+        // The same exclusion as the listing, or the select offers a size that
+        // only hidden products carry and choosing it returns nothing.
+        'meta_query'             => $metaQuery ?: null,
     ]);
 
     if ($scope->posts) {

@@ -73,6 +73,11 @@ if ($ids !== []) {
     // above an empty picker and has no way to tell where they came from.
     $usingFallback = true;
 
+    /* Only the fallback is filtered. A product named in the picker above was
+       chosen deliberately, and dropping it would leave the author looking at a
+       gap with nothing on the screen to explain it; this branch is the one
+       that chooses on the site's behalf, so it follows the site's setting.
+       Empty when the setting is off. */
     $products = get_posts([
         'post_type'      => 'product',
         'posts_per_page' => 8,
@@ -83,6 +88,7 @@ if ($ids !== []) {
             'field'    => 'name',
             'terms'    => 'featured',
         ]],
+        'meta_query'     => cadco_product_catalogue_meta_query() ?: null,
     ]);
 }
 
