@@ -24,20 +24,164 @@
 
   var reduced = window.matchMedia('(prefers-reduced-motion: reduce)');
 
-  var LINKS = [
-    'a[href]',
-    ':not([target])',
-    ':not([href^="#"])',
-    ':not([data-taxi-ignore])',
-    ':not([download])',
-    ':not([href*="/wp-admin"])',
-    ':not([href*="wp-login"])',
-    ':not([href^="mailto:"])',
-    ':not([href^="tel:"])',
-    ':not(#wpadminbar a)',
-    ':not(.add_to_cart_button)',
-    ':not(.wc-block-components-product-button a)'
-  ].join('');
+  /* Optional PHP-side configuration (wp_localize_script on `proto-taxi-init`).
+     Absent on a stock install; every key has a built-in default. */
+  var settings = window.protoTaxiSettings && typeof window.protoTaxiSettings === 'object'
+    ? window.protoTaxiSettings
+    : {};
+
+  /* ----------------------------------------------------------------------
+     Link exclusions. One predicate, two consumers: Taxi's click intercept
+     and its hover/focus prefetch. See docs/page-transitions.md, "Security".
+     ------------------------------------------------------------------- */
+
+  /**
+   * Substrings that mark a same-host URL as an action rather than a page.
+   *
+   * Taxi prefetches on mouseenter and focus with the reader's cookies, and
+   * WordPress protects state-changing GETs with a nonce carried *in the
+   * URL*, so a prefetch of such a link is the action itself: WooCommerce's
+   * "Log out" endpoint (`customer-logout/?_wpnonce=`), `?add-to-cart=`,
+   * `?action=…&_wpnonce=…` plugin links. Matched case-insensitively
+   * against both the href attribute and the resolved URL.
+   *
+   * A PHP-localised `protoTaxiSettings.ignoreHrefPatterns` array (strings)
+   * replaces this list wholesale.
+   */
+  var DEFAULT_IGNORE_HREF = [
+    '_wpnonce=',
+    'add-to-cart=',
+    '?action=',
+    '&action=',
+    'remove_item=',
+    'customer-logout',
+    '/wp-admin',
+    'wp-login'
+  ];
+
+  function stringList(value, fallback) {
+    if (!Array.isArray(value)) return fallback.slice();
+    var out = [];
+    for (var i = 0; i < value.length; i++) {
+      if (typeof value[i] === 'string' && value[i] !== '') out.push(value[i]);
+    }
+    return out;
+  }
+
+  var ignoreHrefPatterns = stringList(settings.ignoreHrefPatterns, DEFAULT_IGNORE_HREF);
+
+  /**
+   * Whether Taxi must leave this anchor alone: no transition, no prefetch.
+   * Runs at event time, so it also covers hrefs rewritten after boot and
+   * patterns added to `protoTaxi.ignoreHrefPatterns` at runtime.
+   */
+  function isExcludedLink(a) {
+    if (!a || typeof a.getAttribute !== 'function') return true;
+    if (a.hasAttribute('data-taxi-ignore') || a.hasAttribute('download') || a.hasAttribute('target')) {
+      return true;
+    }
+    /* rel=nofollow on a same-host link is how WordPress and WooCommerce mark
+       their own action links (add-to-cart, comment reply, logout). */
+    var rel = (a.getAttribute('rel') || '').toLowerCase().split(/\s+/);
+    if (rel.indexOf('nofollow') !== -1) return true;
+
+    /* An SVG <a>'s .href is an SVGAnimatedString; the attribute is always a
+       string. Check both so relative and resolved forms are covered. */
+    var attr = a.getAttribute('href') || '';
+    var prop = typeof a.href === 'string' ? a.href : '';
+    var href = (attr + '\n' + prop).toLowerCase();
+
+    for (var i = 0; i < ignoreHrefPatterns.length; i++) {
+      if (href.indexOf(String(ignoreHrefPatterns[i]).toLowerCase()) !== -1) return true;
+    }
+    return false;
+  }
+
+  function cssString(value) {
+    return '"' + String(value).replace(/["\\]/g, '\\$&') + '"';
+  }
+
+  /**
+   * The delegation selector Taxi attaches its click and prefetch handlers
+   * to. Built from the same list as isExcludedLink() so an excluded link
+   * never even reaches a handler; the predicate is the runtime backstop.
+   */
+  function buildLinksSelector(patterns) {
+    var parts = [
+      'a[href]',
+      ':not([target])',
+      ':not([href^="#"])',
+      ':not([data-taxi-ignore])',
+      ':not([download])',
+      ':not([rel~="nofollow" i])',
+      ':not([href^="mailto:" i])',
+      ':not([href^="tel:" i])',
+      ':not(#wpadminbar a)',
+      ':not(.add_to_cart_button)',
+      ':not(.wc-block-components-product-button a)'
+    ];
+    for (var i = 0; i < patterns.length; i++) {
+      parts.push(':not([href*=' + cssString(patterns[i]) + ' i])');
+    }
+    return parts.join('');
+  }
+
+  var LINKS = buildLinksSelector(ignoreHrefPatterns);
+  try {
+    document.querySelector(LINKS);
+  } catch (err) {
+    /* A malformed localised pattern must not take every link down with it. */
+    console.error('[proto-taxi] Invalid ignoreHrefPatterns, using the defaults.', err);
+    ignoreHrefPatterns = DEFAULT_IGNORE_HREF.slice();
+    LINKS = buildLinksSelector(ignoreHrefPatterns);
+  }
+
+  /* ----------------------------------------------------------------------
+     Fetched-document hygiene.
+     ------------------------------------------------------------------- */
+
+  /**
+   * Make a fetched document parse-equivalent to a full load before Taxi
+   * reads anything out of it.
+   *
+   * Taxi parses responses with DOMParser, i.e. with scripting *disabled*,
+   * and in that mode the contents of <noscript> come back as real elements
+   * instead of the inert text a full load sees. Left in place they go two
+   * ways: the stock Renderer serialises the view (outerHTML) and re-parses
+   * it in the live document — the classic mutation-XSS round trip, where a
+   * serialiser that re-emits `</noscript>` inside an attribute or RCDATA
+   * text lets markup break out of the fallback — and createCacheEntry()
+   * collects every <style>/<link> it finds, promoting no-JS fallback CSS
+   * into the live page (the bug proto-reveal-guard.js was written around).
+   *
+   * Nothing inside <noscript> can matter to a reader running this script,
+   * so the whole element is dropped. <template> contents live in an inert
+   * DocumentFragment, are not reached by querySelectorAll, and stay inert
+   * when imported, so they are left as they are.
+   */
+  function stripInertMarkup(page) {
+    if (!page || typeof page.querySelectorAll !== 'function') return page;
+    var dead = page.querySelectorAll('noscript');
+    for (var i = 0; i < dead.length; i++) {
+      dead[i].remove();
+    }
+    return page;
+  }
+
+  /**
+   * Taxi's reloadCssFilter. Applied to the fetched document's stylesheets
+   * and to the live document's alike, so it only has to say which ones may
+   * take part in the carry-over: anything not inside a <noscript> (already
+   * stripped above — this is the backstop) or a <template>.
+   *
+   * Not head-only on purpose: WordPress prints stylesheets enqueued during
+   * render at wp_footer (print_late_styles), and a block first used on the
+   * incoming page gets its CSS exactly that way.
+   */
+  function isLiveStylesheet(el) {
+    if (!el || typeof el.closest !== 'function') return false;
+    return !el.closest('noscript, template');
+  }
 
   /**
    * The element the fade animates. The view wrapper is a grid cell used for
@@ -102,9 +246,127 @@
     }
   };
 
-  var core = new taxi.Core({
+  /**
+   * Renderer that moves the fetched view into the page as nodes.
+   *
+   * The stock Renderer keeps `content.outerHTML` and re-parses it through
+   * innerHTML when the view is swapped. Importing the parsed subtree
+   * instead means the markup is parsed exactly once, by the browser's own
+   * HTML parser, the same way a full load would parse it — there is no
+   * string round trip for a serialiser quirk to turn inert markup into
+   * live markup. (Scripts in the view stay inert either way: the parser
+   * marks them "already started" and a clone inherits that flag. Taxi's
+   * loadScripts() recreates the [data-taxi-reload] ones.)
+   *
+   * importNode (a copy) rather than adoptNode: the cache entry is reused
+   * on back/forward, so the source tree must survive the first swap.
+   */
+  var ProtoRenderer = class extends taxi.Renderer {
+    constructor(props) {
+      super(props);
+      this.protoContent = props.content;
+    }
+
+    createDom() {
+      if (this._DOM) return;
+      this._DOM = document.createElement('div');
+      this._DOM.appendChild(document.importNode(this.protoContent, true));
+    }
+  };
+
+  function hasTransition(core, name) {
+    return typeof name === 'string' &&
+      Object.prototype.hasOwnProperty.call(core.transitions, name) &&
+      typeof core.transitions[name] === 'function';
+  }
+
+  /**
+   * Taxi never resets isTransitioning on failure — only on success, after
+   * NAVIGATE_END. A navigation whose promise rejects or simply never
+   * settles (a throwing listener inside afterFetch, a transition that
+   * never calls done()) leaves every later click rejected with
+   * "A transition is currently in progress" until a hard reload. The
+   * watchdog puts a ceiling on that.
+   */
+  var WATCHDOG_MS = parseInt(settings.watchdogMs, 10) > 0 ? parseInt(settings.watchdogMs, 10) : 10000;
+
+  var ProtoCore = class extends taxi.Core {
+    createCacheEntry(page, url) {
+      return super.createCacheEntry(stripInertMarkup(page), url);
+    }
+
+    /* Called from Taxi's constructor, after it has assigned onClick and
+       onPrefetch and before either is delegated: the one place both can be
+       wrapped so the exclusion predicate runs for every event. */
+    attachEvents(selector) {
+      var click = this.onClick;
+      var prefetch = this.onPrefetch;
+
+      this.onClick = function (e) {
+        if (isExcludedLink(e.currentTarget)) return;
+        return click.call(this, e);
+      };
+      this.onPrefetch = function (e) {
+        if (isExcludedLink(e.currentTarget)) return;
+        return prefetch.call(this, e);
+      };
+
+      super.attachEvents(selector);
+    }
+
+    navigateTo(url, transition, trigger) {
+      /* data-* attributes pass KSES for every role, so an unknown (or
+         prototype-key: "constructor") data-transition is content, not a
+         developer error. Taxi would `new undefined` inside its Promise
+         executor and leave isTransitioning stuck. */
+      if (transition && !hasTransition(this, transition)) {
+        console.warn('[proto-taxi] Unknown transition "' + transition + '", using the default.');
+        transition = false;
+      }
+
+      var fresh = this.allowInterruption || !this.isTransitioning;
+      var promise = super.navigateTo(url, transition, trigger);
+      if (fresh) this.armWatchdog(promise);
+      return promise;
+    }
+
+    armWatchdog(promise) {
+      var self = this;
+      self.disarmWatchdog();
+      self.protoWatchdog = setTimeout(function () {
+        self.protoWatchdog = null;
+        if (!self.isTransitioning && !self.isPopping) return;
+        console.error('[proto-taxi] Navigation did not finish within ' + WATCHDOG_MS +
+          'ms; resetting the transition state so links keep working.');
+        self.isTransitioning = false;
+        self.isPopping = false;
+      }, WATCHDOG_MS);
+
+      promise.then(function () {
+        self.disarmWatchdog();
+      }, function (err) {
+        /* This navigation was the only one in flight (see `fresh`), so its
+           failure can release the lock straight away. */
+        self.disarmWatchdog();
+        self.isTransitioning = false;
+        self.isPopping = false;
+        console.error('[proto-taxi] Navigation failed; transition state reset.', err);
+      });
+    }
+
+    disarmWatchdog() {
+      if (this.protoWatchdog) {
+        clearTimeout(this.protoWatchdog);
+        this.protoWatchdog = null;
+      }
+    }
+  };
+
+  var core = new ProtoCore({
     links: LINKS,
-    transitions: { default: ProtoFade }
+    transitions: { default: ProtoFade },
+    renderers: { default: ProtoRenderer },
+    reloadCssFilter: isLiveStylesheet
     // reloadJsFilter is left at its default: only [data-taxi-reload] scripts
     // are re-run. inc/proto-taxi.php decides which tags carry it.
   });
@@ -123,7 +385,13 @@
     addTransition: function (name, TransitionClass) {
       core.transitions[name] = TransitionClass;
       return this;
-    }
+    },
+
+    /** Same predicate Taxi's click and prefetch handlers consult. */
+    isExcludedLink: isExcludedLink,
+
+    /** The href substrings behind it; push to it to exclude more at runtime. */
+    ignoreHrefPatterns: ignoreHrefPatterns
   };
 
   /* ----------------------------------------------------------------------

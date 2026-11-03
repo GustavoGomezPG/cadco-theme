@@ -191,3 +191,33 @@ function proto_taxi_mark_ignored_links($content)
 
     return $content;
 }
+
+/**
+ * Expose the link-exclusion list and the transition watchdog to proto-taxi.js.
+ *
+ * The script ships with the same defaults, so this is only needed to extend
+ * the list from a fork (`proto_taxi_ignore_href_patterns`). Links matching a
+ * pattern are never prefetched on hover/focus and never transitioned: a
+ * credentialed prefetch of `?_wpnonce=` or `?add-to-cart=` would otherwise
+ * perform the action (log out, fill the cart) just by hovering the link.
+ */
+add_action('wp_enqueue_scripts', function () {
+    if (!proto_taxi_is_enabled() || !wp_script_is('proto-taxi-init', 'enqueued')) {
+        return;
+    }
+
+    $patterns = array_values(array_filter((array) apply_filters('proto_taxi_ignore_href_patterns', [
+        '_wpnonce=', 'add-to-cart=', '?action=', '&action=', 'remove_item=', 'customer-logout', '/wp-admin', 'wp-login',
+    ]), 'is_string'));
+
+    $settings = [
+        'ignoreHrefPatterns' => $patterns,
+        'watchdogMs'         => max(1000, (int) apply_filters('proto_taxi_watchdog_ms', 10000)),
+    ];
+
+    wp_add_inline_script(
+        'proto-taxi-init',
+        'window.protoTaxiSettings = ' . wp_json_encode($settings, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) . ';',
+        'before'
+    );
+}, 20);

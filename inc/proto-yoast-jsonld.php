@@ -14,6 +14,15 @@
  *   stored as typed (so the user can fix it) but never output.
  * - Accepted shapes: a single node object, an array of nodes, or an object
  *   with `@graph`. `@context` is removed from every node.
+ * - Who may write it: users with `edit_post` on the post AND `unfiltered_html`
+ *   (the same capability core requires for raw markup). The graph is printed
+ *   into `<head>` by Yoast's encoder, which does not set JSON_HEX_TAG, so the
+ *   meta is treated like raw HTML: authors/contributors cannot write it.
+ * - Sanitised on write (`proto_jsonld_sanitize_meta`) and again on output
+ *   (`proto_jsonld_parse`): capped at PROTO_JSONLD_MAX_BYTES, nesting capped
+ *   at PROTO_JSONLD_MAX_DEPTH, scalars rejected, and in every string (keys
+ *   included) a `<` that could open a tag or comment inside `<script>`
+ *   (`</`, `<!`, `<?`, `<a`…) is removed. A bare `<` ("a < b") is kept.
  * - A node whose `@id` is the page's main schema id (or `#webpage`), or whose
  *   `@type` is WebPage or a WebPage subtype, is merged into Yoast's WebPage
  *   piece (properties array_merge'd, Yoast's `@id` kept, `@type`s unioned).
@@ -28,6 +37,12 @@
 defined('ABSPATH') || exit;
 
 const PROTO_JSONLD_META_KEY = '_proto_jsonld';
+
+/** Largest JSON-LD document accepted, in bytes (64 KB). Larger is dropped. */
+const PROTO_JSONLD_MAX_BYTES = 65536;
+
+/** Deepest nesting accepted, as json_decode() counts it. Deeper is dropped. */
+const PROTO_JSONLD_MAX_DEPTH = 16;
 
 /**
  * Whether Yoast SEO is loaded on this request.
@@ -71,7 +86,12 @@ add_action('init', function () {
             'default'       => '',
             'show_in_rest'  => true,
             'description'   => __('Custom JSON-LD nodes merged into the Yoast schema graph.', 'proto-theme'),
-            'auth_callback' => fn($allowed, $meta_key, $post_id) => current_user_can('edit_post', $post_id),
+            // Raw-markup capability, not just edit_post: this text ends up
+            // inside a <script> in <head> on the public page.
+            'auth_callback' => fn($allowed, $meta_key, $post_id) =>
+                current_user_can('edit_post', $post_id) && current_user_can('unfiltered_html'),
+            // Runs for every write path (REST, WP-CLI, update_post_meta).
+            'sanitize_callback' => 'proto_jsonld_sanitize_meta',
         ]);
     }
 
@@ -172,20 +192,135 @@ function proto_jsonld_enqueue_editor(): void
 }
 
 /**
+ * Remove, from every string in a decoded JSON structure, each `<` that could
+ * change the HTML tokenizer's state inside a `<script>` element.
+ *
+ * Inside script data only `<` followed by `!`, `/`, `?` or a letter opens a
+ * tag or comment (`</script`, `<!--`, `<script`); a bare `<` ("a < b") does
+ * nothing and is kept. Yoast prints the graph with wp_json_encode() without
+ * JSON_HEX_TAG, so this is what stands between stored text and `</script>`.
+ *
+ * Applied to values and to object keys. Object members whose key is not a
+ * string (PHP turns "1" into int 1) are dropped; lists keep their order and
+ * are re-indexed. Anything nested deeper than PROTO_JSONLD_MAX_DEPTH is
+ * replaced by an empty array.
+ *
+ * @param mixed $value Decoded JSON (string, number, bool, null or array).
+ * @return mixed Same shape, cleansed.
+ */
+function proto_jsonld_strip_tag_openers($value, int $depth = 0)
+{
+    if (is_string($value)) {
+        return (string) preg_replace('/<(?=[!\/?a-z])/i', '', $value);
+    }
+    if (!is_array($value)) {
+        return $value; // int, float, bool, null.
+    }
+    if ($depth >= PROTO_JSONLD_MAX_DEPTH) {
+        return [];
+    }
+
+    $is_list = proto_jsonld_is_list($value);
+    $out     = [];
+    foreach ($value as $key => $child) {
+        if (!$is_list) {
+            if (!is_string($key)) {
+                continue;
+            }
+            $key = proto_jsonld_strip_tag_openers($key);
+        }
+        $out[$key] = proto_jsonld_strip_tag_openers($child, $depth + 1);
+    }
+
+    return $is_list ? array_values($out) : $out;
+}
+
+/**
+ * Encode a cleansed structure back to text the editor shows: 2-space indent
+ * like its Format button (JSON.stringify(…, null, 2)), slashes and unicode
+ * unescaped. Leading whitespace in pretty-printed JSON is never inside a
+ * string, so halving the 4-space indent is safe.
+ */
+function proto_jsonld_encode(array $data): string
+{
+    $json = wp_json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+    if (!is_string($json)) {
+        return '';
+    }
+
+    return (string) preg_replace_callback(
+        '/^(?: {4})+/m',
+        fn($m) => str_repeat(' ', (int) (strlen($m[0]) / 2)),
+        $json
+    );
+}
+
+/**
+ * `sanitize_callback` for the `_proto_jsonld` meta: what gets stored.
+ *
+ * - Not a string, blank, over PROTO_JSONLD_MAX_BYTES or nested deeper than
+ *   PROTO_JSONLD_MAX_DEPTH: stored as ''.
+ * - Valid JSON that is a scalar (string, number, true/false/null): ''.
+ * - Valid JSON object or list: every string is cleansed by
+ *   proto_jsonld_strip_tag_openers(). If nothing had to change the text is
+ *   stored exactly as typed (formatting kept); otherwise the cleansed
+ *   structure is re-encoded.
+ * - Invalid JSON: kept as typed so the editor can show the error and the user
+ *   can fix it (it is never output), but with the same `<` cleanse applied to
+ *   the raw text so the stored value can never hold `</script` or `<!--`.
+ *
+ * @param mixed $value Meta value as submitted.
+ */
+function proto_jsonld_sanitize_meta($value, $meta_key = '', $object_type = '', $object_subtype = ''): string
+{
+    $value = is_string($value) ? trim($value) : '';
+    if ($value === '') {
+        return '';
+    }
+    if (strlen($value) > PROTO_JSONLD_MAX_BYTES) {
+        return '';
+    }
+
+    $decoded = json_decode($value, true, PROTO_JSONLD_MAX_DEPTH);
+    $error   = json_last_error();
+
+    if ($error === JSON_ERROR_DEPTH) {
+        return '';
+    }
+    if ($error !== JSON_ERROR_NONE) {
+        return proto_jsonld_strip_tag_openers($value); // Invalid: keep, cleansed.
+    }
+    if (!is_array($decoded)) {
+        return ''; // A JSON scalar is never a node.
+    }
+
+    $clean = proto_jsonld_strip_tag_openers($decoded);
+    if ($clean === $decoded) {
+        return $value;
+    }
+
+    return proto_jsonld_encode($clean);
+}
+
+/**
  * Parse the stored string into a list of nodes.
+ *
+ * Re-applies the size, depth and `<` cleanse on every read: meta written
+ * before the sanitize callback existed (or by code bypassing it) gets the
+ * same treatment before it reaches Yoast's encoder.
  *
  * @return array[] Nodes (associative arrays). Empty on blank/invalid input.
  */
 function proto_jsonld_parse(string $raw): array
 {
     $raw = trim($raw);
-    if ($raw === '') {
+    if ($raw === '' || strlen($raw) > PROTO_JSONLD_MAX_BYTES) {
         return [];
     }
 
-    $data = json_decode($raw, true);
+    $data = json_decode($raw, true, PROTO_JSONLD_MAX_DEPTH);
     if (!is_array($data)) {
-        return []; // Invalid JSON or a scalar — stored, never output.
+        return []; // Invalid JSON, too deep, or a scalar — stored, never output.
     }
 
     if (proto_jsonld_is_list($data)) {
@@ -205,6 +340,7 @@ function proto_jsonld_parse(string $raw): array
             continue;
         }
         unset($node['@context']);
+        $node = proto_jsonld_strip_tag_openers($node); // Defence in depth; see above.
         if ($node !== []) {
             $out[] = $node;
         }
