@@ -131,21 +131,42 @@ final class CADCO_Import_Validator
             }
         }
 
-        // Parent Product must name a model that exists in this workbook.
+        // Every Model # a Parent Product cell names must exist in this
+        // workbook. The cell holds a list, not a single model — an accessory
+        // fits several parents — so each entry is checked on its own and the
+        // issue names only the ones that are actually missing. Reporting the
+        // raw cell instead would put four correct models in front of CADCO
+        // alongside the one typo and leave them to find it.
         foreach ($rows as $row) {
             $parent = self::get($row, 'Parent Product');
 
-            if ($parent !== '' && !isset($models[$parent])) {
-                $report->add(new CADCO_Import_Issue(
-                    'A',
-                    self::sheet($row),
-                    self::row_no($row),
-                    'Parent Product',
-                    $parent,
-                    'Parent Product names a Model # that is not in the workbook.',
-                    'Correct the model number, or clear the cell.'
-                ));
+            if ($parent === '') {
+                continue;
             }
+
+            $missing = array_values(array_filter(
+                cadco_import_parent_models($parent),
+                static fn (string $model): bool => !isset($models[$model])
+            ));
+
+            if ($missing === []) {
+                continue;
+            }
+
+            $report->add(new CADCO_Import_Issue(
+                'A',
+                self::sheet($row),
+                self::row_no($row),
+                'Parent Product',
+                implode(', ', $missing),
+                sprintf(
+                    'Parent Product names %s that %s not in the workbook: %s.',
+                    count($missing) === 1 ? 'a Model #' : 'Model #s',
+                    count($missing) === 1 ? 'is' : 'are',
+                    implode(', ', $missing)
+                ),
+                'Correct the model number, or remove it from the cell.'
+            ));
         }
     }
 

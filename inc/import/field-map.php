@@ -197,8 +197,20 @@ function cadco_import_na_fields(): array
  * against 37 'Italy'; without this table both survive and the catalogue ends
  * up with two country terms for one country, with nobody told.
  *
- * Keyed by column, then by the alias in lower case. Only ISO country codes so
- * far — add entries when a new abbreviation actually appears in the data.
+ * Keyed by column, then by the alias in lower case.
+ *
+ * The table is per-column because the same word is canonical in one column
+ * and an alias in another: Color standardises on 'Stainless' (the finish),
+ * Material on 'Stainless Steel' (the substance). A single global map would
+ * have to choose one and corrupt the other, and the two columns genuinely do
+ * disagree — CADCO's own sheet holds 'Stainless Steel' in Color on 10 rows
+ * and 'Stainless' in Material on 1.
+ *
+ * Every entry below is a value CADCO have actually sent, corrected by hand in
+ * a returned workbook, and then sent again unchanged in the next revision.
+ * That is the test for belonging here: a correction that does not stay fixed
+ * at source has to be a rule, or we re-apply it by hand every round. Add
+ * entries only when a spelling actually appears in the data.
  *
  * @return array<string, array<string, string>>
  */
@@ -212,7 +224,111 @@ function cadco_import_value_aliases(): array
             'united kingdom' => 'UK',
             'germany'        => 'DE',
         ],
+
+        // CADCO confirmed on 14 October 2026 that the finish is written
+        // 'Stainless' in Color. 'Grey' is the British spelling of a value
+        // whose other 9 occurrences are 'Gray'.
+        'Color' => [
+            'stainless steel'           => 'Stainless',
+            'stainless/ metallic grey'  => 'Stainless/ Metallic Gray',
+            'stainless / metallic grey' => 'Stainless/ Metallic Gray',
+            'metallic grey'             => 'Metallic Gray',
+            'grey'                      => 'Gray',
+            'dark grey'                 => 'Dark Gray',
+        ],
+
+        // The substance, as against Color's finish. See the docblock above.
+        'Material' => [
+            'stainless' => 'Stainless Steel',
+        ],
     ];
+}
+
+/**
+ * Spellings standardised wherever they appear inside a cell's prose.
+ *
+ * cadco_import_value_aliases() can only match a whole cell, which is the
+ * right unit for Color or Country Of Origin. A brand name is different: it
+ * appears mid-sentence in Primary Description, as one bullet among twelve in
+ * the specification column, as one tag among nine in Specialties, and as the
+ * first word of a Type. The
+ * workbook CADCO sent on 2 November spells it four ways — 50 'VariKwik', 16
+ * 'Varikwik', 11 'Vari-Kwik' and 4 'VariKwiK' — and because Specialties and
+ * Type are both website filters, two spellings mean two filter terms for one
+ * brand.
+ *
+ * The normaliser's frequency pass cannot merge them: canonical_key() folds
+ * case but not punctuation inside a word, so 'Vari-Kwik' and 'VariKwik' never
+ * share a key, and where one spelling is the only one used in a column the
+ * majority it wins is the wrong one.
+ *
+ * Scope is deliberately narrow. These are brand standards — a name whose
+ * correct form its owner decides and we enforce — and NOT a general spell
+ * checker. Product-name typos are left alone on purpose: they are content,
+ * they belong in CADCO's master, and silently fixing them here would hide
+ * that they are still there. Every replacement the normaliser makes is
+ * recorded in its change list and reported, so nothing happens invisibly.
+ *
+ * Keyed by PCRE pattern; the value is the replacement. Patterns must be
+ * anchored to word boundaries so they cannot eat a longer word.
+ *
+ * @return array<string, string>
+ */
+function cadco_import_text_standards(): array
+{
+    return [
+        // Matches Varikwik, VariKwiK, Vari-Kwik and Vari Kwik, in any case.
+        '/\bVari[\s-]?Kwik\b/iu' => 'VariKwik',
+    ];
+}
+
+/**
+ * Columns whose cell holds an address rather than prose.
+ *
+ * cadco_import_text_standards() must not touch these: a share token is
+ * case-sensitive and opaque, and 'Website URL' is the left-hand side of the
+ * legacy redirect map, so rewriting a character in it breaks the redirect
+ * from the old site. Identity columns are listed for the same reason — a
+ * Model # or a UPC is matched exactly, never read.
+ *
+ * @return list<string>
+ */
+function cadco_import_verbatim_columns(): array
+{
+    return array_values(array_unique(array_merge(
+        cadco_import_multi_url_columns(),
+        ['Warranty URL', 'Website URL', 'Model #', 'UPC#', 'Parent Product']
+    )));
+}
+
+/**
+ * The Model #s a Parent Product cell names.
+ *
+ * An accessory fits more than one parent — a steam pan holder sold for four
+ * sizes of warming table, a drip tray for six — so CADCO populate the column
+ * with a list. In the 2 November workbook 13 of the 15 filled cells name more
+ * than one model, up to six, and two of them are separated by line breaks
+ * rather than commas because the cell was pasted from a document.
+ *
+ * Both separators are accepted, for the same reason CADCO_Import_Media::urls()
+ * accepts both. Order is preserved and duplicates are dropped, so the related
+ * products appear in the order CADCO listed them.
+ *
+ * @return list<string>
+ */
+function cadco_import_parent_models(string $cell): array
+{
+    $models = [];
+
+    foreach (preg_split('/[,\n\r]+/', $cell) ?: [] as $part) {
+        $part = trim((string) preg_replace('/\s+/u', ' ', $part));
+
+        if ($part !== '' && !in_array($part, $models, true)) {
+            $models[] = $part;
+        }
+    }
+
+    return $models;
 }
 
 /**

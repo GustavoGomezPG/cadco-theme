@@ -50,7 +50,38 @@ final class CADCO_Import_Normaliser
             }
         }
 
-        // Pass 2 — declared aliases. Applied before the frequency pass so an
+        // Pass 2 — brand standards, applied inside the text rather than to
+        // the whole cell. First of the three value passes, so that a cell the
+        // standard rewrites is then matched by the alias table and the
+        // frequency pass on its corrected spelling rather than its original.
+        $standards = cadco_import_text_standards();
+        $verbatim  = cadco_import_verbatim_columns();
+
+        if ($standards !== []) {
+            $patterns     = array_keys($standards);
+            $replacements = array_values($standards);
+
+            foreach ($rows as $i => $row) {
+                foreach ($row as $column => $value) {
+                    if (str_starts_with($column, '__')
+                        || !is_string($value)
+                        || $value === ''
+                        || in_array($column, $verbatim, true)
+                    ) {
+                        continue;
+                    }
+
+                    $clean = (string) preg_replace($patterns, $replacements, $value);
+
+                    if ($clean !== $value) {
+                        $changes[]         = self::change($row, $column, $value, $clean);
+                        $rows[$i][$column] = $clean;
+                    }
+                }
+            }
+        }
+
+        // Pass 3 — declared aliases. Applied before the frequency pass so an
         // aliased value joins its target's group rather than forming its own.
         foreach (cadco_import_value_aliases() as $column => $aliases) {
             foreach ($rows as $i => $row) {
@@ -69,7 +100,7 @@ final class CADCO_Import_Normaliser
             }
         }
 
-        // Pass 3 — collapse variant spellings onto the most frequent form.
+        // Pass 4 — collapse variant spellings onto the most frequent form.
         foreach (cadco_import_consistency_columns() as $column) {
             $canonical = $column === 'Specialties'
                 ? self::canonical_map_multi($rows, $column)
@@ -103,6 +134,22 @@ final class CADCO_Import_Normaliser
      */
     private static function whitespace(string $value, string $column): string
     {
+        // Invisible spaces first, or nothing below sees them. A cell holding
+        // only a no-break space is the worst case in the real workbook: it
+        // reads as empty in Excel, survives trim() because trim() strips
+        // ASCII whitespace only, and arrives as a one-character value. The
+        // 2 November workbook had 27 such cells over three rows, 3 of them in
+        // Material and Color — both attribute columns, so each would have
+        // created a WooCommerce filter term named with one invisible
+        // character, and the Tier C check that requires a value or an
+        // explicit 'n/a' would have counted it as answered.
+        //
+        // Folding them to a plain space makes such a cell genuinely blank, so
+        // it gets reported instead of silently imported. \p{Zs} is every
+        // space separator, including U+00A0; the rest are the zero-width
+        // characters a paste from Word or a web page leaves behind.
+        $value = preg_replace('/[\p{Zs}\x{200B}\x{200C}\x{200D}\x{FEFF}]/u', ' ', $value) ?? $value;
+
         $value = preg_replace('/[ \t]+/', ' ', $value) ?? $value;
         $value = preg_replace('/[ \t]*\n[ \t]*/', "\n", $value) ?? $value;
         $value = trim($value);

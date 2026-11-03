@@ -163,4 +163,85 @@ final class FieldMapTest extends TestCase
         self::assertSame(0, preg_match($pattern, '654796-+28:3052193-7'), 'formula artifact');
         self::assertSame(0, preg_match($pattern, ''), 'blank');
     }
+
+    public function test_parent_models_splits_on_commas_and_line_breaks(): void
+    {
+        self::assertSame(
+            ['WTBS-2N-HD', 'WTBS-3N-HD', 'WTBS-4N-HD'],
+            cadco_import_parent_models('WTBS-2N-HD, WTBS-3N-HD, WTBS-4N-HD')
+        );
+
+        // Two cells in the 2 November workbook use line breaks, from a paste.
+        self::assertSame(
+            ['WTBS-2RT', 'WTBS-4RT', 'WTBS-5RT'],
+            cadco_import_parent_models("WTBS-2RT,\nWTBS-4RT,\nWTBS-5RT")
+        );
+    }
+
+    public function test_parent_models_keeps_order_and_drops_duplicates(): void
+    {
+        self::assertSame(
+            ['WTBS-5RT', 'WTBS-2RT'],
+            cadco_import_parent_models('WTBS-5RT, WTBS-2RT, WTBS-5RT')
+        );
+    }
+
+    public function test_parent_models_of_an_empty_cell_is_empty(): void
+    {
+        self::assertSame([], cadco_import_parent_models(''));
+        self::assertSame([], cadco_import_parent_models('  ,  '));
+    }
+
+    public function test_verbatim_columns_cover_every_address_column(): void
+    {
+        $verbatim = cadco_import_verbatim_columns();
+
+        foreach (cadco_import_multi_url_columns() as $column) {
+            self::assertContains($column, $verbatim);
+        }
+
+        // Deliberately named, because both are addresses that
+        // cadco_import_multi_url_columns() excludes for other reasons.
+        self::assertContains('Warranty URL', $verbatim);
+        self::assertContains('Website URL', $verbatim);
+
+        // Identity columns are matched exactly, never read as prose.
+        self::assertContains('Model #', $verbatim);
+        self::assertContains('UPC#', $verbatim);
+    }
+
+    public function test_text_standards_are_anchored_patterns(): void
+    {
+        foreach (cadco_import_text_standards() as $pattern => $replacement) {
+            self::assertSame(
+                1,
+                preg_match($pattern, 'a VariKwik oven'),
+                $pattern . ' should match the brand in prose'
+            );
+
+            // An anchored pattern cannot eat a longer word that contains it.
+            self::assertNotSame(
+                'VariKwik',
+                preg_replace($pattern, $replacement, 'VariKwiks'),
+                $pattern . ' must be bounded by word boundaries'
+            );
+        }
+    }
+
+    public function test_colour_and_material_aliases_do_not_contradict(): void
+    {
+        $aliases = cadco_import_value_aliases();
+
+        // Each column's canonical values must not themselves be aliases in
+        // the same column, or the pass would depend on iteration order.
+        foreach ($aliases as $column => $map) {
+            foreach ($map as $alias => $canonical) {
+                self::assertArrayNotHasKey(
+                    mb_strtolower($canonical),
+                    $map,
+                    sprintf('%s: %s is both a canonical value and an alias', $column, $canonical)
+                );
+            }
+        }
+    }
 }

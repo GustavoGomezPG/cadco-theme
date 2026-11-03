@@ -98,6 +98,64 @@ final class ValidatorTest extends TestCase
         self::assertTrue($report->passed(), self::describe($report));
     }
 
+    public function test_a_parent_product_list_passes_when_every_model_resolves(): void
+    {
+        // CADCO populate the column with a list: in the 2 November workbook
+        // SPL-2P names five parents and C-DPF2-HD six. Checking the raw cell
+        // against the model index reported every one of those rows as a
+        // broken reference when nothing was wrong with any of them.
+        $report = \CADCO_Import_Validator::validate([
+            self::row(['Model #' => 'WTBS-2N-HD', 'UPC#' => '654796-11111-1']),
+            self::row(['Model #' => 'WTBS-3N-HD', 'UPC#' => '654796-22222-2']),
+            self::row(['Model #' => 'WTBS-4RT', 'UPC#' => '654796-33333-3']),
+            self::row([
+                'Model #'        => 'PS-TBS-HD',
+                'UPC#'           => '654796-44444-4',
+                'Parent Product' => 'WTBS-2N-HD, WTBS-3N-HD, WTBS-4RT',
+            ]),
+        ]);
+
+        self::assertTrue($report->passed(), self::describe($report));
+    }
+
+    public function test_a_parent_product_list_separated_by_line_breaks_passes(): void
+    {
+        // Two cells in the 2 November workbook separate their models with a
+        // line break rather than a comma, from being pasted in.
+        $report = \CADCO_Import_Validator::validate([
+            self::row(['Model #' => 'WTBS-2RT', 'UPC#' => '654796-11111-1']),
+            self::row(['Model #' => 'WTBS-4RT', 'UPC#' => '654796-22222-2']),
+            self::row([
+                'Model #'        => 'PS-TBS',
+                'UPC#'           => '654796-33333-3',
+                'Parent Product' => "WTBS-2RT,\nWTBS-4RT",
+            ]),
+        ]);
+
+        self::assertTrue($report->passed(), self::describe($report));
+    }
+
+    public function test_a_parent_product_list_reports_only_the_missing_model(): void
+    {
+        $report = \CADCO_Import_Validator::validate([
+            self::row(['Model #' => 'WTBS-2N-HD', 'UPC#' => '654796-11111-1']),
+            self::row([
+                'Model #'        => 'PS-TBS-HD',
+                'UPC#'           => '654796-22222-2',
+                'Parent Product' => 'WTBS-2N-HD, WTBS-9Z-HD',
+            ]),
+        ]);
+
+        $a = $report->by_tier()['A'] ?? [];
+
+        self::assertCount(1, $a);
+        self::assertSame('WTBS-9Z-HD', $a[0]->found);
+
+        // The four correct models must not be put in front of CADCO as if
+        // they were part of the problem.
+        self::assertStringNotContainsString('WTBS-2N-HD', $a[0]->message);
+    }
+
     public function test_punctuation_only_variants_are_tier_b(): void
     {
         // Same letters, different spacing. The normaliser's canonical key does

@@ -702,6 +702,10 @@ final class CADCO_Import_Applier
      * child post IDs and surfaced through the woocommerce_related_products
      * filter, which templates/single-product.html already renders.
      *
+     * A Parent Product cell names one model or several — see
+     * cadco_import_parent_models() — and a child listed against several
+     * parents is linked from each of them.
+     *
      * Rebuilt from scratch every run so a reference removed from the workbook
      * disappears rather than lingering.
      */
@@ -741,11 +745,27 @@ final class CADCO_Import_Applier
 
         $grouped = [];
 
-        foreach ($children as $child) {
-            $parent_id = CADCO_Import_Repository::find_by_sku((string) $child['parent_sku']);
+        // The cell holds a list of models, not one: an accessory that fits
+        // four sizes of warming table names all four, and the child appears
+        // under each of them. Passing the raw cell to find_by_sku() looked up
+        // the SKU 'WTBS-2N-HD, WTBS-3N-HD, WTBS-4N-HD', found nothing, and
+        // linked the accessory to no parent at all — silently, because a
+        // parent with no children is indistinguishable from one that was
+        // never referenced.
+        $resolved = [];
 
-            if ($parent_id !== null) {
-                $grouped[$parent_id][] = (int) $child['post_id'];
+        foreach ($children as $child) {
+            foreach (cadco_import_parent_models((string) $child['parent_sku']) as $model) {
+                // One lookup per distinct model rather than per row: the
+                // WTBS parents are each named by up to eight accessories,
+                // and wc_get_product_id_by_sku() is a database query.
+                if (!array_key_exists($model, $resolved)) {
+                    $resolved[$model] = CADCO_Import_Repository::find_by_sku($model);
+                }
+
+                if ($resolved[$model] !== null) {
+                    $grouped[$resolved[$model]][] = (int) $child['post_id'];
+                }
             }
         }
 
