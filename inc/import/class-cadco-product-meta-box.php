@@ -96,29 +96,32 @@ final class CADCO_Product_Meta_Box
      */
     private static function format(string $value): string
     {
-        $urls = class_exists('CADCO_Import_Media')
-            ? CADCO_Import_Media::urls($value)
-            : [];
-
-        if (count($urls) === 1 && trim($value) === $urls[0]) {
-            return self::link($urls[0]);
+        if (!class_exists('CADCO_Import_Media')) {
+            return nl2br(esc_html($value));
         }
 
-        if (count($urls) > 1) {
-            $items = '';
+        // Every link the cell holds, resolved the way the importer resolves
+        // it: a relative SharePoint link gets the tenant back on the front, a
+        // gateway-wrapped link shows its real target. A link that cannot be
+        // followed (a PC path) is listed as text, so it reads as the problem
+        // it is.
+        $tenant = (string) get_option('cadco_import_sharepoint_tenant', '');
+        $items  = [];
 
-            foreach ($urls as $url) {
-                $items .= sprintf('<li>%s</li>', self::link($url));
-            }
-
-            return sprintf('<ol style="margin:0;padding-left:1.4em">%s</ol>', $items);
+        foreach (CADCO_Import_Media::links($value) as $link) {
+            $url     = CADCO_Import_Media::resolve($link, $tenant)['url'];
+            $items[] = $url !== '' ? self::link($url) : '<code>' . esc_html($link) . '</code>';
         }
 
-        if (filter_var($value, FILTER_VALIDATE_URL) !== false) {
-            return self::link($value);
+        if ($items === []) {
+            return nl2br(esc_html($value));
         }
 
-        return nl2br(esc_html($value));
+        if (count($items) === 1) {
+            return $items[0];
+        }
+
+        return sprintf('<ol style="margin:0;padding-left:1.4em"><li>%s</li></ol>', implode('</li><li>', $items));
     }
 
     private static function link(string $url): string

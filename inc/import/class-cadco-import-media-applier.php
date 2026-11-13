@@ -75,6 +75,13 @@ final class CADCO_Import_Media_Applier
      */
     public static function queue(CADCO_Import_Media_Plan $plan, bool $refresh = false): array
     {
+        // Remembered so the product edit screen resolves the relative links
+        // it shows the same way the import did. update_option() writes only
+        // when the value changes.
+        if ($plan->tenant() !== '') {
+            update_option('cadco_import_sharepoint_tenant', $plan->tenant(), false);
+        }
+
         $jobs = [];
 
         foreach ($plan->files() as $key => $source) {
