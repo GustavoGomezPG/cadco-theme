@@ -121,6 +121,15 @@ applies to Spec Sheet, Manual, Diagram and Warranty URLs.
 **Therefore: media is out of scope for this phase. URLs are stored so phase 2
 can consume them.**
 
+> **Phase 2 (13 Nov 2026) — done.** CADCO made the media library
+> link-shareable, and the links turned out to be reachable anonymously through
+> SharePoint's `download.aspx?share=<token>` endpoint. Most workbook links are
+> hyperlinks behind file-name text, many of them relative to the tenant, some
+> wrapped by a mail gateway. The media stage (`CADCO_Import_Media`,
+> `_Media_Plan`, `_Fetcher`, `_Media_Applier`) resolves, downloads, dedupes and
+> attaches them; unusable links are non-blocking notices. See the theme README,
+> "Media: images, spec sheets, manuals and videos".
+
 ### 2.8 Attribute cardinality
 
 29 candidate spec columns would produce 506 attribute terms. 396 of those come
@@ -474,8 +483,7 @@ and can never be shipped by accident.
 
 ## 10. Out of scope
 
-- **Media import** — images, spec sheets, manuals. Deferred to phase 2; URLs
-  are stored as meta so that phase can consume them.
+- ~~**Media import**~~ — delivered in phase 2; see §2.7.
 - **Variable products** — no workbook column drives variation attributes.
 - **Pricing** — the site does not sell; the previous workbook's `LIST PRICING`
   sheet is not present in the current one and is not imported.

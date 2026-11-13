@@ -105,6 +105,8 @@ final class CADCO_Import_Admin
                 'doneWithFailures' => __('Done — {applied} of {total} changes applied. {failed} failed; see the list below.', 'cadco-theme'),
                 /* translators: {count} is replaced with the number of failed rows */
                 'failuresHeading'  => __('{count} row(s) failed and were not applied:', 'cadco-theme'),
+                'mediaFailuresHeading'  => __('{count} media item(s) could not be imported. The products are in; fix these links and import again to add the files:', 'cadco-theme'),
+                'mediaDoneWithFailures' => __('{count} media item(s) could not be imported; see the list below.', 'cadco-theme'),
                 'labelSaved'       => __('Saved.', 'cadco-theme'),
                 'labelFailed'      => __('Could not save the label.', 'cadco-theme'),
                 /* translators: {read} and {total} are each replaced with a number of sheets, e.g. "4 of 4 sheets" */
@@ -1115,6 +1117,16 @@ final class CADCO_Import_Admin
         $term_diff    = CADCO_Import_Term_Diff::compare($result['rows'], self::existing_terms());
         $redirect_map = self::redirect_map();
 
+        // What the media stage will do: downloads still to make, resources
+        // to create or retire, and the links that cannot be used. Planned
+        // from every row, as the apply step plans it.
+        $media_plan = CADCO_Import_Media_Plan::build($result['rows']);
+        $media      = [
+            'plan'    => $media_plan,
+            'preview' => CADCO_Import_Media_Applier::preview($media_plan),
+            'run_id'  => self::current_run_id(),
+        ];
+
         CADCO_Import_View::review(
             $result['plan'],
             $result['changes'],
@@ -1122,7 +1134,8 @@ final class CADCO_Import_Admin
             $term_diff,
             $workbook,
             $redirect_map,
-            $result['restore'] ?? null
+            $result['restore'] ?? null,
+            $media
         );
     }
 
@@ -1564,7 +1577,12 @@ final class CADCO_Import_Admin
             wp_die(esc_html__('That import run could not be found.', 'cadco-theme'));
         }
 
-        $path = $dir . '/report.csv';
+        // Two files per run can be exported: the validation report, and
+        // the media notices (links the import could not use). Named by a
+        // fixed choice, never by the request, so no path is ever built from
+        // input.
+        $media = self::request_string($_GET['file'] ?? null) === 'media';
+        $path  = $dir . ($media ? '/media-notices.csv' : '/report.csv');
 
         if (is_link($path) || !is_readable($path)) {
             wp_die(esc_html__('That run\'s report is no longer available.', 'cadco-theme'));
@@ -1578,7 +1596,7 @@ final class CADCO_Import_Admin
 
         nocache_headers();
         header('Content-Type: text/csv; charset=utf-8');
-        header('Content-Disposition: attachment; filename=cadco-import-report.csv');
+        header('Content-Disposition: attachment; filename=' . ($media ? 'cadco-media-notices.csv' : 'cadco-import-report.csv'));
 
         echo $csv;
         exit;

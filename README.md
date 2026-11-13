@@ -883,11 +883,82 @@ deliberately re-arms the flush after every incomplete batch as a safety net
 (an abandoned run must not leave category permalinks 404ing), so a 236-row
 run at the default batch size flushes once per batch.
 
-### Out of scope
+### Media: images, spec sheets, manuals and videos
 
-Images, spec sheets and manuals are not imported — most links in the workbook
-point to SharePoint locations requiring a CADCO login. The URLs are stored as
-`_cadco_*` meta so a later phase can consume them.
+After the product jobs, the same Apply run imports what the media columns link
+to and puts it where the site reads it:
+
+| Column | Becomes |
+|---|---|
+| `Images URL` | The product's featured image (first link) and gallery (the rest) |
+| `Spec Sheet URL` | A `resource` filed under Spec Sheet, tagged to every product citing it |
+| `Manual URL` | A `resource` filed under Manual |
+| `Video URL` | A video `resource` (YouTube/Vimeo, embedded, with the provider's still) |
+
+A cell can hold several links, comma- or line-separated. Most cells show a
+file name with the real link as a **hyperlink behind it**; the reader appends
+that hyperlink to the cell's value (only in these four columns), so a
+re-pointed link is an ordinary update.
+
+`CADCO_Import_Media::resolve()` turns each link into something downloadable:
+
+- SharePoint sharing links, short (`/:b:/s/<site>/<token>`) or the long library
+  form (`.../AllItems.aspx?id=...&share=<token>`), download anonymously through
+  `/_layouts/15/download.aspx?share=<token>` — no sign-in, no cookies.
+- **Relative** links (`../../../:i:/r/sites/...`, which Excel writes when the
+  workbook is saved inside the same SharePoint tenant) are completed with the
+  tenant most of the workbook's absolute links use.
+- Links wrapped by a mail gateway (Check Point `protect.checkpoint.com`,
+  Microsoft Safe Links, Proofpoint URL Defense) are unwrapped.
+- Dropbox links are asked for the file (`dl=1`), Google Drive links go through
+  its export address, YouTube and Vimeo links are recognised in every form.
+
+What cannot be used is reported, never fetched, and **never blocks the
+import** — a product with a broken image link is still worth publishing.
+Review lists every such link with its sheet, row, column and the fix
+(downloadable as CSV for CADCO): folder links, paths on someone's PC
+(`file:///C:/...`), library paths only signed-in staff can open, bare file
+names with no link, and files on `cadco-ltd.com`, which are imported today but
+flagged because that site disappears at launch.
+
+A download is accepted only when its first bytes say it is a PDF, image or
+video (SVG never) — SharePoint answers a locked or throttled request with
+`200` and an HTML page, and the refusal reason is reported in words. CMYK JPEGs
+are converted to sRGB before entering the media library. Files are
+deduplicated by content hash, so two links to one PDF are one attachment and
+one resource.
+
+Ownership is recorded, which is what keeps re-runs safe:
+
+- an attachment remembers every link it came from (`_cadco_media_source`) —
+  a link is downloaded **once**; tick *Download every file again* on Review
+  (or `--refresh-media`) to pick up a file CADCO replaced behind the same link;
+- a product remembers which images the importer set (`_cadco_import_images`)
+  — only those are replaced or removed, so an image an editor adds survives;
+- a resource the importer made carries `_cadco_import_resource` — only those
+  are retitled (unless an editor renamed it), retagged or trashed when no
+  product cites them any more. Hand-made resources are never touched.
+
+A failed download never removes anything: the product keeps what it had.
+Only an emptied cell removes the importer's media for it. An unchanged
+workbook downloads and writes nothing.
+
+Apply batches stop after ~20 seconds, so downloads never run a request past
+the host's limit; the screen resumes from where the batch stopped.
+
+### Command line
+
+The same pipeline runs from WP-CLI — useful for a large first media download,
+a server shell, or scripting:
+
+```bash
+wp cadco-import check <workbook.xlsx> [--notices]     # validate + plan + media preview; writes nothing
+wp cadco-import run   <workbook.xlsx> [--approve-renames=<upc,...>|all] [--refresh-media] [--skip-media] [--yes]
+wp cadco-import media <workbook.xlsx> [--refresh]     # media stage only, e.g. to retry downloads
+```
+
+A `run` is archived exactly like one from the screen and appears in History.
+Renames are never applied without `--approve-renames`.
 
 ### The `vendor/` directory is committed on purpose
 
@@ -918,9 +989,18 @@ simply aren't on disk to be added.
 ### Running the tests
 
 ```bash
-composer test        # PHP units, no WordPress required (~116 tests, ~287 assertions)
-npm run test:e2e     # Browser: wizard, review, apply, history, restore (~29 tests, ~6 minutes)
+composer test                         # PHP units, no WordPress required
+tests/integration/run-media.sh        # Media stage against real WordPress, network mocked
+npm run test:e2e                      # Browser: wizard, review, apply, history, restore (~6 minutes)
 ```
+
+`tests/integration/run-media.sh` runs the media stage's whole lifecycle —
+first import, unchanged re-run, editor edits, changed and emptied cells,
+failed downloads, refresh, product renames and removals — against the real
+WordPress with every HTTP request answered from a table, inside a database
+snapshot it restores afterwards (the stage's clean-up is catalogue-wide). Set
+`WP` to the site's WP-CLI command and `WP_DB_ARGS` to anything `wp db
+export/import` needs (a `--socket=` for a Local site).
 
 `composer test` covers the pure pipeline units — Reader, Normaliser,
 Validator, Planner, Plan and Report — plus the Archive and its run-id

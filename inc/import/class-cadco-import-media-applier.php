@@ -218,7 +218,11 @@ final class CADCO_Import_Media_Applier
             CADCO_Import_Fetcher::discard($file['path']);
 
             if ($existing > 0 && $existing !== $same) {
+                // A refresh found that this link now serves bytes another
+                // link already brought in (two links to one file, both
+                // replaced). Same hand-over as a fresh download.
                 self::move_source($key, $existing, $same);
+                self::rekey_resources($existing, $same);
             } elseif ($existing !== $same) {
                 add_post_meta($same, self::SOURCE_META, $key);
                 self::$sources[$key] = $same;
@@ -320,7 +324,17 @@ final class CADCO_Import_Media_Applier
             require_once ABSPATH . 'wp-admin/includes/image.php';
         }
 
+        // No preview images for PDFs. WordPress renders a PDF's first page
+        // into every image size when it can (Imagick with Ghostscript); the
+        // site never shows those — a document resource is a link, not a
+        // picture — and it is the slowest step of importing one, seconds per
+        // file across a few hundred spec sheets and manuals.
+        $no_previews = static fn (): array => [];
+        add_filter('fallback_intermediate_image_sizes', $no_previews);
+
         $id = media_handle_sideload(['name' => $name, 'tmp_name' => $path], 0, $title);
+
+        remove_filter('fallback_intermediate_image_sizes', $no_previews);
 
         if (is_wp_error($id)) {
             return 0;
@@ -1009,9 +1023,44 @@ final class CADCO_Import_Media_Applier
             $trashed[] = $resource->post_title;
         }
 
-        return $trashed === []
+        $terms = self::remove_orphan_product_terms();
+        $line  = $trashed === []
             ? 'Resources no longer cited: none'
             : sprintf('Resources no longer cited, moved to the trash: %s', implode(', ', $trashed));
+
+        return $terms > 0 ? $line . sprintf('; %d unused product tag(s) removed from the resource library', $terms) : $line;
+    }
+
+    /**
+     * Delete resource_product terms the importer made whose product is gone
+     * and which no resource uses any more. Only the importer's own terms
+     * (they carry _cadco_product_id); a term an editor made is theirs.
+     */
+    private static function remove_orphan_product_terms(): int
+    {
+        $terms = get_terms([
+            'taxonomy'   => 'resource_product',
+            'hide_empty' => false,
+            'meta_key'   => self::PRODUCT_TERM,
+        ]);
+
+        if (is_wp_error($terms)) {
+            return 0;
+        }
+
+        $removed = 0;
+
+        foreach ($terms as $term) {
+            $product = get_post((int) get_term_meta($term->term_id, self::PRODUCT_TERM, true));
+            $live    = $product instanceof WP_Post && $product->post_type === 'product' && $product->post_status !== 'trash';
+
+            if (!$live && (int) $term->count === 0) {
+                wp_delete_term($term->term_id, 'resource_product');
+                $removed++;
+            }
+        }
+
+        return $removed;
     }
 
     /**

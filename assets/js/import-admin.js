@@ -37,12 +37,25 @@
 		});
 	}
 
+	/**
+	 * The media stage's failures: a file that would not download, a link
+	 * that is not an image. Counted apart from product failures because they
+	 * mean something different — the product was imported, only one of its
+	 * files was not — and because folding them in would make "applied" count
+	 * downloads as product changes.
+	 */
+	function extractMediaFailures(log) {
+		return (log || []).filter(function (line) {
+			return (/^MEDIA FAILED/).test(line);
+		});
+	}
+
 	// Exposed for a plain `node` test of the string/counting logic above,
 	// which has no DOM to run against. No-ops in the browser, where `module`
 	// is undefined. Everything past this point touches the DOM, so it is
 	// skipped entirely outside a browser rather than merely left unreachable.
 	if (typeof module !== 'undefined' && module.exports) {
-		module.exports = { format: format, extractFailures: extractFailures };
+		module.exports = { format: format, extractFailures: extractFailures, extractMediaFailures: extractMediaFailures };
 	}
 
 	if (typeof document === 'undefined') {
@@ -774,6 +787,19 @@
 
 	/** Accumulated across every batch of this run — never reset mid-run. */
 	var failures = [];
+	var mediaFailures = [];
+
+	// The media failures box sits under the product failures box. Built here
+	// rather than in PHP so the markup the existing tests pin stays as it was.
+	var mediaBox = document.createElement('div');
+	mediaBox.id = 'cadco-import-media-failures';
+	mediaBox.className = 'cadco-import-message is-warning';
+	mediaBox.hidden = true;
+	var mediaHeading = document.createElement('p');
+	var mediaList = document.createElement('ul');
+	mediaBox.appendChild(mediaHeading);
+	mediaBox.appendChild(mediaList);
+	failuresBox.parentNode.insertBefore(mediaBox, failuresBox.nextSibling);
 
 	/**
 	 * UPCs of the renames the operator ticked. Read fresh on every batch so
@@ -792,6 +818,25 @@
 	 * an operator watching a long run sees a problem as soon as it happens
 	 * rather than only in the final summary.
 	 */
+	function recordMediaFailures(log) {
+		var newFailures = extractMediaFailures(log);
+
+		if (newFailures.length === 0) {
+			return;
+		}
+
+		mediaFailures = mediaFailures.concat(newFailures);
+
+		mediaBox.hidden = false;
+		mediaHeading.textContent = format(config.i18n.mediaFailuresHeading, { count: mediaFailures.length });
+
+		newFailures.forEach(function (line) {
+			var li = document.createElement('li');
+			li.textContent = line.replace(/^MEDIA FAILED:?\s*/, '');
+			mediaList.appendChild(li);
+		});
+	}
+
 	function recordFailures(log) {
 		var newFailures = extractFailures(log);
 
@@ -826,6 +871,13 @@
 		body.append('size', config.batchSize);
 		approved().forEach(function (upc) { body.append('approved[]', upc); });
 
+		// Only read at offset 0, where the server builds the queue; sent on
+		// every batch for simplicity.
+		var refresh = document.getElementById('cadco-import-refresh-media');
+		if (refresh && refresh.checked) {
+			body.append('refresh_media', '1');
+		}
+
 		window.fetch(config.ajaxUrl, {
 			method: 'POST',
 			body: body,
@@ -842,6 +894,7 @@
 				var data = result.data;
 
 				recordFailures(data.log);
+				recordMediaFailures(data.log);
 
 				bar.value = data.total ? Math.round((data.done / data.total) * 100) : 100;
 				status.textContent = data.done + ' / ' + data.total;
@@ -853,11 +906,19 @@
 					// count has to be computed here, from what recordFailures
 					// has been accumulating, or a run with failures reports
 					// the full total as if every row had succeeded.
-					var applied = data.total - failures.length;
+					//
+					// Only product jobs count as changes: the media stage's
+					// jobs are reported by their own line below.
+					var productTotal = typeof data.products === 'number' ? data.products : data.total;
+					var applied = productTotal - failures.length;
 
 					status.textContent = failures.length
-						? format(config.i18n.doneWithFailures, { applied: applied, total: data.total, failed: failures.length })
+						? format(config.i18n.doneWithFailures, { applied: applied, total: productTotal, failed: failures.length })
 						: format(config.i18n.done, { applied: applied });
+
+					if (mediaFailures.length) {
+						status.textContent += ' ' + format(config.i18n.mediaDoneWithFailures, { count: mediaFailures.length });
+					}
 
 					return;
 				}
@@ -875,8 +936,11 @@
 		box.hidden = false;
 		bar.value = 0;
 		failures = [];
+		mediaFailures = [];
 		failuresBox.hidden = true;
 		failuresList.innerHTML = '';
+		mediaBox.hidden = true;
+		mediaList.innerHTML = '';
 		step(0);
 	});
 }());

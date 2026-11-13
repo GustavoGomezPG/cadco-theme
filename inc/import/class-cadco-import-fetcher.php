@@ -226,11 +226,18 @@ final class CADCO_Import_Fetcher
 
         $max = (int) apply_filters('cadco_import_media_max_bytes', self::MAX_BYTES);
 
+        // Inside a web request the whole download, retries included, has to
+        // fit under the host's limit (WP Engine stops requests at 60s), so a
+        // slow host gets one 25s try there and is retried by the next
+        // import. The command line has no such limit.
+        $web     = function_exists('wp_doing_ajax') && wp_doing_ajax();
+        $timeout = (int) apply_filters('cadco_import_media_timeout', $web ? 25 : 45);
+
         for ($attempt = 1; $attempt <= max(1, $attempts); $attempt++) {
             $tmp = wp_tempnam('cadco-media');
 
             $response = wp_safe_remote_get($url, [
-                'timeout'             => 45,
+                'timeout'             => $timeout,
                 'redirection'         => 6,
                 'stream'              => true,
                 'filename'            => $tmp,
@@ -246,7 +253,7 @@ final class CADCO_Import_Fetcher
                 $result['error']     = 'The download failed: ' . $response->get_error_message();
                 $result['retryable'] = true;
 
-                if ($attempt < $attempts) {
+                if ($attempt < $attempts && !$web) {
                     sleep(2 * $attempt);
                     continue;
                 }
@@ -267,9 +274,15 @@ final class CADCO_Import_Fetcher
             }
 
             if ($type === '') {
+                // A refusal page states its reason deep in the markup —
+                // SharePoint's "cannot access this document" sits about
+                // 100 KB into a 140 KB page — so the explanation reads far
+                // more of it than the sniff needed.
+                $page = $size > 0 ? (string) file_get_contents($tmp, false, null, 0, 512 * 1024) : '';
+
                 self::discard($tmp);
-                $result['error']     = self::explain_refusal($head, $status);
-                $result['retryable'] = self::retryable($head, $status);
+                $result['error']     = self::explain_refusal($page, $status);
+                $result['retryable'] = self::retryable($page, $status);
 
                 if ($result['retryable'] && $attempt < $attempts) {
                     sleep(3 * $attempt);

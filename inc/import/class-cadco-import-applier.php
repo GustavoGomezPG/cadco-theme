@@ -117,7 +117,7 @@ final class CADCO_Import_Applier
      * the command line.
      *
      * @param list<array<string, mixed>> $queue
-     * @return array{done:int,total:int,complete:bool,log:list<string>}
+     * @return array{done:int,total:int,complete:bool,log:list<string>,products:int}
      */
     public static function apply_jobs(array $queue, int $offset, int $size, float $budget = 0.0): array
     {
@@ -151,6 +151,9 @@ final class CADCO_Import_Applier
             'total'    => $total,
             'complete' => $done >= $total,
             'log'      => $log,
+            // Product jobs only — the screen's "N changes applied" counts
+            // these, and reports the media stage separately.
+            'products' => count(array_filter($queue, static fn (array $job): bool => !str_starts_with((string) $job['op'], 'media-'))),
         ];
     }
 

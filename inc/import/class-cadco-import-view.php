@@ -884,7 +884,8 @@ final class CADCO_Import_View
         array $term_diff,
         array $workbook,
         array $redirect_map,
-        ?array $restore = null
+        ?array $restore = null,
+        ?array $media = null
     ): void {
         $counts = $plan->counts();
 
@@ -958,6 +959,11 @@ final class CADCO_Import_View
                 'meta'  => (string) count($changes),
                 'muted' => $changes === [],
             ],
+            'media' => [
+                'label' => __('Media', 'cadco-theme'),
+                'meta'  => $media === null ? '' : self::media_nav_meta($media),
+                'muted' => $media === null,
+            ],
             'redirects' => [
                 'label' => __('Redirects', 'cadco-theme'),
                 // The forecast, not count($redirect_map) — see
@@ -984,6 +990,11 @@ final class CADCO_Import_View
                 self::section_renames($plan);
                 self::section_removals($plan);
                 self::section_cleaned_up($changes);
+
+                if ($media !== null) {
+                    self::section_media($media);
+                }
+
                 self::section_redirects($redirect_map, $redirect_forecast);
                 ?>
             </div>
@@ -1464,6 +1475,133 @@ final class CADCO_Import_View
     {
         self::section_open('cleaned-up');
         self::cleaned_up_table($changes);
+        self::section_close();
+    }
+
+    /**
+     * The navigator badge for Media: what will be downloaded, or how many
+     * links need fixing when nothing is.
+     *
+     * @param array{plan:CADCO_Import_Media_Plan,preview:array,run_id:string} $media
+     */
+    private static function media_nav_meta(array $media): string
+    {
+        $downloads = (int) $media['preview']['downloads'];
+        $notices   = count($media['plan']->notices());
+
+        if ($downloads > 0) {
+            /* translators: %d: number of files to download */
+            return sprintf(_n('%d file', '%d files', $downloads, 'cadco-theme'), $downloads);
+        }
+
+        /* translators: %d: number of media links that cannot be used */
+        return $notices > 0 ? sprintf(_n('%d to fix', '%d to fix', $notices, 'cadco-theme'), $notices) : '0';
+    }
+
+    /**
+     * The media stage: what will be downloaded and changed, the option to
+     * download everything again, and every link that cannot be used.
+     *
+     * The notices do not block the import — see CADCO_Import_Media_Plan —
+     * so they are presented as a worklist for CADCO, not as errors.
+     *
+     * @param array{plan:CADCO_Import_Media_Plan,preview:array{downloads:int,images:int,resources_new:int,resources_changed:int,resources_removed:int},run_id:string} $media
+     */
+    private static function section_media(array $media): void
+    {
+        $plan    = $media['plan'];
+        $preview = $media['preview'];
+        $counts  = $plan->counts();
+        $notices = $plan->notices();
+
+        self::section_open('media');
+        ?>
+        <h2 id="cadco-heading-media"><?php esc_html_e('Media', 'cadco-theme'); ?> <span class="count<?php echo $preview['downloads'] === 0 ? ' is-zero' : ''; ?>"><?php echo (int) $preview['downloads']; ?></span></h2>
+        <p class="description">
+            <?php esc_html_e('Product images become each product\'s featured image and gallery. Spec sheets, manuals and videos become resources, listed on every product that cites them and in the resource centre. Files are downloaded once and kept in the media library.', 'cadco-theme'); ?>
+        </p>
+        <table class="widefat striped cadco-import-media-summary">
+            <tbody>
+                <tr>
+                    <th scope="row"><?php esc_html_e('Files cited', 'cadco-theme'); ?></th>
+                    <td><?php
+                        printf(
+                            /* translators: 1: files cited, 2: files to download, 3: files already in the library */
+                            esc_html__('%1$d — %2$d to download, %3$d already in the media library', 'cadco-theme'),
+                            (int) $counts['files'],
+                            (int) $preview['downloads'],
+                            max(0, (int) $counts['files'] - (int) $preview['downloads'])
+                        );
+                    ?></td>
+                </tr>
+                <tr>
+                    <th scope="row"><?php esc_html_e('Videos', 'cadco-theme'); ?></th>
+                    <td><?php echo (int) $counts['videos']; ?></td>
+                </tr>
+                <tr>
+                    <th scope="row"><?php esc_html_e('Resources', 'cadco-theme'); ?></th>
+                    <td><?php
+                        printf(
+                            /* translators: 1: total, 2: new, 3: changed, 4: removed */
+                            esc_html__('%1$d — %2$d new, %3$d changed, %4$d no longer cited (moved to the trash)', 'cadco-theme'),
+                            (int) $counts['resources'],
+                            (int) $preview['resources_new'],
+                            (int) $preview['resources_changed'],
+                            (int) $preview['resources_removed']
+                        );
+                    ?></td>
+                </tr>
+                <tr>
+                    <th scope="row"><?php esc_html_e('Existing products whose images change', 'cadco-theme'); ?></th>
+                    <td><?php echo (int) $preview['images']; ?></td>
+                </tr>
+            </tbody>
+        </table>
+        <p>
+            <label>
+                <input type="checkbox" id="cadco-import-refresh-media" value="1" />
+                <?php esc_html_e('Download every file again, to pick up documents CADCO replaced without changing their link. Slower; only needed when a file was updated in place.', 'cadco-theme'); ?>
+            </label>
+        </p>
+
+        <h3><?php esc_html_e('Links that cannot be used', 'cadco-theme'); ?> <span class="count<?php echo $notices === [] ? ' is-zero' : ''; ?>"><?php echo count($notices); ?></span></h3>
+        <?php if ($notices === []) : ?>
+            <p class="description"><?php esc_html_e('Every media link in the workbook can be used.', 'cadco-theme'); ?></p>
+        <?php else : ?>
+            <p class="description">
+                <?php esc_html_e('These do not stop the import: the product is imported without that file. Send the list to CADCO; once a link is fixed, the next import picks the file up.', 'cadco-theme'); ?>
+                <?php if ($media['run_id'] !== '') : ?>
+                    <a href="<?php echo esc_url(wp_nonce_url(
+                        admin_url('edit.php?post_type=product&page=cadco-import&action=export-archived-report&file=media&run_id=' . rawurlencode($media['run_id'])),
+                        CADCO_Import_Admin::NONCE
+                    )); ?>"><?php esc_html_e('Download the list (CSV)', 'cadco-theme'); ?></a>
+                <?php endif; ?>
+            </p>
+            <table class="widefat striped">
+                <thead><tr>
+                    <th><?php esc_html_e('Sheet', 'cadco-theme'); ?></th>
+                    <th><?php esc_html_e('Row', 'cadco-theme'); ?></th>
+                    <th><?php esc_html_e('Column', 'cadco-theme'); ?></th>
+                    <th><?php esc_html_e('Link', 'cadco-theme'); ?></th>
+                    <th><?php esc_html_e('Problem', 'cadco-theme'); ?></th>
+                    <th><?php esc_html_e('How to fix', 'cadco-theme'); ?></th>
+                </tr></thead>
+                <tbody>
+                <?php foreach (array_slice($notices, 0, 200) as $notice) : ?>
+                    <tr>
+                        <td><?php echo esc_html($notice->sheet); ?></td>
+                        <td><?php echo $notice->row === null ? '' : (int) $notice->row; ?></td>
+                        <td><?php echo esc_html($notice->column); ?></td>
+                        <td><code class="cadco-import-link"><?php echo esc_html(mb_strimwidth($notice->found, 0, 90, '…')); ?></code></td>
+                        <td><?php echo esc_html($notice->message); ?></td>
+                        <td><?php echo esc_html($notice->fix); ?></td>
+                    </tr>
+                <?php endforeach; ?>
+                </tbody>
+            </table>
+            <?php self::truncation_note(count($notices)); ?>
+        <?php endif; ?>
+        <?php
         self::section_close();
     }
 
