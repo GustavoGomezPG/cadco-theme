@@ -159,6 +159,17 @@ final class CADCO_Import_Applier
     {
         $queue = [];
 
+        // Trashes run first. A trashed product gives up its slug (WordPress
+        // renames it to <slug>__trashed) and drops out of WooCommerce's
+        // duplicate-SKU check, both of which a create or rename later in the
+        // same run may need: a product the workbook re-keys onto an address
+        // or model number an outgoing product still holds would otherwise be
+        // created as "<slug>-2", or refused as a duplicate SKU, depending on
+        // which of the two happened to run first.
+        foreach ($plan->trashes() as $item) {
+            $queue[] = ['op' => 'trash', 'post_id' => (int) $item['post_id'], 'sku' => (string) $item['sku']];
+        }
+
         foreach ($plan->creates() as $item) {
             $queue[] = ['op' => 'create', 'row' => $item['row'], 'post_id' => null];
         }
@@ -176,10 +187,6 @@ final class CADCO_Import_Applier
                     'old_sku' => (string) $item['old_sku'],
                 ];
             }
-        }
-
-        foreach ($plan->trashes() as $item) {
-            $queue[] = ['op' => 'trash', 'post_id' => (int) $item['post_id'], 'sku' => (string) $item['sku']];
         }
 
         foreach ($plan->untrashes() as $item) {

@@ -28,20 +28,30 @@ final class CADCO_Import_Repository
         global $wpdb;
 
         // SKU and UPC come from WooCommerce's lookup table, where both are
-        // indexed columns; only the import hash and snapshot need a postmeta
-        // join.
+        // indexed columns, falling back to the _sku / _global_unique_id meta
+        // the lookup row is built from. The lookup table is a cache that
+        // WooCommerce only fills when a product is saved through its own data
+        // store: a product written any other way (wp_insert_post plus
+        // update_post_meta, a migration, a direct SQL import) has no row
+        // there. Read from the lookup alone, such a product looks SKU-less,
+        // so the planner trashes it and plans a create for its model, and
+        // that create then fails on WooCommerce's duplicate-SKU check because
+        // the trash has not happened yet. Six placeholder products on the
+        // dev site were exactly this case.
         $lookup       = $wpdb->prefix . 'wc_product_meta_lookup';
         $snapshot_key = '_cadco_' . cadco_import_snapshot_meta_key();
 
         $rows = $wpdb->get_results(
             $wpdb->prepare(
                 "SELECT p.ID AS post_id,
-                        COALESCE(l.sku, '')              AS sku,
-                        COALESCE(l.global_unique_id, '') AS upc,
+                        COALESCE(NULLIF(l.sku, ''), skum.meta_value, '')              AS sku,
+                        COALESCE(NULLIF(l.global_unique_id, ''), upcm.meta_value, '') AS upc,
                         COALESCE(hash.meta_value, '')    AS hash,
                         snap.meta_value                  AS snapshot
                    FROM {$wpdb->posts} p
               LEFT JOIN {$lookup} l            ON l.product_id = p.ID
+              LEFT JOIN {$wpdb->postmeta} skum ON skum.post_id = p.ID AND skum.meta_key = '_sku'
+              LEFT JOIN {$wpdb->postmeta} upcm ON upcm.post_id = p.ID AND upcm.meta_key = '_global_unique_id'
               LEFT JOIN {$wpdb->postmeta} hash ON hash.post_id = p.ID AND hash.meta_key = '_cadco_import_hash'
               LEFT JOIN {$wpdb->postmeta} snap ON snap.post_id = p.ID AND snap.meta_key = %s
                   WHERE p.post_type = 'product'
@@ -105,12 +115,14 @@ final class CADCO_Import_Repository
         $rows = $wpdb->get_results(
             $wpdb->prepare(
                 "SELECT p.ID AS post_id,
-                        COALESCE(l.sku, '')              AS sku,
-                        COALESCE(l.global_unique_id, '') AS upc,
+                        COALESCE(NULLIF(l.sku, ''), skum.meta_value, '')              AS sku,
+                        COALESCE(NULLIF(l.global_unique_id, ''), upcm.meta_value, '') AS upc,
                         COALESCE(hash.meta_value, '')    AS hash,
                         snap.meta_value                  AS snapshot
                    FROM {$wpdb->posts} p
               LEFT JOIN {$lookup} l            ON l.product_id = p.ID
+              LEFT JOIN {$wpdb->postmeta} skum ON skum.post_id = p.ID AND skum.meta_key = '_sku'
+              LEFT JOIN {$wpdb->postmeta} upcm ON upcm.post_id = p.ID AND upcm.meta_key = '_global_unique_id'
               LEFT JOIN {$wpdb->postmeta} hash ON hash.post_id = p.ID AND hash.meta_key = '_cadco_import_hash'
               LEFT JOIN {$wpdb->postmeta} snap ON snap.post_id = p.ID AND snap.meta_key = %s
                   WHERE p.post_type = 'product'
@@ -190,10 +202,11 @@ final class CADCO_Import_Repository
                FROM {$wpdb->posts} p
          INNER JOIN {$wpdb->postmeta} pm ON pm.post_id = p.ID AND pm.meta_key = '_cadco_legacy_url'
           LEFT JOIN {$lookup} l           ON l.product_id = p.ID
+          LEFT JOIN {$wpdb->postmeta} skum ON skum.post_id = p.ID AND skum.meta_key = '_sku'
               WHERE p.post_type = 'product'
                 AND p.post_status NOT IN ('trash', 'auto-draft')
                 AND pm.meta_value <> ''
-           ORDER BY l.sku ASC, p.ID ASC",
+           ORDER BY COALESCE(NULLIF(l.sku, ''), skum.meta_value, '') ASC, p.ID ASC",
             ARRAY_A
         ) ?: [];
 
