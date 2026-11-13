@@ -402,7 +402,6 @@ function cadco_import_multi_url_columns(): array
         'Images URL',
         'Video URL',
         'Spec Sheet URL',
-        'Diagram URL',
         'Manual URL',
     ];
 }
@@ -430,7 +429,6 @@ function cadco_import_meta_columns(): array
         'Images URL'                     => 'image_url',
         'Video URL'                      => 'video_url',
         'Spec Sheet URL'                 => 'spec_sheet_url',
-        'Diagram URL'                    => 'diagram_url',
         'Manual URL'                     => 'manual_url',
         'Cubic Feet'                     => 'cubic_feet',
         'Approvals'                      => 'approvals',
@@ -489,7 +487,9 @@ function cadco_import_native_columns(): array
  * 238 rows — they are labels, not data, and WooCommerce's global unit setting
  * already covers the native dimension fields. 'Primary Category' holds two
  * values across four sheets and contradicts the sheet it appears on. 'Other'
- * is empty on every row.
+ * is empty on every row. 'Diagram URL' was dropped by CADCO in the 12 Nov
+ * workbook as not used; it stays listed so an older workbook that still has
+ * it imports without it.
  */
 function cadco_import_ignored_columns(): array
 {
@@ -504,5 +504,6 @@ function cadco_import_ignored_columns(): array
         'Package Weight Unit Of Measure',
         'Primary Category',
         'Other',
+        'Diagram URL',
     ];
 }

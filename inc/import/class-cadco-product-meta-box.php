@@ -45,7 +45,7 @@ final class CADCO_Product_Meta_Box
             // GTIN field on the Inventory tab, so repeating it here would
             // show the same value twice in two different places.
             __('Compliance', 'cadco-theme')  => ['prop65_affected', 'prop65_warning', 'warranty_info', 'warranty_url'],
-            __('Documents', 'cadco-theme')   => ['spec_sheet_url', 'manual_url', 'diagram_url', 'video_url', 'image_url'],
+            __('Documents', 'cadco-theme')   => ['spec_sheet_url', 'manual_url', 'video_url', 'image_url'],
             __('Catalogue', 'cadco-theme')   => ['footnote', 'disclaimer', 'second_category', 'cubic_feet', 'approvals', 'parent_model', 'legacy_url'],
             __('Source', 'cadco-theme')      => ['source_sheet', 'source_row', 'notes', 'import_hash'],
         ];
