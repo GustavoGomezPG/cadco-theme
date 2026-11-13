@@ -37,6 +37,10 @@ foreach ([
     'class-cadco-import-archive.php',
     'class-cadco-import-term-diff.php',
     'class-cadco-import-media.php',
+    'class-cadco-import-media-plan.php',
+    'class-cadco-import-fetcher.php',
+    'class-cadco-import-media-applier.php',
+    'class-cadco-import-cli.php',
 ] as $cadco_import_file) {
     if (is_readable(__DIR__ . '/' . $cadco_import_file)) {
         require_once __DIR__ . '/' . $cadco_import_file;

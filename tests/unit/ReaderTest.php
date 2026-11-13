@@ -210,4 +210,93 @@ final class ReaderTest extends TestCase
         self::assertSame('https://example.com/canonical.pdf', $bySku['BLC-113']['Manual URL']);
         self::assertSame('https://example.com/alias.pdf', $bySku['BLC-113']['Install / Manual URL']);
     }
+
+    public function test_a_media_cells_hyperlink_is_appended_to_its_text(): void
+    {
+        // The shape the real workbook has: the file name on screen, a
+        // relative SharePoint link behind it.
+        $link = '../../../:i:/r/sites/CADCOMediaLibrary/Shared%20Documents/Forms/AllItems.aspx?id=%2Fx.jpg&share=cQpQTSLX';
+
+        FixtureBuilder::write($this->path, FixtureBuilder::completeSheets([
+            'CONVECTION | COOK & HOLD OVENS' => [FixtureBuilder::row([
+                'Images URL' => ['text' => 'CPG-10.jpg', 'link' => $link],
+            ])],
+        ]));
+
+        $row = $this->first_row();
+
+        self::assertSame("CPG-10.jpg\n" . $link, $row['Images URL']);
+    }
+
+    public function test_a_hyperlink_already_in_the_text_is_not_repeated(): void
+    {
+        $url = 'https://youtu.be/agce-HkgqCo';
+
+        FixtureBuilder::write($this->path, FixtureBuilder::completeSheets([
+            'CONVECTION | COOK & HOLD OVENS' => [FixtureBuilder::row([
+                'Video URL' => ['text' => $url, 'link' => $url],
+            ])],
+        ]));
+
+        self::assertSame($url, $this->first_row()['Video URL']);
+    }
+
+    public function test_a_hyperlink_on_an_empty_cell_becomes_its_value(): void
+    {
+        $url = 'https://cadcoltd232.sharepoint.com/:b:/s/CADCOMediaLibrary/IQA6LNC31jvdSKTo82ke0rQuAWBlWKWOvNjGJ9nX_R8bIso';
+
+        FixtureBuilder::write($this->path, FixtureBuilder::completeSheets([
+            'CONVECTION | COOK & HOLD OVENS' => [FixtureBuilder::row([
+                'Spec Sheet URL' => ['text' => '', 'link' => $url],
+            ])],
+        ]));
+
+        self::assertSame($url, $this->first_row()['Spec Sheet URL']);
+    }
+
+    public function test_a_hyperlink_outside_the_media_columns_is_ignored(): void
+    {
+        // Website URL holds its address as text; a second copy appended
+        // from the hyperlink would make it two addresses.
+        FixtureBuilder::write($this->path, FixtureBuilder::completeSheets([
+            'CONVECTION | COOK & HOLD OVENS' => [FixtureBuilder::row([
+                'Website URL'  => ['text' => 'https://www.cadco-ltd.com/a', 'link' => 'https://www.cadco-ltd.com/b'],
+                'Product Name' => ['text' => 'Oven', 'link' => 'https://example.com'],
+            ])],
+        ]));
+
+        $row = $this->first_row();
+
+        self::assertSame('https://www.cadco-ltd.com/a', $row['Website URL']);
+        self::assertSame('Oven', $row['Product Name']);
+    }
+
+    public function test_a_link_to_another_sheet_is_not_media(): void
+    {
+        FixtureBuilder::write($this->path, FixtureBuilder::completeSheets([
+            'CONVECTION | COOK & HOLD OVENS' => [FixtureBuilder::row([
+                'Images URL' => ['text' => 'see notes', 'link' => "sheet://'_NOTES'!A1"],
+            ])],
+        ]));
+
+        self::assertSame('see notes', $this->first_row()['Images URL']);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function first_row(): array
+    {
+        $result = \CADCO_Import_Reader::read($this->path);
+
+        self::assertSame([], $result['errors']);
+
+        foreach ($result['rows'] as $row) {
+            if ($row['__sheet'] === 'CONVECTION | COOK & HOLD OVENS') {
+                return $row;
+            }
+        }
+
+        self::fail('the convection sheet row was not read');
+    }
 }

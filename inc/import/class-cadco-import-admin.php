@@ -972,44 +972,10 @@ final class CADCO_Import_Admin
         $path = $dir . '/workbook.xlsx';
 
         // Archive the run: the workbook exactly as uploaded (or restored),
-        // the report, and the plan it produced. When a later import
-        // surprises somebody, this is the only record of what the workbook
-        // said at the time.
-        file_put_contents($dir . '/report.csv', $result['report']->to_csv());
-
-        if ($result['plan'] instanceof CADCO_Import_Plan) {
-            file_put_contents($dir . '/plan.json', (string) wp_json_encode([
-                'counts'  => $result['plan']->counts(),
-                'creates' => array_map(static fn ($c) => $c['row']['Model #'] ?? '', $result['plan']->creates()),
-                'updates' => array_map(static fn ($u) => $u['row']['Model #'] ?? '', $result['plan']->updates()),
-                'renames' => array_map(
-                    static fn ($r) => ['from' => $r['old_sku'], 'to' => $r['new_sku'], 'upc' => $r['upc']],
-                    $result['plan']->renames()
-                ),
-                'trashes' => array_map(static fn ($t) => $t['sku'], $result['plan']->trashes()),
-                'changes' => $result['changes'],
-            ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
-        }
-
-        // The manifest is what the history list reads — never the workbook
-        // — so it is written unconditionally, pass or fail. `applied` is
-        // false until mark_applied() flips it in ajax_batch(), so a run
-        // abandoned midway is never offered as a usable restore point.
-        CADCO_Import_Archive::write_manifest($dir, [
-            'run_id'   => $archive['run_id'],
-            'created'  => gmdate('Y-m-d\TH:i:s\Z'),
-            'user_id'  => get_current_user_id(),
-            'filename' => $filename,
-            'label'    => '',
-            'passed'   => $result['report']->passed(),
-            'rows'     => count($result['rows']),
-            'issues'   => $result['report']->count(),
-            'counts'   => $result['plan'] instanceof CADCO_Import_Plan
-                ? $result['plan']->counts()
-                : ['create' => 0, 'update' => 0, 'rename' => 0, 'trash' => 0, 'untrash' => 0, 'skip' => 0],
-            'applied'       => false,
-            'restored_from' => $restored_from,
-        ]);
+        // the report, the plan it produced and the media notices. Shared
+        // with the command line, so a run is recorded the same way however
+        // it was started.
+        CADCO_Import_Archive::write_run($archive, $result, $filename, $restored_from);
 
         // Count-based retention replaces the previous 7-day age-based
         // collector — a restore point should not vanish purely because a
@@ -1323,7 +1289,14 @@ final class CADCO_Import_Admin
 
             CADCO_Import_Applier::prepare_terms($result['rows']);
 
-            $queue      = CADCO_Import_Applier::build_queue($plan);
+            // Product jobs, then the media stage (downloads, product images,
+            // resources). 'refresh_media' asks for every file to be fetched
+            // again to pick up documents CADCO replaced behind the same link.
+            $queue      = CADCO_Import_Applier::build_run_queue(
+                $plan,
+                $result['rows'],
+                !empty($_POST['refresh_media'])
+            );
             // Not queue.php.ser: mod_mime matches ANY dot-separated
             // extension, not just the last, so a name ending in .php...ser
             // is handed to the PHP handler on a large class of hosts. The
@@ -1359,7 +1332,14 @@ final class CADCO_Import_Admin
             wp_send_json_error(['message' => __('The import run could not be read back. Please start again.', 'cadco-theme')], 500);
         }
 
-        $batch = CADCO_Import_Applier::apply_jobs($queue, $offset, $size);
+        // Downloads can take seconds each; stop a batch after ~20s so the
+        // request finishes well inside any host's limit (WP Engine cuts web
+        // requests at 60s). The script resumes from the 'done' it is given.
+        if (function_exists('set_time_limit')) {
+            @set_time_limit(120);
+        }
+
+        $batch = CADCO_Import_Applier::apply_jobs($queue, $offset, $size, 20.0);
 
         if ($batch['complete']) {
             $removed_terms = CADCO_Import_Applier::finalise();

@@ -109,19 +109,33 @@ final class CADCO_Import_Applier
      * shrinking list silently steps over rows that were never applied. The
      * caller builds the queue once and persists it.
      *
+     * $budget, in seconds, stops a batch early once that much time has gone,
+     * after at least one job. Product jobs take milliseconds, but a media
+     * download can take many seconds, and a batch of 25 of them would run
+     * past any web request's time limit. The batch reports how far it got
+     * in 'done', and the next request starts there. 0 means no limit, for
+     * the command line.
+     *
      * @param list<array<string, mixed>> $queue
      * @return array{done:int,total:int,complete:bool,log:list<string>}
      */
-    public static function apply_jobs(array $queue, int $offset, int $size): array
+    public static function apply_jobs(array $queue, int $offset, int $size, float $budget = 0.0): array
     {
-        $total = count($queue);
-        $log   = [];
+        $total   = count($queue);
+        $log     = [];
+        $started = microtime(true);
+        $done    = $offset;
 
         foreach (array_slice($queue, $offset, $size) as $job) {
             $log[] = self::run_job($job);
+            $done++;
+
+            if ($budget > 0 && microtime(true) - $started >= $budget) {
+                break;
+            }
         }
 
-        $done = min($offset + $size, $total);
+        $done = min($done, $total);
 
         // Mirrors prepare_terms(): a batch that created or edited categories
         // fires the theme's own shutdown-flush; clearing the flag here stops
@@ -197,6 +211,27 @@ final class CADCO_Import_Applier
     }
 
     /**
+     * The whole run: the plan's product jobs, then the media stage's.
+     *
+     * Media comes last because it attaches files to products that the
+     * product jobs may only just have created. It is planned from every row,
+     * not only the changed ones: a row that is unchanged since the last run
+     * may still have media to finish — a download that failed then and
+     * works now — and a product skipped as unchanged must not be skipped for
+     * that.
+     *
+     * @param list<array<string, mixed>> $rows normalised rows
+     * @return list<array<string, mixed>>
+     */
+    public static function build_run_queue(CADCO_Import_Plan $plan, array $rows, bool $refresh_media = false): array
+    {
+        return array_merge(
+            self::build_queue($plan),
+            CADCO_Import_Media_Applier::queue(CADCO_Import_Media_Plan::build($rows), $refresh_media)
+        );
+    }
+
+    /**
      * Run one job, never letting it take the batch down with it.
      *
      * set_sku() and set_global_unique_id() can throw WC_Data_Exception — a
@@ -208,6 +243,10 @@ final class CADCO_Import_Applier
      */
     private static function run_job(array $job): string
     {
+        if (str_starts_with((string) $job['op'], 'media-')) {
+            return CADCO_Import_Media_Applier::run($job);
+        }
+
         try {
             if ($job['op'] === 'trash') {
                 wp_trash_post((int) $job['post_id']);

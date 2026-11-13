@@ -37,7 +37,13 @@ final class CADCO_Import_Reader
 
         try {
             $reader = IOFactory::createReaderForFile($path);
-            $reader->setReadDataOnly(true);
+
+            // Not data-only: PhpSpreadsheet skips hyperlinks in that mode,
+            // and the media columns keep their real links there — the cell
+            // shows a file name, the link sits behind it. Empty cells are
+            // still skipped, which is most of what data-only saved.
+            $reader->setReadDataOnly(false);
+            $reader->setReadEmptyCells(false);
             $book = $reader->load($path);
         } catch (\Throwable $e) {
             return [
@@ -165,8 +171,9 @@ final class CADCO_Import_Reader
         array $headers,
         string $name
     ): array {
-        $rows = [];
-        $last = $sheet->getHighestDataRow();
+        $rows  = [];
+        $last  = $sheet->getHighestDataRow();
+        $links = array_flip(cadco_import_hyperlink_columns());
 
         for ($r = 2; $r <= $last; $r++) {
             $row   = [];
@@ -175,6 +182,10 @@ final class CADCO_Import_Reader
             foreach ($headers as $c => $header) {
                 $value = $sheet->getCell([$c, $r])->getValue();
                 $value = $value === null ? '' : trim((string) $value);
+
+                if (isset($links[$header])) {
+                    $value = self::with_hyperlink($sheet, $c, $r, $value);
+                }
 
                 if ($value !== '') {
                     $empty = false;
@@ -194,6 +205,49 @@ final class CADCO_Import_Reader
         }
 
         return $rows;
+    }
+
+    /**
+     * A cell's text with the address of its hyperlink, if it has one, on a
+     * line of its own after it.
+     *
+     * In the media columns the visible text is usually just a file name
+     * ('CPG-10_SAP010R 2016 300dpi CMYK 5in.jpg') and the file's real
+     * address is the hyperlink behind it — read as text alone, 511 of the
+     * 13 Nov workbook's 558 media cells had no link at all. Appending keeps
+     * both: the name stays readable in the product's meta, the link is
+     * found by CADCO_Import_Media::links(), and because the link is part of
+     * the cell's value it is part of the row's import hash, so a re-pointed
+     * link is an update like any other edit.
+     *
+     * Links to another place in the workbook ('#Sheet!A1', 'sheet://') are
+     * navigation, not media, and are left out. A link the text already
+     * contains is not repeated.
+     */
+    private static function with_hyperlink(
+        \PhpOffice\PhpSpreadsheet\Worksheet\Worksheet $sheet,
+        int $column,
+        int $row,
+        string $value
+    ): string {
+        $coordinate = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($column) . $row;
+
+        if (!$sheet->hyperlinkExists($coordinate)) {
+            return $value;
+        }
+
+        $hyperlink = $sheet->getHyperlink($coordinate);
+        $url       = trim($hyperlink->getUrl());
+
+        if ($url === '' || $hyperlink->isInternal() || str_starts_with($url, '#')) {
+            return $value;
+        }
+
+        if ($value !== '' && str_contains($value, $url)) {
+            return $value;
+        }
+
+        return $value === '' ? $url : $value . "\n" . $url;
     }
 
     private static function error(string $sheet, ?int $row, string $column, string $message): array

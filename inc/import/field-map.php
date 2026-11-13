@@ -407,6 +407,51 @@ function cadco_import_multi_url_columns(): array
 }
 
 /**
+ * Columns whose cell hyperlink is part of the cell's value.
+ *
+ * The reader appends each cell's hyperlink to its text in these columns only
+ * (CADCO_Import_Reader::with_hyperlink()). Everywhere else a hyperlink is
+ * formatting: 'Website URL' in particular holds the address as its text, and
+ * appending a second copy would make it two addresses.
+ */
+function cadco_import_hyperlink_columns(): array
+{
+    return cadco_import_multi_url_columns();
+}
+
+/**
+ * What each media column contributes to a product.
+ *
+ * 'image' columns become the product's featured image and gallery; every
+ * other role becomes a resource in the resource library, tagged to the
+ * products that cite it, under the resource_media term whose slug is the
+ * role.
+ */
+function cadco_import_media_roles(): array
+{
+    return [
+        'Images URL'     => 'image',
+        'Spec Sheet URL' => 'spec-sheet',
+        'Manual URL'     => 'manual',
+        'Video URL'      => 'video',
+    ];
+}
+
+/**
+ * The resource_media terms the importer files resources under, by slug.
+ *
+ * Matched by slug so a term an editor has renamed keeps its new name.
+ */
+function cadco_import_resource_media_terms(): array
+{
+    return [
+        'spec-sheet' => 'Spec Sheet',
+        'manual'     => 'Manual',
+        'video'      => 'Video',
+    ];
+}
+
+/**
  * Columns stored as post meta, keyed by the suffix after '_cadco_'.
  */
 function cadco_import_meta_columns(): array

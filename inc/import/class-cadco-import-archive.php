@@ -88,6 +88,67 @@ final class CADCO_Import_Archive
     }
 
     /**
+     * Record a checked run: the report, the plan, the media notices and the
+     * manifest the History tab lists it by.
+     *
+     * When a later import surprises somebody, this is the only record of
+     * what the workbook said at the time. The manifest is written
+     * unconditionally, pass or fail, with `applied` false until
+     * mark_applied() flips it — a run abandoned midway is never offered as a
+     * usable restore point.
+     *
+     * The workbook itself is expected at <dir>/workbook.xlsx already; the
+     * caller copied it there before checking it.
+     *
+     * @param array{run_id:string, dir:string} $archive
+     * @param array{report:CADCO_Import_Report,plan:?CADCO_Import_Plan,rows:array,changes:array} $result
+     */
+    public static function write_run(array $archive, array $result, string $filename, ?string $restored_from = null): void
+    {
+        $dir = $archive['dir'];
+
+        file_put_contents($dir . '/report.csv', $result['report']->to_csv());
+
+        if ($result['plan'] instanceof CADCO_Import_Plan) {
+            file_put_contents($dir . '/plan.json', (string) wp_json_encode([
+                'counts'  => $result['plan']->counts(),
+                'creates' => array_map(static fn ($c) => $c['row']['Model #'] ?? '', $result['plan']->creates()),
+                'updates' => array_map(static fn ($u) => $u['row']['Model #'] ?? '', $result['plan']->updates()),
+                'renames' => array_map(
+                    static fn ($r) => ['from' => $r['old_sku'], 'to' => $r['new_sku'], 'upc' => $r['upc']],
+                    $result['plan']->renames()
+                ),
+                'trashes' => array_map(static fn ($t) => $t['sku'], $result['plan']->trashes()),
+                'changes' => $result['changes'],
+            ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
+        }
+
+        $media = null;
+
+        if ($result['report']->passed() && $result['rows'] !== []) {
+            $media = CADCO_Import_Media_Plan::build($result['rows']);
+            file_put_contents($dir . '/media-notices.csv', $media->notices_csv());
+        }
+
+        self::write_manifest($dir, [
+            'run_id'   => $archive['run_id'],
+            'created'  => gmdate('Y-m-d\TH:i:s\Z'),
+            'user_id'  => get_current_user_id(),
+            'filename' => $filename,
+            'label'    => '',
+            'passed'   => $result['report']->passed(),
+            'rows'     => count($result['rows']),
+            'issues'   => $result['report']->count(),
+            'counts'   => $result['plan'] instanceof CADCO_Import_Plan
+                ? $result['plan']->counts()
+                : ['create' => 0, 'update' => 0, 'rename' => 0, 'trash' => 0, 'untrash' => 0, 'skip' => 0],
+            'media'         => $media === null ? null : $media->counts(),
+            'applied'       => false,
+            'restored_from' => $restored_from,
+        ]);
+    }
+
+    /**
      * @param array<string, mixed> $manifest
      */
     public static function write_manifest(string $dir, array $manifest): void

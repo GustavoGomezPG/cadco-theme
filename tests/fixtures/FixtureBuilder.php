@@ -16,7 +16,7 @@ use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 final class FixtureBuilder
 {
     /**
-     * @param array<string, list<array<string, string>>> $sheets
+     * @param array<string, list<array<string, string|array{text:string,link:string}>>> $sheets
      *        Sheet name => list of rows. Each row's keys are header names.
      *        A sheet's header order is taken from its first row, so different
      *        sheets can deliberately disagree on column order.
@@ -37,7 +37,18 @@ final class FixtureBuilder
 
             foreach ($rows as $r => $row) {
                 foreach ($headers as $i => $header) {
-                    $sheet->setCellValue([$i + 1, $r + 2], $row[$header] ?? '');
+                    $value = $row[$header] ?? '';
+
+                    // ['text' => ..., 'link' => ...] writes a hyperlinked
+                    // cell, the way the media columns arrive from CADCO: a
+                    // file name on screen with the address behind it.
+                    if (is_array($value)) {
+                        $sheet->setCellValue([$i + 1, $r + 2], (string) ($value['text'] ?? ''));
+                        $sheet->getCell([$i + 1, $r + 2])->getHyperlink()->setUrl((string) ($value['link'] ?? ''));
+                        continue;
+                    }
+
+                    $sheet->setCellValue([$i + 1, $r + 2], $value);
                 }
             }
         }
