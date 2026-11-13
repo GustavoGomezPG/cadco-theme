@@ -997,10 +997,11 @@ npm run test:e2e                      # Browser: wizard, review, apply, history,
 `tests/integration/run-media.sh` runs the media stage's whole lifecycle —
 first import, unchanged re-run, editor edits, changed and emptied cells,
 failed downloads, refresh, product renames and removals — against the real
-WordPress with every HTTP request answered from a table, inside a database
-snapshot it restores afterwards (the stage's clean-up is catalogue-wide). Set
-`WP` to the site's WP-CLI command and `WP_DB_ARGS` to anything `wp db
-export/import` needs (a `--socket=` for a Local site).
+WordPress with every HTTP request answered from a table. The stage's
+clean-up is catalogue-wide, so the suite runs inside one database transaction
+it never commits (it refuses to start unless the tables involved are InnoDB)
+and deletes the files it wrote; the site is left exactly as it was, even if
+the run is killed. Set `WP` to the site's WP-CLI command if `wp` is not it.
 
 `composer test` covers the pure pipeline units — Reader, Normaliser,
 Validator, Planner, Plan and Report — plus the Archive and its run-id
