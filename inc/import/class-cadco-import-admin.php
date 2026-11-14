@@ -1191,7 +1191,13 @@ final class CADCO_Import_Admin
                 $existing[] = [
                     'taxonomy' => $taxonomy,
                     'term_id'  => (int) $term->term_id,
-                    'name'     => (string) $term->name,
+                    // WordPress stores a term name HTML-encoded — '&' in
+                    // 'Convection & Cook-Hold Ovens' is saved as '&amp;' by
+                    // the kses filter on term names — while the workbook
+                    // spells it plainly. Compared as stored, every category
+                    // with an ampersand (and every child under one) read as
+                    // new on Review and its stored twin as removed.
+                    'name'     => html_entity_decode((string) $term->name, ENT_QUOTES | ENT_HTML5, 'UTF-8'),
                     'parent'   => (int) $term->parent,
                     'count'    => (int) $term->count,
                 ];

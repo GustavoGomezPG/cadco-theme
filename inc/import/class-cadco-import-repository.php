@@ -244,7 +244,8 @@ final class CADCO_Import_Repository
         return array_map(
             static fn (WP_Term $t): array => [
                 'term_id' => $t->term_id,
-                'name'    => $t->name,
+                // Stored HTML-encoded ('&amp;'); see CADCO_Import_Admin::existing_terms().
+                'name'    => html_entity_decode($t->name, ENT_QUOTES | ENT_HTML5, 'UTF-8'),
                 'slug'    => $t->slug,
                 'parent'  => $t->parent,
             ],
