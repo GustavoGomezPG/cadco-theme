@@ -230,7 +230,7 @@ $wrapper = get_block_wrapper_attributes([
             <?php // ---------- Name, introduction, claims, price ---------- ?>
             <div class="flex flex-col lg:pt-[17px]">
                 <h1 data-cadco-reveal="lines"
-                    class="m-0 font-display text-[34px] font-bold leading-[1.12] text-true-black md:text-[48px] lg:text-[64px]">
+                    class="m-0 font-display text-[34px] font-bold text-true-black md:text-[48px] lg:text-[64px]">
                     <?php echo esc_html(get_the_title($productId)); ?>
                 </h1>
 

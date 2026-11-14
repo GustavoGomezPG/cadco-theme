@@ -16,6 +16,7 @@
  */
 
 require_once __DIR__ . '/cadco-product-specs.php';
+require_once __DIR__ . '/cadco-product-text.php';
 
 /**
  * The product's spec rows as `label => value`, in document order.
@@ -251,7 +252,41 @@ function cadco_product_summary_lines(int $product_id): array
 
     $parts[] = $cur;
 
-    return array_values(array_filter(array_map('trim', $parts), static fn ($p): bool => $p !== ''));
+    // A claim that only restates the product's name — most of the
+    // workbook's short descriptions are the name again, plus 'Bakerlux' or
+    // 'Stainless Steel' — tells nobody anything printed under that name.
+    $title = (string) get_the_title($product_id);
+
+    return array_values(array_filter(
+        array_map('trim', $parts),
+        static fn ($p): bool => $p !== '' && !cadco_text_repeats($p, $title)
+    ));
+}
+
+/**
+ * The product's "Additional information" list — the workbook's Secondary
+ * Description, which the importer writes under that heading.
+ *
+ * @return string[]
+ */
+function cadco_product_additional_info(int $product_id): array
+{
+    $body  = (string) get_post_field('post_content', $product_id);
+    $items = [];
+
+    if (preg_match('~<h[2-4][^>]*>\s*Additional information\s*</h[2-4]>(.*?)(?:<h[2-4]|$)~is', $body, $section)
+        && preg_match_all('~<li[^>]*>(.*?)</li>~is', $section[1], $found)
+    ) {
+        foreach ($found[1] as $item) {
+            $text = trim(html_entity_decode(wp_strip_all_tags($item), ENT_QUOTES | ENT_HTML5, 'UTF-8'));
+
+            if ($text !== '') {
+                $items[] = $text;
+            }
+        }
+    }
+
+    return $items;
 }
 
 /**
@@ -292,11 +327,21 @@ function cadco_product_card_html(int $product_id, array $opts = []): string
 
     $tag   = in_array($opts['headingLevel'], ['h2', 'h3', 'h4'], true) ? $opts['headingLevel'] : 'h3';
     $price = (string) $product->get_price_html();
-    $lines = cadco_product_summary_lines($product_id);
+
+    /* Budgets, so every card in a row ends up the same height whatever the
+       workbook says: a name runs to three lines at most, the description to
+       three short lines. The full name stays in the link's title. */
+    $title = html_entity_decode((string) get_the_title($product_id), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+    $name  = cadco_text_truncate($title, (int) apply_filters('cadco_card_title_chars', 70));
+    $lines = cadco_text_fit_lines(
+        cadco_product_summary_lines($product_id),
+        (int) apply_filters('cadco_card_description_chars', 100),
+        3
+    );
 
     ob_start();
     ?>
-    <a href="<?php echo esc_url((string) get_permalink($product_id)); ?>" class="cadco-card">
+    <a href="<?php echo esc_url((string) get_permalink($product_id)); ?>" class="cadco-card"<?php echo $name !== $title ? ' title="' . esc_attr($title) . '"' : ''; ?>>
 
         <span class="cadco-card__media<?php echo has_post_thumbnail($product_id) ? '' : ' cadco-card__media--empty'; ?>">
             <?php if (has_post_thumbnail($product_id)) : ?>
@@ -316,7 +361,7 @@ function cadco_product_card_html(int $product_id, array $opts = []): string
         </span>
 
         <<?php echo $tag; ?> class="cadco-card__title">
-            <?php echo esc_html(get_the_title($product_id)); ?>
+            <?php echo esc_html($name); ?>
         </<?php echo $tag; ?>>
 
         <?php if ($lines) : ?>

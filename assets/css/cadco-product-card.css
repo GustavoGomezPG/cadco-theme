@@ -93,6 +93,25 @@
 	transition: color 0.3s ease;
 }
 
+/* The name and the lines are cut to a character budget in PHP
+   (cadco_product_card_html()); the clamps are the backstop for a font or a
+   width that fits fewer characters than that budget assumes. */
+.cadco-card__title {
+	display: -webkit-box;
+	-webkit-box-orient: vertical;
+	-webkit-line-clamp: 3;
+	line-clamp: 3;
+	overflow: hidden;
+}
+
+.cadco-card__lines li {
+	display: -webkit-box;
+	-webkit-box-orient: vertical;
+	-webkit-line-clamp: 2;
+	line-clamp: 2;
+	overflow: hidden;
+}
+
 .cadco-card:hover .cadco-card__title {
 	color: #00476e;
 }

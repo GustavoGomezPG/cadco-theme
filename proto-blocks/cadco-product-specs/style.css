@@ -33,3 +33,17 @@
 		grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
 	}
 }
+
+/* A group that reads as prose spans both spec columns. */
+.cadco-product-specs .cadco-specs__wide {
+	grid-column: 1 / -1;
+}
+
+.cadco-product-specs .cadco-specs__list {
+	padding-left: 1.25rem;
+	list-style: disc;
+}
+
+.cadco-product-specs .cadco-specs__list li {
+	margin: 0 0 6px;
+}

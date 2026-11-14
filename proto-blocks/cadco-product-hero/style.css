@@ -1,0 +1,33 @@
+/**
+ * Cadco product hero: the parts utility classes do not reach.
+ */
+
+/* The product name runs to four or five lines at 64px; at 1.12 the descenders
+   of one line met the caps of the next ("Heavy-Duty Digital"). */
+.cadco-product-hero h1 {
+	line-height: 1.22;
+}
+
+/* The introduction is the description's opening: the importer writes the
+   feature bullets there as a list, so it is drawn as one. */
+.cadco-product-hero .cadco-product-intro ul,
+.cadco-product-hero .cadco-product-intro ol {
+	margin: 0;
+	padding-left: 1.5rem;
+}
+
+.cadco-product-hero .cadco-product-intro ul {
+	list-style: disc;
+}
+
+.cadco-product-hero .cadco-product-intro ol {
+	list-style: decimal;
+}
+
+.cadco-product-hero .cadco-product-intro li {
+	margin: 0 0 4px;
+}
+
+.cadco-product-hero .cadco-product-intro p {
+	margin: 0 0 12px;
+}

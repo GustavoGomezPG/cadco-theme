@@ -59,13 +59,14 @@ if (! $productId) {
 
 $groups   = cadco_product_grouped_specs($productId);
 $features = cadco_product_features($productId);
+$extra    = cadco_product_additional_info($productId);
 
 $sheet  = $showDownloads ? cadco_product_resources($productId, ['spec-sheet'], 1) : [];
 $manual = $showDownloads ? cadco_product_resources($productId, ['manual'], 1) : [];
 
 /* Nothing to say: no specifications, no features, no downloads. Rendering the
    band anyway would put a heading over an empty tinted rectangle. */
-if (! $groups && ! $features && ! $sheet && ! $manual && ! $showWarranty) {
+if (! $groups && ! $features && ! $extra && ! $sheet && ! $manual && ! $showWarranty) {
     return;
 }
 
@@ -125,6 +126,22 @@ $wrapper = get_block_wrapper_attributes([
                         <?php endif; ?>
                     </div>
                 <?php endforeach; ?>
+
+                <?php /* Notes that are not specifications — water filtration, warranty
+                         terms, support — as a list across the whole column. */ ?>
+                <?php if ($extra) : ?>
+                    <div class="cadco-specs__wide">
+                        <p class="m-0 inline-flex h-[34px] items-center rounded-[10px] bg-[#4a6a84] px-[19px] font-display text-[16px] font-bold leading-none text-white">
+                            <?php esc_html_e('Additional Information', 'cadco-theme'); ?>
+                        </p>
+
+                        <ul class="cadco-specs__list m-0 mt-4 font-display text-[16px] leading-[28px] text-true-black">
+                            <?php foreach ($extra as $item) : ?>
+                                <li><?php echo esc_html($item); ?></li>
+                            <?php endforeach; ?>
+                        </ul>
+                    </div>
+                <?php endif; ?>
             </div>
 
             <?php // ---------- Features, warranty, downloads ---------- ?>
