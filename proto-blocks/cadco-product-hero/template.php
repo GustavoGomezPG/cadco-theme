@@ -188,6 +188,10 @@ $wrapper = get_block_wrapper_attributes([
 
             <?php // ---------- Photograph ---------- ?>
             <div data-cadco-reveal="fade">
+                <?php /* Sticky on wide screens (style.css): the photograph stays in
+                         view while the name and the feature list scroll past, and
+                         is released at the end of the hero. */ ?>
+                <div class="cadco-product-hero__media">
                 <?php /* Contained: product shots arrive at every ratio from square to
                          panoramic, and a fixed 704x438 crop would cut the tall ones
                          in half. The box keeps the frame's proportion so the text
@@ -225,6 +229,7 @@ $wrapper = get_block_wrapper_attributes([
                         <?php endforeach; ?>
                     </ul>
                 <?php endif; ?>
+                </div>
             </div>
 
             <?php // ---------- Name, introduction, claims, price ---------- ?>

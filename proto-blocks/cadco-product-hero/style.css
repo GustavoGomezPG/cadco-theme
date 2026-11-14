@@ -31,3 +31,15 @@
 .cadco-product-hero .cadco-product-intro p {
 	margin: 0 0 12px;
 }
+
+/* The photograph follows the reader down the hero on wide screens and stops
+   at its end. The grid row stretches the photograph's column to the height of
+   the text column, which is the track the sticky box travels in. The header
+   scrolls away with the page, so 40px of air is the only offset needed. Below
+   1024px the columns stack and nothing sticks. */
+@media (min-width: 1024px) {
+	.cadco-product-hero .cadco-product-hero__media {
+		position: sticky;
+		top: 40px;
+	}
+}
