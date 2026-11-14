@@ -244,4 +244,21 @@ final class FieldMapTest extends TestCase
             }
         }
     }
+
+    public function test_a_model_number_becomes_a_readable_unique_slug(): void
+    {
+        self::assertSame('blc-113', \cadco_import_product_slug('BLC-113'));
+        self::assertSame('vk-120', \cadco_import_product_slug('VK-120'));
+        self::assertSame('vk-120-plus', \cadco_import_product_slug('VK-120+'));
+        self::assertSame('vkii-220-plus', \cadco_import_product_slug('VKII-220+'));
+        self::assertSame('cpg-10fc-120', \cadco_import_product_slug('CPG-10FC(120)'));
+        self::assertSame('cts-4-220', \cadco_import_product_slug('CTS-4(220)'));
+        self::assertSame('a-b-c', \cadco_import_product_slug(' A / b  .c '));
+    }
+
+    public function test_models_that_differ_only_by_a_symbol_get_different_slugs(): void
+    {
+        // The real collision: both used to become 'vk-120'.
+        self::assertNotSame(\cadco_import_product_slug('VK-120'), \cadco_import_product_slug('VK-120+'));
+    }
 }

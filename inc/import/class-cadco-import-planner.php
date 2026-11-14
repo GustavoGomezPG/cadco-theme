@@ -97,8 +97,23 @@ final class CADCO_Import_Planner
                 $match = $by_sku[$sku];
                 unset($unseen[(int) $match['post_id']]);
 
+                // The product's address follows a rule (the slug of its
+                // model number) that can change between versions of the
+                // importer, while the row itself has not. A product whose
+                // stored slug no longer matches the rule is updated so it
+                // moves to the right address; WordPress records the old slug
+                // and redirects it. Only checked when the repository says
+                // what the slug is.
+                $slug     = (string) ($match['slug'] ?? '');
+                $expected = cadco_import_product_slug($sku);
+
                 if ((string) $match['hash'] === $hash) {
-                    $plan->add_skip($sku);
+                    if ($slug === '' || $slug === $expected) {
+                        $plan->add_skip($sku);
+                        continue;
+                    }
+
+                    $plan->add_update($row, (int) $match['post_id'], ['URL slug' => [$slug, $expected]]);
                     continue;
                 }
 

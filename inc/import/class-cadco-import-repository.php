@@ -44,6 +44,7 @@ final class CADCO_Import_Repository
         $rows = $wpdb->get_results(
             $wpdb->prepare(
                 "SELECT p.ID AS post_id,
+                        p.post_name                                                  AS slug,
                         COALESCE(NULLIF(l.sku, ''), skum.meta_value, '')              AS sku,
                         COALESCE(NULLIF(l.global_unique_id, ''), upcm.meta_value, '') AS upc,
                         COALESCE(hash.meta_value, '')    AS hash,
@@ -83,6 +84,7 @@ final class CADCO_Import_Repository
                     'sku'                 => (string) $row['sku'],
                     'upc'                 => (string) $row['upc'],
                     'hash'                => (string) $row['hash'],
+                    'slug'                => (string) ($row['slug'] ?? ''),
                     'snapshot'            => is_array($decoded) ? $decoded : [],
                     'snapshot_unreadable' => $raw !== null && !is_array($decoded),
                 ];

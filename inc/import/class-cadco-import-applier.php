@@ -345,7 +345,7 @@ final class CADCO_Import_Applier
         // legitimately HTML, and the_title() does not escape on output.
         $product->set_name(wp_strip_all_tags(trim((string) ($row['Product Name'] ?? ''))));
         $product->set_sku($sku);
-        $product->set_slug(sanitize_title($sku));
+        $product->set_slug(cadco_import_product_slug($sku));
         $product->set_status('publish');
         $product->set_catalog_visibility('visible');
 

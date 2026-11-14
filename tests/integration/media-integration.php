@@ -542,7 +542,14 @@ check(!has_failure($log, 'ZZ-INT-C'), 'with no failure reported any more');
 section('Product renames and removals');
 
 wp_update_post(['ID' => $A, 'post_name' => 'zz-int-a-renamed']);
-run_media(array_values($rows));
+
+// As the command line does it: preview, then apply, in one process.
+CADCO_Import_Media_Applier::reset_cache();
+CADCO_Import_Media_Applier::preview(CADCO_Import_Media_Plan::build(array_values($rows), 'cadcoltd232.sharepoint.com'));
+$queue = CADCO_Import_Media_Applier::queue(CADCO_Import_Media_Plan::build(array_values($rows), 'cadcoltd232.sharepoint.com'));
+CADCO_Import_Applier::apply_jobs($queue, 0, 10000);
+CADCO_Import_Media_Applier::reset_cache();
+
 check(in_array('zz-int-a-renamed', tagged($spec->ID), true), 'the resource tag follows a product\'s new slug');
 
 wp_trash_post($B);

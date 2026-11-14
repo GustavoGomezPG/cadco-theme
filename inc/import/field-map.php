@@ -302,6 +302,30 @@ function cadco_import_verbatim_columns(): array
 }
 
 /**
+ * The URL slug for a model number.
+ *
+ * WordPress's own sanitize_title() drops characters it cannot put in a URL,
+ * and two real model numbers differ only by such a character: 'VK-120' and
+ * 'VK-120+' (the Plus model) both came out as 'vk-120', so WordPress quietly
+ * gave the second one 'vk-120-2' — an address that names neither product and
+ * changes with import order. '+' therefore becomes '-plus', and every other
+ * separator ('CPG-10FC(120)', 'CTS-4(220)', a space, a slash) becomes a hyphen
+ * instead of vanishing, so 'CPG-10FC(120)' reads 'cpg-10fc-120', not
+ * 'cpg-10fc120'.
+ *
+ * Pure, so the rule is unit-tested; the result contains only [a-z0-9-] and
+ * is what sanitize_title() would keep unchanged.
+ */
+function cadco_import_product_slug(string $model): string
+{
+    $slug = strtolower(trim($model));
+    $slug = str_replace('+', '-plus-', $slug);
+    $slug = (string) preg_replace('~[^a-z0-9]+~', '-', $slug);
+
+    return trim($slug, '-');
+}
+
+/**
  * The Model #s a Parent Product cell names.
  *
  * An accessory fits more than one parent — a steam pan holder sold for four

@@ -939,7 +939,11 @@ final class CADCO_Import_Media_Applier
      */
     private static function product_term(int $product_id, bool $dry): int
     {
-        if (isset(self::$terms[$product_id])) {
+        // Only a written-through lookup is cached. A dry one (Review's
+        // preview) finds the term without bringing its slug up to date, and
+        // caching that would make the real run in the same process — the
+        // command line previews, then applies — skip the update.
+        if (!$dry && isset(self::$terms[$product_id])) {
             return self::$terms[$product_id];
         }
 
@@ -972,7 +976,7 @@ final class CADCO_Import_Media_Applier
                 }
             }
 
-            return self::$terms[$product_id] = (int) $term->term_id;
+            return $dry ? (int) $term->term_id : self::$terms[$product_id] = (int) $term->term_id;
         }
 
         if ($dry) {

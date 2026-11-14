@@ -482,4 +482,34 @@ final class PlannerTest extends TestCase
             'Weight'                                  => '51',
         ];
     }
+
+    public function test_an_unchanged_row_at_an_outdated_address_is_updated_to_move_it(): void
+    {
+        $row  = self::row(['Model #' => 'VK-120+']);
+        $plan = \CADCO_Import_Planner::plan([$row], [[
+            'post_id' => 9,
+            'sku'     => 'VK-120+',
+            'upc'     => (string) $row['UPC#'],
+            'hash'    => \CADCO_Import_Planner::hash($row),
+            'slug'    => 'vk-120-2',
+        ]]);
+
+        self::assertSame(0, $plan->counts()['skip']);
+        self::assertSame(1, $plan->counts()['update']);
+        self::assertSame(['URL slug' => ['vk-120-2', 'vk-120-plus']], $plan->updates()[0]['diff']);
+    }
+
+    public function test_an_unchanged_row_at_the_right_address_is_still_skipped(): void
+    {
+        $row  = self::row();
+        $plan = \CADCO_Import_Planner::plan([$row], [[
+            'post_id' => 9,
+            'sku'     => (string) $row['Model #'],
+            'upc'     => (string) $row['UPC#'],
+            'hash'    => \CADCO_Import_Planner::hash($row),
+            'slug'    => \cadco_import_product_slug((string) $row['Model #']),
+        ]]);
+
+        self::assertSame(1, $plan->counts()['skip']);
+    }
 }
