@@ -1,0 +1,35 @@
+/**
+ * Cadco product specifications: the band's two columns, and the spec groups
+ * two to a row.
+ *
+ * 60/40 on wide screens — the specifications are the bulk of the band, the
+ * warranty note and the two download buttons only need a narrow column. Below
+ * 1024px everything stacks; below 640px the groups stack too.
+ */
+
+.cadco-product-specs .cadco-specs__layout {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr);
+	column-gap: 62px;
+	row-gap: 48px;
+}
+
+.cadco-product-specs .cadco-specs__groups {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr);
+	align-items: start;
+	column-gap: 48px;
+	row-gap: 42px;
+}
+
+@media (min-width: 640px) {
+	.cadco-product-specs .cadco-specs__groups {
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+	}
+}
+
+@media (min-width: 1024px) {
+	.cadco-product-specs .cadco-specs__layout {
+		grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+	}
+}

@@ -89,10 +89,15 @@ $wrapper = get_block_wrapper_attributes([
             <?php echo esc_html($heading); ?>
         </h2>
 
-        <div class="mt-10 grid grid-cols-1 gap-x-[62px] gap-y-12 lg:mt-[71px] lg:grid-cols-2">
+        <?php /* 60/40: the specifications are the bulk of the band; the warranty
+                 note and the two downloads need a narrow column, not half. */ ?>
+        <?php /* Layout lives in this block's style.css, not utility classes: the
+                 columns are the block's own structure, and must not depend on
+                 whether the site's Tailwind build has been recompiled. */ ?>
+        <div class="cadco-specs__layout mt-10 lg:mt-[71px]">
 
-            <?php // ---------- Grouped specifications ---------- ?>
-            <div data-cadco-reveal="rise" class="flex flex-col gap-[42px]">
+            <?php // ---------- Grouped specifications, two groups per row ---------- ?>
+            <div data-cadco-reveal="rise" class="cadco-specs__groups">
                 <?php foreach ($groups as $group) : ?>
                     <div>
                         <?php /* A tag, not a heading of its own: the design labels the
