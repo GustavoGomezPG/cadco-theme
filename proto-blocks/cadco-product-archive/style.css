@@ -64,3 +64,21 @@
 		transform: none;
 	}
 }
+
+/* Sub-category links in the side rail.
+
+   A fixed 35px row with a line height of 1 suited one-line names, but the
+   real category names wrap ("Buffet Server & Warming Shelf Accessories"),
+   and a wrapped name was squeezed into the same 35px — its lines touching,
+   the gap to its neighbours far tighter than between one-line names. Rows
+   are now at least 35px, a wrapped name gets a readable line height and its
+   own padding, and every row is separated by the same gap. */
+.cadco-archive-rail {
+	gap: 10px;
+}
+
+.cadco-archive-rail .cadco-archive-rail__link {
+	min-height: 35px;
+	padding-block: 4px;
+	line-height: 1.2;
+}

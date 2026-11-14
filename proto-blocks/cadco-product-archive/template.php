@@ -393,7 +393,7 @@ $wrapper = get_block_wrapper_attributes([
                     </h2>
 
                     <?php if ($railTerms) : ?>
-                        <nav class="mt-7 flex flex-col items-start gap-[7.9px] lg:items-end"
+                        <nav class="cadco-archive-rail mt-7 flex flex-col items-start lg:items-end"
                              aria-label="<?php esc_attr_e('Sub-categories', 'cadco-theme'); ?>">
                             <?php foreach ($railTerms as $railChild) : ?>
                                 <?php
@@ -403,7 +403,7 @@ $wrapper = get_block_wrapper_attributes([
                                 <?php if (! is_wp_error($childUrl)) : ?>
                                     <a href="<?php echo esc_url($childUrl); ?>"
                                        <?php echo $childActive ? 'aria-current="page"' : ''; ?>
-                                       class="flex h-[35px] items-center px-0 font-display text-[18px] font-bold leading-none no-underline transition-colors hover:text-cadco-blue lg:text-right lg:text-[20px] <?php echo $childActive ? 'text-cadco-blue' : 'text-true-black'; ?>">
+                                       class="cadco-archive-rail__link flex items-center px-0 font-display text-[18px] font-bold no-underline transition-colors hover:text-cadco-blue lg:text-right lg:text-[20px] <?php echo $childActive ? 'text-cadco-blue' : 'text-true-black'; ?>">
                                         <?php echo esc_html($railChild->name); ?>
                                     </a>
                                 <?php endif; ?>
