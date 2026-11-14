@@ -264,6 +264,43 @@ function cadco_product_summary_lines(int $product_id): array
 }
 
 /**
+ * What a card says under the product's name.
+ *
+ * The short description's claims, when they say something the name does not.
+ * More than half the catalogue's short descriptions only restate the name
+ * ("Medium Heavy Duty Stainless Buffet Warming Shelf with Clear Rolltop Lid"
+ * under "Medium Heavy Duty Warming Shelf with Clear Rolltop Lid"), which left
+ * those cards blank; they fall back to the product's first feature bullets,
+ * the same list the product page opens with.
+ *
+ * @return string[]
+ */
+function cadco_product_card_lines(int $product_id): array
+{
+    $lines = cadco_product_summary_lines($product_id);
+
+    if ($lines !== []) {
+        return $lines;
+    }
+
+    $title = (string) get_the_title($product_id);
+    $intro = cadco_product_intro($product_id);
+    $out   = [];
+
+    if (preg_match_all('~<li[^>]*>(.*?)</li>~is', $intro, $items)) {
+        foreach ($items[1] as $item) {
+            $text = trim(html_entity_decode(wp_strip_all_tags($item), ENT_QUOTES | ENT_HTML5, 'UTF-8'));
+
+            if ($text !== '' && !cadco_text_repeats($text, $title)) {
+                $out[] = $text;
+            }
+        }
+    }
+
+    return $out;
+}
+
+/**
  * The product's "Additional information" list — the workbook's Secondary
  * Description, which the importer writes under that heading.
  *
@@ -334,7 +371,7 @@ function cadco_product_card_html(int $product_id, array $opts = []): string
     $title = html_entity_decode((string) get_the_title($product_id), ENT_QUOTES | ENT_HTML5, 'UTF-8');
     $name  = cadco_text_truncate($title, (int) apply_filters('cadco_card_title_chars', 70));
     $lines = cadco_text_fit_lines(
-        cadco_product_summary_lines($product_id),
+        cadco_product_card_lines($product_id),
         (int) apply_filters('cadco_card_description_chars', 100),
         3
     );
