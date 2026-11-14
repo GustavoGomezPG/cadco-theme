@@ -39,6 +39,7 @@ foreach ([
     'class-cadco-import-media.php',
     'class-cadco-import-media-plan.php',
     'class-cadco-import-fetcher.php',
+    'class-cadco-import-preview.php',
     'class-cadco-import-media-applier.php',
     'class-cadco-import-cli.php',
 ] as $cadco_import_file) {

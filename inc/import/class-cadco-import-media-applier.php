@@ -42,6 +42,7 @@ final class CADCO_Import_Media_Applier
     public const RESOURCE_META = '_cadco_import_resource';
     public const TITLE_META    = '_cadco_import_title';
     public const PRODUCT_TERM  = '_cadco_product_id';
+    public const PREVIEW_OF    = '_cadco_import_preview_of';
 
     /** Resource jobs handle this many resources each. */
     private const RESOURCE_CHUNK = 15;
@@ -732,6 +733,8 @@ final class CADCO_Import_Media_Applier
 
             if ($is_video && is_array($group['video'])) {
                 self::video_thumbnail($id, $group['video'], $title);
+            } else {
+                self::document_preview($id, $group['attachment'], $title);
             }
 
             return 'created';
@@ -772,12 +775,22 @@ final class CADCO_Import_Media_Applier
             $changes['media'] = $media;
         }
 
-        if ($changes === []) {
+        $needs_preview = !$is_video && self::preview_due($id, $group['attachment']);
+
+        if ($changes === [] && !$needs_preview) {
             return 'unchanged';
         }
 
         if ($dry) {
+            return $changes === [] ? 'unchanged' : 'updated';
+        }
+
+        if ($needs_preview && self::document_preview($id, $group['attachment'], $title) && $changes === []) {
             return 'updated';
+        }
+
+        if ($changes === []) {
+            return 'unchanged';
         }
 
         if (isset($changes['title'])) {
@@ -933,6 +946,81 @@ final class CADCO_Import_Media_Applier
         if ($id > 0 && !has_post_thumbnail($resource_id)) {
             set_post_thumbnail($resource_id, $id);
         }
+    }
+
+    /**
+     * Whether a document resource should get (or replace) its first-page
+     * preview: it has no card image yet, or the one it has is the importer's
+     * preview of a file the resource no longer opens. A card image an editor
+     * chose is never replaced.
+     */
+    private static function preview_due(int $resource_id, int $attachment_id): bool
+    {
+        if ($attachment_id <= 0) {
+            return false;
+        }
+
+        if (!has_post_thumbnail($resource_id)) {
+            return true;
+        }
+
+        $of = get_post_meta($resource_id, self::PREVIEW_OF, true);
+
+        return $of !== '' && (int) $of !== $attachment_id;
+    }
+
+    /**
+     * Give a document resource a picture of its first page as its card image.
+     * Returns whether one was set. Rendered once per file and shared by every
+     * resource that opens it.
+     */
+    private static function document_preview(int $resource_id, int $attachment_id, string $title): bool
+    {
+        if ($attachment_id <= 0) {
+            return false;
+        }
+
+        // A "document" that is itself a picture (CPG-15FC's spec sheet link
+        // is a product photograph) is its own preview.
+        if (wp_attachment_is_image($attachment_id)) {
+            set_post_thumbnail($resource_id, $attachment_id);
+            update_post_meta($resource_id, self::PREVIEW_OF, $attachment_id);
+
+            return true;
+        }
+
+        if (get_post_mime_type($attachment_id) !== 'application/pdf') {
+            return false;
+        }
+
+        $key = 'preview:' . $attachment_id;
+        $id  = self::attachment_for($key);
+
+        if ($id <= 0) {
+            $jpeg = CADCO_Import_Preview::render((string) get_attached_file($attachment_id));
+
+            if ($jpeg === '') {
+                return false;
+            }
+
+            $base = (string) preg_replace('~\.[^.]+$~', '', basename((string) get_attached_file($attachment_id)));
+            $id   = self::sideload($jpeg, sanitize_file_name($base . '-preview.jpg'), $title);
+
+            if ($id <= 0) {
+                CADCO_Import_Fetcher::discard($jpeg);
+
+                return false;
+            }
+
+            add_post_meta($id, self::SOURCE_META, $key);
+            update_post_meta($id, '_wp_attachment_image_alt', '');
+            self::$sources[$key] = $id;
+        }
+
+        set_post_thumbnail($resource_id, $id);
+        update_post_meta($resource_id, self::PREVIEW_OF, $attachment_id);
+
+        return true;
     }
 
     /**

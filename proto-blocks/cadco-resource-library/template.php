@@ -247,6 +247,15 @@ $wrapper = get_block_wrapper_attributes([
                                     'class'   => 'h-full w-full ' . $fit,
                                     'loading' => 'lazy',
                                 ]); ?>
+                            <?php elseif (! $isStill) : ?>
+                                <?php /* No first-page preview (the server could not
+                                         render the PDF, or it is not a PDF): a
+                                         drawn page rather than an empty box. */ ?>
+                                <span class="absolute inset-0 flex items-center justify-center">
+                                    <img src="<?php echo esc_url(get_theme_file_uri('assets/img/cadco-doc-cover.svg')); ?>"
+                                         width="120" height="150" alt="" aria-hidden="true" loading="lazy" decoding="async"
+                                         style="height:58%;width:auto" />
+                                </span>
                             <?php endif; ?>
 
                             <?php /* Only where the card really plays. A video whose

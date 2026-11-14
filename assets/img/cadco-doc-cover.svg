@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="120" height="150" viewBox="0 0 120 150" fill="none">
+  <!-- A page with a folded corner: the default cover for a document whose first
+       page could not be rendered. Brand blue on white, drawn to sit on the card's
+       #dbe7f3 tint. -->
+  <path d="M8 4h76l32 32v106a4 4 0 0 1-4 4H8a4 4 0 0 1-4-4V8a4 4 0 0 1 4-4Z" fill="#fff" stroke="#00476e" stroke-width="3"/>
+  <path d="M84 4v28a4 4 0 0 0 4 4h28" stroke="#00476e" stroke-width="3" stroke-linejoin="round"/>
+  <rect x="20" y="52" width="58" height="6" rx="3" fill="#00476e"/>
+  <rect x="20" y="70" width="80" height="4" rx="2" fill="#4a6a84" opacity=".55"/>
+  <rect x="20" y="82" width="80" height="4" rx="2" fill="#4a6a84" opacity=".55"/>
+  <rect x="20" y="94" width="66" height="4" rx="2" fill="#4a6a84" opacity=".55"/>
+  <rect x="20" y="112" width="80" height="4" rx="2" fill="#4a6a84" opacity=".35"/>
+  <rect x="20" y="124" width="52" height="4" rx="2" fill="#4a6a84" opacity=".35"/>
+</svg>
