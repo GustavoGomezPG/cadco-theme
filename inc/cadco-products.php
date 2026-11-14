@@ -7,13 +7,15 @@
  * blocks are templates, so anything they would otherwise each re-derive lives
  * here instead.
  *
- * Specifications are read back out of the product description because that is
- * where the catalogue puts them: the importer writes a <h3>Specifications</h3>
- * list of label/value pairs and a <h3>Features</h3> list, which is also the
- * shape a human editor produces in the block editor. If a future import carries
- * them as real WooCommerce attributes instead, filter `cadco_product_spec_rows`
- * and `cadco_product_features` and nothing above this file has to change.
+ * Specifications come from a <h3>Specifications</h3> list of label/value pairs
+ * in the description when an editor wrote one, and otherwise from the
+ * product's structured data — native dimensions and weight, attributes,
+ * `_cadco_*` meta — which is where the importer puts them
+ * (inc/cadco-product-specs.php). Filter `cadco_product_spec_rows`
+ * to change either.
  */
+
+require_once __DIR__ . '/cadco-product-specs.php';
 
 /**
  * The product's spec rows as `label => value`, in document order.
@@ -44,7 +46,66 @@ function cadco_product_spec_rows(int $product_id): array
         }
     }
 
+    // A list written into the description is someone's deliberate choice
+    // and is kept as written. Without one — every imported product — the
+    // rows come from the product's structured data.
+    if ($rows === []) {
+        $rows = cadco_product_structured_spec_rows($product_id);
+    }
+
     return (array) apply_filters('cadco_product_spec_rows', $rows, $product_id);
+}
+
+/**
+ * A product's spec rows from its dimensions, attributes and `_cadco_*` meta.
+ *
+ * @return array<string, string>
+ */
+function cadco_product_structured_spec_rows(int $product_id): array
+{
+    $product = function_exists('wc_get_product') ? wc_get_product($product_id) : null;
+
+    if (!$product instanceof WC_Product) {
+        return [];
+    }
+
+    $attribute = static function (string $slug) use ($product_id): string {
+        $taxonomy = 'pa_' . $slug;
+
+        if (!taxonomy_exists($taxonomy)) {
+            return '';
+        }
+
+        $names = wc_get_product_terms($product_id, $taxonomy, ['fields' => 'names']);
+
+        return is_array($names) ? html_entity_decode(implode(', ', $names), ENT_QUOTES | ENT_HTML5, 'UTF-8') : '';
+    };
+
+    $meta = static fn (string $key): string => trim((string) get_post_meta($product_id, '_cadco_' . $key, true));
+
+    return cadco_product_spec_rows_from_values([
+        'width'          => (string) $product->get_width(),
+        'depth'          => (string) $product->get_length(),
+        'height'         => (string) $product->get_height(),
+        'weight'         => (string) $product->get_weight(),
+        'package_width'  => $meta('package_width'),
+        'package_depth'  => $meta('package_length'),
+        'package_height' => $meta('package_height'),
+        'package_weight' => $meta('package_weight'),
+        'capacity'       => $attribute('capacity'),
+        'size'           => $attribute('size'),
+        'cubic_feet'     => $meta('cubic_feet'),
+        'voltage'        => $attribute('voltage'),
+        'wattage'        => $meta('wattage'),
+        'amps'           => $meta('amps'),
+        'plug'           => $attribute('plug-type'),
+        'material'       => $attribute('material'),
+        'color'          => $attribute('color'),
+        'certifications' => $attribute('certifications'),
+        'approvals'      => $meta('approvals'),
+        'country'        => $attribute('country-of-origin'),
+        'lead_time'      => $attribute('lead-time'),
+    ]);
 }
 
 /**
@@ -85,7 +146,7 @@ function cadco_product_features(int $product_id): array
 function cadco_product_spec_groups(): array
 {
     return (array) apply_filters('cadco_product_spec_groups', [
-        'Size'  => ['Unit Dimensions', 'Cavity Size', 'Shipping Weight', 'Ship Weight', 'Size', 'Shelves', 'Capacity', 'Pan Capacity', 'Weight'],
+        'Size'  => ['Unit Dimensions', 'Cavity Size', 'Shipping Dimensions', 'Shipping Weight', 'Ship Weight', 'Size', 'Shelves', 'Capacity', 'Pan Capacity', 'Cubic Feet', 'Weight'],
         'Power' => ['Volts', 'Watts', 'Amps', 'Hertz', 'Phase', 'Plug', 'NEMA'],
     ]);
 }
@@ -132,6 +193,16 @@ function cadco_product_grouped_specs(int $product_id): array
     }
 
     $freight = trim((string) get_post_meta($product_id, '_cadco_freight_class', true));
+
+    // The importer stores freight class as the Freight Class attribute.
+    if ($freight === '' && taxonomy_exists('pa_freight-class')) {
+        $names   = wc_get_product_terms($product_id, 'pa_freight-class', ['fields' => 'names']);
+        $freight = is_array($names) ? trim(implode(', ', $names)) : '';
+    }
+
+    if (cadco_spec_is_empty($freight)) {
+        $freight = '';
+    }
 
     if ($freight !== '') {
         $out[] = ['label' => __('Freight Class', 'cadco-theme'), 'rows' => [], 'text' => $freight];
