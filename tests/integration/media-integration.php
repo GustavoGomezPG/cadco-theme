@@ -126,7 +126,19 @@ $requests = [];
 
 add_filter('pre_http_request', static function ($pre, array $args, string $url) use (&$files, &$requests) {
     $requests[] = $url;
-    [$status, $body] = $files[$url] ?? [404, 'not found'];
+    $answer = $files[$url] ?? [404, 'not found'];
+
+    // A list of answers is served one per request, the last one repeating —
+    // how a throttled host behaves: a sign-in page, then the file.
+    if (isset($answer[0]) && is_array($answer[0])) {
+        $answer = count($answer) > 1 ? array_shift($files[$url]) : $answer[0];
+    }
+
+    if ($answer[0] === 'error') {
+        return new WP_Error('http_request_failed', (string) $answer[1]);
+    }
+
+    [$status, $body] = $answer;
 
     if (!empty($args['stream']) && !empty($args['filename'])) {
         file_put_contents($args['filename'], $body);
@@ -232,6 +244,70 @@ function has_failure(array $log, string $needle): bool
 
     return false;
 }
+
+/* -------------------------------------------------------------------------
+   The downloader
+   ------------------------------------------------------------------------- */
+
+section('Downloader');
+
+$signin = '<html><script>location="https://login.microsoftonline.com/common/oauth2/authorize"</script></html>';
+
+$files['https://dl.test/throttled'] = [[200, $signin], [200, pdf('after throttling')]];
+$r = CADCO_Import_Fetcher::fetch('https://dl.test/throttled', 'k1');
+check($r['ok'] && $r['type'] === 'pdf', 'a sign-in page (SharePoint throttling) is retried, and the file then accepted');
+CADCO_Import_Fetcher::discard($r['path']);
+
+$files['https://dl.test/locked'] = [200, '<html>' . str_repeat(' ', 200000) . 'Sorry, you cannot access this document.</html>'];
+$requests = [];
+$r = CADCO_Import_Fetcher::fetch('https://dl.test/locked', 'k2');
+check(!$r['ok'] && str_contains($r['error'], 'cannot be accessed'), 'a locked file is refused with the reason, found deep in the page');
+check(count($requests) === 1, 'and not retried, since waiting will not unlock it');
+
+$files['https://dl.test/gone'] = [404, ''];
+$requests = [];
+$r = CADCO_Import_Fetcher::fetch('https://dl.test/gone', 'k3');
+check(!$r['ok'] && str_contains($r['error'], 'not there') && count($requests) === 1, 'a 404 fails once, without retrying');
+
+$files['https://dl.test/flaky'] = [['error', 'cURL error 28: Operation timed out'], [200, png(4, 5, 6)]];
+$r = CADCO_Import_Fetcher::fetch('https://dl.test/flaky', 'k4');
+check($r['ok'] && $r['type'] === 'png', 'a timeout is retried on the command line');
+CADCO_Import_Fetcher::discard($r['path']);
+
+// Inside a web request the same timeout is not retried: the whole download
+// has to fit under the host's request limit, and the next import retries it.
+$files['https://dl.test/flaky-web'] = [['error', 'cURL error 28: Operation timed out'], [200, png(4, 5, 7)]];
+$ajax = static fn () => true;
+add_filter('wp_doing_ajax', $ajax);
+$timeout = null;
+$probe   = static function ($args) use (&$timeout) { $timeout = $args['timeout']; return $args; };
+add_filter('http_request_args', $probe);
+$requests = [];
+$r = CADCO_Import_Fetcher::fetch('https://dl.test/flaky-web', 'k4w');
+remove_filter('http_request_args', $probe);
+remove_filter('wp_doing_ajax', $ajax);
+check(!$r['ok'] && count($requests) === 1, 'in a web request a timeout is not retried');
+check($timeout === 25, 'and the web timeout is 25 seconds (' . var_export($timeout, true) . ')');
+
+$files['https://dl.test/down'] = [['error', 'cURL error 6: Could not resolve host']];
+$r = CADCO_Import_Fetcher::fetch('https://dl.test/down', 'k5');
+check(!$r['ok'] && $r['retryable'] && str_contains($r['error'], 'Could not resolve host'), 'a network failure is reported with the reason');
+
+$files['https://dl.test/big'] = [200, '%PDF-1.4' . str_repeat('x', 4096)];
+$cap = static fn () => 1024;
+add_filter('cadco_import_media_max_bytes', $cap);
+$r = CADCO_Import_Fetcher::fetch('https://dl.test/big', 'k6');
+remove_filter('cadco_import_media_max_bytes', $cap);
+check(!$r['ok'] && str_contains($r['error'], 'larger than'), 'a file over the size limit is refused');
+
+$files['https://dl.test/svg'] = [200, '<svg xmlns="http://www.w3.org/2000/svg"><script>alert(1)</script></svg>'];
+$r = CADCO_Import_Fetcher::fetch('https://dl.test/svg', 'k7');
+check(!$r['ok'], 'an SVG is refused');
+
+$leftovers = glob(get_temp_dir() . 'cadco-media*') ?: [];
+check(count(array_filter($leftovers, static fn ($f) => filemtime($f) >= time() - 60)) === 0, 'refused downloads leave no temporary files behind');
+
+$requests = [];
 
 /* -------------------------------------------------------------------------
    Catalogue
