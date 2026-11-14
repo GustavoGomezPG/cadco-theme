@@ -226,12 +226,29 @@ final class CADCO_Import_Applier
      * @param list<array<string, mixed>> $rows normalised rows
      * @return list<array<string, mixed>>
      */
-    public static function build_run_queue(CADCO_Import_Plan $plan, array $rows, bool $refresh_media = false): array
+    public static function build_run_queue(CADCO_Import_Plan $plan, array $rows, bool $refresh_media = false, bool $skip_media = false): array
     {
+        if ($skip_media || !self::media_enabled()) {
+            return self::build_queue($plan);
+        }
+
         return array_merge(
             self::build_queue($plan),
             CADCO_Import_Media_Applier::queue(CADCO_Import_Media_Plan::build($rows), $refresh_media)
         );
+    }
+
+    /**
+     * Whether Apply runs the media stage at all.
+     *
+     * On by default. The 'cadco_import_media_disabled' option turns it off
+     * site-wide — the browser test suite sets it so a test import never
+     * downloads from CADCO's SharePoint — and the cadco_import_media_enabled
+     * filter has the last word for code that needs it.
+     */
+    public static function media_enabled(): bool
+    {
+        return (bool) apply_filters('cadco_import_media_enabled', !get_option('cadco_import_media_disabled'));
     }
 
     /**

@@ -878,6 +878,11 @@
 			body.append('refresh_media', '1');
 		}
 
+		var skip = document.getElementById('cadco-import-skip-media');
+		if (skip && skip.checked) {
+			body.append('skip_media', '1');
+		}
+
 		window.fetch(config.ajaxUrl, {
 			method: 'POST',
 			body: body,

@@ -23,6 +23,13 @@ const RESTORE_FILE = path.join(__dirname, '.password-restore.json');
 module.exports = async (config) => {
 	const baseURL = config.projects[0].use.baseURL;
 
+	// No test import downloads from CADCO's SharePoint: the media stage is
+	// switched off for the run (CADCO_Import_Applier::media_enabled()) and
+	// switched back on by global-teardown.js. Media behaviour is covered by
+	// tests/integration/ with the network mocked, and by media.spec.js with
+	// the apply call intercepted.
+	execFileSync('wp', ['option', 'update', 'cadco_import_media_disabled', '1'], { cwd: THEME });
+
 	const login = execFileSync('wp', ['user', 'list', '--role=administrator', '--field=user_login', '--format=csv'], {
 		cwd: THEME,
 		encoding: 'utf8',

@@ -1308,7 +1308,8 @@ final class CADCO_Import_Admin
             $queue      = CADCO_Import_Applier::build_run_queue(
                 $plan,
                 $result['rows'],
-                !empty($_POST['refresh_media'])
+                !empty($_POST['refresh_media']),
+                !empty($_POST['skip_media'])
             );
             // Not queue.php.ser: mod_mime matches ANY dot-separated
             // extension, not just the last, so a name ending in .php...ser

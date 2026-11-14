@@ -100,7 +100,7 @@ final class CADCO_Import_CLI
         $this->approve($plan, (string) ($assoc['approve-renames'] ?? ''));
         $this->print_plan($plan);
 
-        $skip_media = isset($assoc['skip-media']);
+        $skip_media = isset($assoc['skip-media']) || !CADCO_Import_Applier::media_enabled();
         $media      = CADCO_Import_Media_Plan::build($result['rows']);
 
         if (!$skip_media) {

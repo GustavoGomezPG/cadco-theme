@@ -1557,6 +1557,15 @@ final class CADCO_Import_View
                 </tr>
             </tbody>
         </table>
+        <?php if (!CADCO_Import_Applier::media_enabled()) : ?>
+            <p class="cadco-import-message is-warning"><?php esc_html_e('The media stage is switched off on this site (the cadco_import_media_disabled option). Apply will import products only.', 'cadco-theme'); ?></p>
+        <?php endif; ?>
+        <p>
+            <label>
+                <input type="checkbox" id="cadco-import-skip-media" value="1" />
+                <?php esc_html_e('Products only: skip the media stage this time. Files and resources are left as they are.', 'cadco-theme'); ?>
+            </label>
+        </p>
         <p>
             <label>
                 <input type="checkbox" id="cadco-import-refresh-media" value="1" />

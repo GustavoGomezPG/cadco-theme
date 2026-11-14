@@ -17,6 +17,9 @@ const RESTORE_FILE = path.join(__dirname, '.password-restore.json');
  * leave the site's real admin password overwritten with the run's random one.
  */
 module.exports = async () => {
+	// Switched off by global-setup.js for the run; always switched back on.
+	execFileSync('wp', ['option', 'delete', 'cadco_import_media_disabled'], { cwd: THEME });
+
 	if (!fs.existsSync(RESTORE_FILE)) {
 		return;
 	}
