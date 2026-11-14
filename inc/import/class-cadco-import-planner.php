@@ -108,12 +108,25 @@ final class CADCO_Import_Planner
                 $expected = cadco_import_product_slug($sku);
 
                 if ((string) $match['hash'] === $hash) {
-                    if ($slug === '' || $slug === $expected) {
+                    $drift = [];
+
+                    if ($slug !== '' && $slug !== $expected) {
+                        $drift['URL slug'] = [$slug, $expected];
+                    }
+
+                    // Written by an older importer: the row is the same, the
+                    // output it should produce is not. Only checked when the
+                    // repository says which version wrote the product.
+                    if (array_key_exists('format', $match) && (int) $match['format'] < cadco_import_format_version()) {
+                        $drift['Import format'] = ['v' . (int) $match['format'], 'v' . cadco_import_format_version()];
+                    }
+
+                    if ($drift === []) {
                         $plan->add_skip($sku);
                         continue;
                     }
 
-                    $plan->add_update($row, (int) $match['post_id'], ['URL slug' => [$slug, $expected]]);
+                    $plan->add_update($row, (int) $match['post_id'], $drift);
                     continue;
                 }
 

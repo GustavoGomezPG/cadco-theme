@@ -274,4 +274,21 @@ final class NormaliserTest extends TestCase
             'Lead Time'         => '1-3 business days',
         ];
     }
+
+    public function test_a_bullet_carried_onto_a_new_line_is_joined_back(): void
+    {
+        // XAFT-04HS-TR in the 13 Nov workbook.
+        $cell = "•USB programming capability & WIFI\n•Includes electro valve for direct plumbed water\nconnection\n•208-240V, 2900-3800W, 16A";
+
+        self::assertSame([
+            'USB programming capability & WIFI',
+            'Includes electro valve for direct plumbed water connection',
+            '208-240V, 2900-3800W, 16A',
+        ], \CADCO_Import_Normaliser::bullets($cell));
+    }
+
+    public function test_a_cell_without_markers_is_one_bullet_per_line(): void
+    {
+        self::assertSame(['Heavy duty', 'Stainless'], \CADCO_Import_Normaliser::bullets("Heavy duty\nStainless"));
+    }
 }

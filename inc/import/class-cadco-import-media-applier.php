@@ -811,9 +811,8 @@ final class CADCO_Import_Media_Applier
     /**
      * A resource's title.
      *
-     * One product: that product's name — the card already says what kind of
-     * document it is, so "Half Size Convection Oven" under "Spec Sheet"
-     * reads completely. Shared by several: the file's own name, which is
+     * One product: its model number and the kind of document
+     * ("XAFT-04HS-TR Spec Sheet") — short enough for the one-line card. Shared by several: the file's own name, which is
      * what CADCO called the document ("Cadco Panini Grills"), since no one
      * product's name describes it. Videos take the video's own title.
      *
@@ -841,7 +840,14 @@ final class CADCO_Import_Media_Applier
         }
 
         if (count($product_ids) === 1) {
-            return (string) get_the_title($product_ids[0]);
+            // Model number and kind ('XAFT-04HS-TR Spec Sheet'), not the
+            // product's full name: names run to 150 characters, and the card
+            // that shows this title is one line wide.
+            $sku   = trim((string) get_post_meta($product_ids[0], '_sku', true));
+            $kinds = cadco_import_resource_media_terms();
+            $kind  = $kinds[$group['role']] ?? '';
+
+            return $sku !== '' ? trim($sku . ' ' . $kind) : (string) get_the_title($product_ids[0]);
         }
 
         $file = (string) get_the_title($group['attachment']);

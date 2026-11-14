@@ -211,14 +211,33 @@ final class CADCO_Import_Normaliser
      */
     public static function bullets(string $value): array
     {
-        $out = [];
+        $out   = [];
+        $raw   = explode("\n", $value);
 
-        foreach (explode("\n", $value) as $line) {
+        // A line that starts in lower case, with no bullet marker, is the
+        // previous bullet's sentence carried onto a new line —
+        // '•Includes electro valve for direct plumbed water' / 'connection'
+        // in the 13 Nov workbook — and is joined back onto it. Only then:
+        // unmarked lines that start a sentence ('NOTE: Require dedicated
+        // electrical line', the items under 'Includes:') are separate items
+        // CADCO wrote that way on purpose, in 70-odd real cells.
+        foreach ($raw as $line) {
+            $continues = $out !== [] && preg_match('/^\s*\p{Ll}/u', $line) === 1;
+
             $line = ltrim(trim($line), "•*- \t");
             $line = preg_replace('/\s*•\s*/u', ' ', $line) ?? $line;
             $line = trim(preg_replace('/\s+/u', ' ', $line) ?? $line, " \t\"'");
 
-            if ($line !== '' && !in_array($line, $out, true)) {
+            if ($line === '') {
+                continue;
+            }
+
+            if ($continues) {
+                $out[count($out) - 1] .= ' ' . $line;
+                continue;
+            }
+
+            if (!in_array($line, $out, true)) {
                 $out[] = $line;
             }
         }

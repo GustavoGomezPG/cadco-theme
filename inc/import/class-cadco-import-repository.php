@@ -45,6 +45,7 @@ final class CADCO_Import_Repository
             $wpdb->prepare(
                 "SELECT p.ID AS post_id,
                         p.post_name                                                  AS slug,
+                        COALESCE(fmt.meta_value, '0')                                AS format,
                         COALESCE(NULLIF(l.sku, ''), skum.meta_value, '')              AS sku,
                         COALESCE(NULLIF(l.global_unique_id, ''), upcm.meta_value, '') AS upc,
                         COALESCE(hash.meta_value, '')    AS hash,
@@ -53,6 +54,7 @@ final class CADCO_Import_Repository
               LEFT JOIN {$lookup} l            ON l.product_id = p.ID
               LEFT JOIN {$wpdb->postmeta} skum ON skum.post_id = p.ID AND skum.meta_key = '_sku'
               LEFT JOIN {$wpdb->postmeta} upcm ON upcm.post_id = p.ID AND upcm.meta_key = '_global_unique_id'
+              LEFT JOIN {$wpdb->postmeta} fmt  ON fmt.post_id = p.ID AND fmt.meta_key = '_cadco_import_format'
               LEFT JOIN {$wpdb->postmeta} hash ON hash.post_id = p.ID AND hash.meta_key = '_cadco_import_hash'
               LEFT JOIN {$wpdb->postmeta} snap ON snap.post_id = p.ID AND snap.meta_key = %s
                   WHERE p.post_type = 'product'
@@ -85,6 +87,7 @@ final class CADCO_Import_Repository
                     'upc'                 => (string) $row['upc'],
                     'hash'                => (string) $row['hash'],
                     'slug'                => (string) ($row['slug'] ?? ''),
+                    'format'              => (int) ($row['format'] ?? 0),
                     'snapshot'            => is_array($decoded) ? $decoded : [],
                     'snapshot_unreadable' => $raw !== null && !is_array($decoded),
                 ];

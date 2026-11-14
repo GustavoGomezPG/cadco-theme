@@ -402,7 +402,7 @@ check($spec !== null && get_post_meta($spec->ID, 'cadco_resource_link_type', tru
 check($spec !== null && has_term('spec-sheet', 'resource_media', $spec->ID), 'the resource is filed as a spec sheet');
 
 $manual = resource('doc:manual:' . att('MANA'));
-check($manual !== null && $manual->post_title === 'Integration ZZ-INT-A', 'a single-product document is titled after its product');
+check($manual !== null && $manual->post_title === 'ZZ-INT-A Manual', 'a single-product document is titled with its model and kind (' . ($manual->post_title ?? '-') . ')');
 
 $video = resource('video:youtube:zzIntTest01');
 check($video !== null, 'a wrapped YouTube link becomes a video resource');

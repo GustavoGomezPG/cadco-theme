@@ -302,6 +302,25 @@ function cadco_import_verbatim_columns(): array
 }
 
 /**
+ * The version of how the importer turns a row into a product.
+ *
+ * A product is skipped when its row is unchanged (design spec §6.1), which is
+ * right until the importer itself changes how it writes a product — joining
+ * a bullet split across two lines, say. Then every existing product keeps the
+ * old output for ever, because its row never changes again. Each product
+ * records the version it was written with; one written with an older version
+ * is planned as an update, once, and Review says why.
+ *
+ * Bump this whenever write_product()'s output changes for an unchanged row.
+ *   1  the original importer (recorded as 0: products predate the field)
+ *   2  13 Nov 2026: continuation lines joined into their bullet
+ */
+function cadco_import_format_version(): int
+{
+    return 2;
+}
+
+/**
  * The URL slug for a model number.
  *
  * WordPress's own sanitize_title() drops characters it cannot put in a URL,

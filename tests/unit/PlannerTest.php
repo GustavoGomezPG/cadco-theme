@@ -512,4 +512,24 @@ final class PlannerTest extends TestCase
 
         self::assertSame(1, $plan->counts()['skip']);
     }
+
+    public function test_a_product_written_by_an_older_importer_is_rewritten_once(): void
+    {
+        $row     = self::row();
+        $current = [
+            'post_id' => 9,
+            'sku'     => (string) $row['Model #'],
+            'upc'     => (string) $row['UPC#'],
+            'hash'    => \CADCO_Import_Planner::hash($row),
+            'slug'    => \cadco_import_product_slug((string) $row['Model #']),
+            'format'  => 0,
+        ];
+
+        $plan = \CADCO_Import_Planner::plan([$row], [$current]);
+        self::assertSame(1, $plan->counts()['update']);
+        self::assertSame(['Import format' => ['v0', 'v' . \cadco_import_format_version()]], $plan->updates()[0]['diff']);
+
+        $current['format'] = \cadco_import_format_version();
+        self::assertSame(1, \CADCO_Import_Planner::plan([$row], [$current])->counts()['skip'], 'and skipped once it is current');
+    }
 }

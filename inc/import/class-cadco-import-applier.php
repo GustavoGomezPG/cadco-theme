@@ -574,6 +574,7 @@ final class CADCO_Import_Applier
         update_post_meta($post_id, self::META_PREFIX . 'source_sheet', wp_slash((string) ($row['__sheet'] ?? '')));
         update_post_meta($post_id, self::META_PREFIX . 'source_row', (int) ($row['__row'] ?? 0));
         update_post_meta($post_id, self::META_PREFIX . 'import_hash', CADCO_Import_Planner::hash($row));
+        update_post_meta($post_id, self::META_PREFIX . 'import_format', cadco_import_format_version());
 
         // The payload the next run's plan will diff this product's new row
         // against — see CADCO_Import_Planner::diff(). Stored as exactly what
