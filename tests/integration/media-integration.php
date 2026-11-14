@@ -345,6 +345,39 @@ $preview = CADCO_Import_Media_Applier::preview(CADCO_Import_Media_Plan::build([
 check($preview['resources_new'] === 1, 'a resource cited only by a product still to be created counts as new (' . $preview['resources_new'] . ')');
 CADCO_Import_Media_Applier::reset_cache();
 
+section('Review media section renders');
+
+// The view only loads inside wp-admin; load it here to render the section
+// exactly as Review does, with a plan that has every kind of notice.
+require_once get_stylesheet_directory() . '/inc/import/class-cadco-import-view.php';
+require_once get_stylesheet_directory() . '/inc/import/class-cadco-import-admin.php';
+
+$review_plan = CADCO_Import_Media_Plan::build([
+    row('ZZ-INT-VIEW', [
+        'Images URL'     => '<script>alert(1)</script>.jpg',
+        'Spec Sheet URL' => SP . 'VIEWSPEC',
+        'Manual URL'     => "https://cadcoltd232.sharepoint.com/:f:/s/CADCOMediaLibrary/EopViewFolder\nfile:///C:/Users/x/m.pdf",
+    ]),
+], 'cadcoltd232.sharepoint.com');
+
+$section = new ReflectionMethod('CADCO_Import_View', 'section_media');
+$section->setAccessible(true);
+ob_start();
+$section->invoke(null, ['plan' => $review_plan, 'preview' => CADCO_Import_Media_Applier::preview($review_plan), 'run_id' => '2026-11-13-000000-1-abcdefghijkl']);
+$html = (string) ob_get_clean();
+CADCO_Import_Media_Applier::reset_cache();
+
+check(str_contains($html, 'id="cadco-section-media"'), 'the section renders with its anchor');
+check(str_contains($html, '1 to download'), 'it counts the file to download');
+check(substr_count($html, '<tr>') >= 3 + 4, 'it lists the three unusable links under the summary rows');
+check(!str_contains($html, '<script>alert(1)</script>'), 'workbook text is escaped');
+check(str_contains($html, 'action=export-archived-report') && str_contains($html, 'file=media') && str_contains($html, '_wpnonce='), 'the CSV link carries the run, the file and a nonce');
+check(str_contains($html, 'id="cadco-import-refresh-media"') && str_contains($html, 'id="cadco-import-skip-media"'), 'both options are offered');
+
+$nav = new ReflectionMethod('CADCO_Import_View', 'media_nav_meta');
+$nav->setAccessible(true);
+check($nav->invoke(null, ['plan' => $review_plan, 'preview' => ['downloads' => 0, 'images' => 0, 'resources_new' => 0, 'resources_changed' => 0, 'resources_removed' => 0], 'run_id' => '']) === '3 to fix', 'with nothing to download, the navigator shows the links to fix');
+
 /* -------------------------------------------------------------------------
    1. First import
    ------------------------------------------------------------------------- */
