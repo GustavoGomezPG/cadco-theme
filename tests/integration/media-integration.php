@@ -334,6 +334,17 @@ $rows = [
     ]),
 ];
 
+section('Review on a first import');
+
+// Products this import is about to create do not exist when Review is
+// shown. Their resources must still be counted as new.
+CADCO_Import_Media_Applier::reset_cache();
+$preview = CADCO_Import_Media_Applier::preview(CADCO_Import_Media_Plan::build([
+    row('ZZ-INT-NOT-YET', ['Video URL' => 'https://youtu.be/zzIntTest02']),
+], 'cadcoltd232.sharepoint.com'));
+check($preview['resources_new'] === 1, 'a resource cited only by a product still to be created counts as new (' . $preview['resources_new'] . ')');
+CADCO_Import_Media_Applier::reset_cache();
+
 /* -------------------------------------------------------------------------
    1. First import
    ------------------------------------------------------------------------- */

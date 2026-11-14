@@ -661,11 +661,21 @@ final class CADCO_Import_Media_Applier
             }
         }
 
+        $existing = self::resource_by_identity($identity);
+
         if ($product_ids === []) {
+            // On Review, before the product stage has run, a resource cited
+            // only by products this import is about to create has no product
+            // to resolve yet — it will once they exist, so the preview counts
+            // what Apply will do rather than what the catalogue holds now.
+            // When applying, no product means the products were not created
+            // (they failed), and the resource is left as it is.
+            if ($dry && $group['models'] !== []) {
+                return $existing === null ? 'created' : 'updated';
+            }
+
             return 'unchanged';
         }
-
-        $existing = self::resource_by_identity($identity);
 
         // An editor trashed it: that is a decision about this resource, and
         // the importer does not bring it back.
