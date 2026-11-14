@@ -549,9 +549,14 @@ test.describe('Product import', () => {
 		// delimiter, the enclosure, a newline, or whitespace) — the header
 		// row is quoted because 'Old path' and 'New URL' contain spaces, but
 		// a plain path or URL is not, so data rows are unquoted.
+		// The new URL is whatever the product's permalink is now — read from
+		// WordPress rather than spelled out, so a category renamed in the
+		// sheet-to-category map (as 'Convection Ovens' became 'Convection &
+		// Cook-Hold Ovens') does not turn this into a false failure.
 		const blcRow = rows.find((line) => line.startsWith('/product/xaf-113,'));
 		expect(blcRow).toBeTruthy();
-		expect(blcRow).toContain('/products/convection-ovens/bakerlux-classic/blc-113/');
+		expect(blcRow).toContain(new URL(permalinkFor(productIdBySku('BLC-113'))).pathname);
+		expect(blcRow).toContain('/blc-113/');
 
 		// VK-VH-FK -> varikwik-hood-filter-2.pdf, PS-TBS-HD ->
 		// wt-hd-warming-shelves-accessories-spec-rv1-stainless-1.pdf. Neither
@@ -561,10 +566,14 @@ test.describe('Product import', () => {
 	});
 
 	test('an imported product page renders with its specs', async ({ page }) => {
-		await page.goto('/products/convection-ovens/bakerlux-classic/blc-113/');
+		await page.goto(new URL(permalinkFor(productIdBySku('BLC-113'))).pathname);
 
 		await expect(page.getByRole('heading', { level: 1 })).toContainText(/Convection Oven/i);
-		await expect(page.locator('body')).toContainText('BLC-113');
+
+		// The product page design does not print the model number; what it
+		// does render from the import is the specification band.
+		await expect(page.getByRole('heading', { name: 'Specifications', level: 2 })).toBeVisible();
+		expect(page.url()).toContain('/blc-113/');
 
 		// Catalogue only: nothing may be purchasable.
 		await expect(page.locator('.single_add_to_cart_button')).toHaveCount(0);
@@ -655,6 +664,20 @@ test.describe('Product import', () => {
 		resetCatalogue();
 
 		try {
+			// Hold the third (plan) stage back for a few seconds. Read and
+			// validate answer in well under a second now, and the plan
+			// stage's response navigates to Review — without the delay the
+			// panel can be gone before the first two rows are read, which
+			// is a race in the test, not a fault in the screen. Every other
+			// request goes straight through.
+			await page.route('**/admin-ajax.php', async (route) => {
+				if ((route.request().postData() || '').includes('cadco_import_check_plan')) {
+					await new Promise((resolve) => setTimeout(resolve, 4000));
+				}
+
+				await route.continue();
+			});
+
 			await page.goto(IMPORT_PATH);
 			await page.setInputFiles('input[type="file"]', CORRECTED);
 
@@ -815,10 +838,11 @@ test.describe('Product import', () => {
 			await page.setInputFiles('input[type="file"]', fixture);
 			await expect(page.locator('#cadco-import-apply')).toBeVisible();
 
-			// The sheet name, title-cased, is the one new parent — both
-			// distinct 'Type' values are its children, nested underneath it.
+			// The sheet's category (cadco_import_sheet_categories() maps the
+			// tab to its display name) is the one new parent — both distinct
+			// 'Type' values are its children, nested underneath it.
 			const parent = page.locator('#cadco-section-categories .cadco-import-term-tree > li')
-				.filter({ hasText: 'Convection Ovens' });
+				.filter({ hasText: 'Convection & Cook-Hold Ovens' });
 			await expect(parent).toHaveCount(1);
 
 			const children = parent.locator('ul > li');
