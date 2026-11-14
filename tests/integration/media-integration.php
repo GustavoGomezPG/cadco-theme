@@ -381,7 +381,42 @@ check(get_post_meta($spec->ID, CADCO_Import_Media_Applier::RESOURCE_META, true) 
 check(get_post($spec->ID)->post_title === 'Panini grill specifications', 'and keeps its editor\'s title');
 
 /* -------------------------------------------------------------------------
-   7. Renamed and removed products
+   7. Links CADCO still has to fix
+   ------------------------------------------------------------------------- */
+
+section('Unusable links and late fixes');
+
+// The shape ~50 real Manual cells have: a folder link as the text, a path
+// on someone's PC as the hyperlink behind it.
+$rows['C']['Manual URL'] = "https://cadcoltd232.sharepoint.com/:f:/s/CADCOMediaLibrary/EopFolderToken?e=wRo4bC\nfile:///C:\\Users\\apenn\\AppData\\Local\\Microsoft\\:i:\\s\\CADCOMediaLibrary\\IQAG9IGx%3fe=DOgZmM";
+// A manual still on the site being replaced.
+$rows['C']['Images URL'] = 'http://cadco-ltd.com/edit/resources/images/zz-int-c.png';
+$files['http://cadco-ltd.com/edit/resources/images/zz-int-c.png'] = [200, png(1, 2, 3)];
+
+$plan     = CADCO_Import_Media_Plan::build(array_values($rows), 'cadcoltd232.sharepoint.com');
+$cnotices = array_values(array_filter($plan->notices(), static fn ($n) => $n->row === 2 && in_array($n->column, ['Manual URL', 'Images URL'], true)));
+
+$requests = [];
+$log      = run_media(array_values($rows));
+
+check(count(array_filter($cnotices, static fn ($n) => $n->column === 'Manual URL')) === 2, 'a folder link and a PC path in one cell are two notices');
+check(count(array_filter($requests, static fn ($u) => str_contains($u, 'EopFolderToken') || str_starts_with($u, 'file:'))) === 0, 'neither is ever requested');
+check(count(get_posts(['post_type' => 'resource', 'meta_key' => CADCO_Import_Media_Applier::RESOURCE_META, 'tax_query' => [['taxonomy' => 'resource_product', 'field' => 'slug', 'terms' => 'zz-int-c']]])) === 0, 'and no manual resource is made for them');
+check((int) get_post_thumbnail_id($C) > 0, 'a file on the old site is still imported');
+check(count(array_filter($cnotices, static fn ($n) => $n->column === 'Images URL' && str_contains($n->message, 'cadco-ltd.com'))) === 1, 'and flagged as hosted on the site being replaced');
+
+// CADCO unlock the spec sheet that failed on every run so far.
+$files[DL . 'LOCKED'] = [200, pdf('spec for C, unlocked')];
+$writes = 0;
+$log    = run_media(array_values($rows));
+$cspec  = resource('doc:spec-sheet:' . att('LOCKED'));
+
+check(att('LOCKED') > 0, 'a file that was locked is downloaded once it is shared');
+check($cspec !== null && tagged($cspec->ID) === ['zz-int-c'], 'and its resource appears, tagged to its product');
+check(!has_failure($log, 'ZZ-INT-C'), 'with no failure reported any more');
+
+/* -------------------------------------------------------------------------
+   8. Renamed and removed products
    ------------------------------------------------------------------------- */
 
 section('Product renames and removals');
