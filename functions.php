@@ -11,6 +11,7 @@ require_once get_stylesheet_directory() . '/inc/cadco-woocommerce.php';
 require_once get_stylesheet_directory() . '/inc/cadco-display-settings.php'; // Products > Display Settings; read on the front end too.
 require_once get_stylesheet_directory() . '/inc/cadco-products.php';   // What the product blocks read.
 require_once get_stylesheet_directory() . '/inc/proto-yoast-jsonld.php'; // Inert unless Yoast SEO is active.
+require_once get_stylesheet_directory() . '/inc/cadco-seo.php';           // Category share images (Yoast).
 require_once get_stylesheet_directory() . '/inc/import/bootstrap.php';   // Products > Import; registers only in wp-admin.
 
 add_action('after_setup_theme', function () {
