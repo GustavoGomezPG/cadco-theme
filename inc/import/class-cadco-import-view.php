@@ -155,6 +155,54 @@ final class CADCO_Import_View
             </div>
         </div>
         <?php
+        if ($state === 'review') {
+            self::run_panel();
+        }
+    }
+
+    /**
+     * The live view of an apply run, revealed when Apply is clicked: the
+     * phase it is in, the job it is on, how long it has been working, what
+     * it has just done, and — when it ends — what was written and where to
+     * go next. assets/js/import-admin.js fills it from each batch's
+     * 'progress' (CADCO_Import_Applier::progress()) and 'log'.
+     */
+    private static function run_panel(): void
+    {
+        ?>
+        <div class="cadco-import-section cadco-import-checking cadco-import-run" id="cadco-import-run" tabindex="-1" hidden>
+            <div class="cadco-import-checking-head">
+                <h2>
+                    <span class="cadco-import-run-title"><?php esc_html_e('Applying the plan', 'cadco-theme'); ?></span>
+                    <span class="cadco-import-checking-percent cadco-mono" id="cadco-import-run-percent">0%</span>
+                </h2>
+                <p class="cadco-import-checking-file cadco-mono" id="cadco-import-run-elapsed"></p>
+            </div>
+            <div class="cadco-import-checking-bar">
+                <progress value="0" max="100" id="cadco-import-run-progress"></progress>
+            </div>
+            <p class="cadco-import-now" id="cadco-import-run-now" role="status" aria-live="polite">
+                <span class="cadco-import-spinner" aria-hidden="true"></span>
+                <span class="cadco-import-now-text"></span>
+            </p>
+            <ul class="cadco-import-checklist" id="cadco-import-run-phases"></ul>
+            <div class="cadco-import-run-activity">
+                <h3><?php esc_html_e('Recent activity', 'cadco-theme'); ?></h3>
+                <ol class="cadco-import-run-log cadco-mono" id="cadco-import-run-log"></ol>
+            </div>
+            <p class="cadco-import-run-keepopen" id="cadco-import-run-keepopen">
+                <?php esc_html_e('Keep this page open until the import finishes. If it is closed part-way, what was already written stays; check the workbook again and apply to finish the rest.', 'cadco-theme'); ?>
+            </p>
+            <div class="cadco-import-run-done" id="cadco-import-run-done" hidden>
+                <ul class="cadco-import-run-summary" id="cadco-import-run-summary"></ul>
+                <p class="cadco-import-run-next">
+                    <a class="button button-primary" href="<?php echo esc_url(admin_url('edit.php?post_type=product&page=cadco-import')); ?>"><?php esc_html_e('Check another workbook', 'cadco-theme'); ?></a>
+                    <a class="button" href="<?php echo esc_url(admin_url('edit.php?post_type=product&page=cadco-import&tab=history')); ?>"><?php esc_html_e('View import history', 'cadco-theme'); ?></a>
+                    <a class="button" href="<?php echo esc_url(admin_url('edit.php?post_type=product')); ?>"><?php esc_html_e('View products', 'cadco-theme'); ?></a>
+                </p>
+            </div>
+        </div>
+        <?php
     }
 
     /**
@@ -181,12 +229,18 @@ final class CADCO_Import_View
             // CADCO_Import_Admin::ajax_batch() refuses any mismatch, so a
             // Review left open in another tab can never apply the workbook
             // that was checked after it.
+            //
+            // Rendered disabled: applying is driven entirely by
+            // assets/js/import-admin.js, which enables the button once its
+            // handler is attached. A click before then would otherwise do
+            // nothing and say nothing.
             ?>
             <button
                 type="button"
                 class="button button-primary"
                 id="cadco-import-apply"
                 data-run-id="<?php echo esc_attr($run_id); ?>"
+                disabled
             >
                 <?php esc_html_e('Apply plan', 'cadco-theme'); ?>
             </button>
@@ -295,11 +349,11 @@ final class CADCO_Import_View
         <table class="widefat striped cadco-import-history">
             <thead>
             <tr>
-                <th scope="col"><?php esc_html_e('Date', 'cadco-theme'); ?></th>
-                <th scope="col"><?php esc_html_e('Label', 'cadco-theme'); ?></th>
+                <th scope="col" class="cadco-import-history-col-date"><?php esc_html_e('Date', 'cadco-theme'); ?></th>
+                <th scope="col" class="cadco-import-history-col-label"><?php esc_html_e('Label', 'cadco-theme'); ?></th>
                 <th scope="col"><?php esc_html_e('Filename', 'cadco-theme'); ?></th>
-                <th scope="col"><?php esc_html_e('Result', 'cadco-theme'); ?></th>
-                <th scope="col"><?php esc_html_e('Actions', 'cadco-theme'); ?></th>
+                <th scope="col" class="cadco-import-history-col-result"><?php esc_html_e('Result', 'cadco-theme'); ?></th>
+                <th scope="col" class="cadco-import-history-col-actions"><?php esc_html_e('Actions', 'cadco-theme'); ?></th>
             </tr>
             </thead>
             <tbody>
@@ -337,7 +391,7 @@ final class CADCO_Import_View
         $applied = !empty($run['applied']);
         ?>
         <tr<?php echo ($passed && !$applied) ? ' class="cadco-import-history-unapplied"' : ''; ?>>
-            <td><?php echo esc_html(self::format_run_date((string) ($run['created'] ?? ''))); ?></td>
+            <td><?php self::history_date((string) ($run['created'] ?? '')); ?></td>
             <td>
                 <input
                     type="text"
@@ -354,7 +408,8 @@ final class CADCO_Import_View
                 <?php self::lineage_note($run, $by_id); ?>
             </td>
             <td><?php echo esc_html(self::run_result_summary($run)); ?></td>
-            <td>
+            <td class="cadco-import-history-actions-cell">
+                <div class="cadco-import-history-actions">
                 <?php if ($passed) : ?>
                     <a
                         class="button"
@@ -372,6 +427,21 @@ final class CADCO_Import_View
                         )); ?>"
                     ><?php esc_html_e('View report', 'cadco-theme'); ?></a>
                 <?php endif; ?>
+                <?php
+                // Revealed by assets/js/import-admin.js, which asks for
+                // confirmation inline and deletes over AJAX
+                // (CADCO_Import_Admin::ajax_delete_run()). Hidden without
+                // script rather than offered as a link that cannot confirm.
+                ?>
+                <button
+                    type="button"
+                    class="button cadco-import-history-delete"
+                    data-run-id="<?php echo esc_attr($run_id); ?>"
+                    title="<?php esc_attr_e('Delete this run', 'cadco-theme'); ?>"
+                    aria-label="<?php esc_attr_e('Delete this run', 'cadco-theme'); ?>"
+                    hidden
+                ><span class="dashicons dashicons-trash" aria-hidden="true"></span></button>
+                </div>
             </td>
         </tr>
         <?php
@@ -634,6 +704,13 @@ final class CADCO_Import_View
                     </li>
                 <?php endforeach; ?>
             </ul>
+            <p class="cadco-import-now" id="cadco-import-checking-now" role="status" aria-live="polite">
+                <span class="cadco-import-spinner" aria-hidden="true"></span>
+                <span class="cadco-import-now-text"></span>
+            </p>
+            <p class="cadco-import-checking-ready" id="cadco-import-checking-ready" hidden>
+                <a class="button button-primary" id="cadco-import-checking-open" href="#"><?php esc_html_e('Open the review now', 'cadco-theme'); ?></a>
+            </p>
         </div>
         <?php
     }
@@ -1067,6 +1144,27 @@ final class CADCO_Import_View
      * missing or malformed — the same defensive posture
      * CADCO_Import_Archive itself takes toward a hand-edited manifest.
      */
+    /**
+     * The history table's date cell: the date on one line and the time
+     * always on the next, so every row reads the same however wide the
+     * column happens to be.
+     */
+    private static function history_date(string $created): void
+    {
+        $timestamp = $created !== '' ? strtotime($created) : false;
+
+        if ($timestamp === false) {
+            echo esc_html(__('an unknown date', 'cadco-theme'));
+            return;
+        }
+
+        printf(
+            '<span class="cadco-import-history-day">%s</span><br><span class="cadco-import-history-time">%s</span>',
+            esc_html((string) wp_date(get_option('date_format'), $timestamp)),
+            esc_html((string) wp_date(get_option('time_format'), $timestamp))
+        );
+    }
+
     private static function format_run_date(string $created): string
     {
         $timestamp = $created !== '' ? strtotime($created) : false;

@@ -100,6 +100,161 @@ final class CADCO_Import_Applier
     }
 
     /**
+     * The phases of a run, in the order build_run_queue() puts them, with
+     * the words the Apply screen uses while each one is running.
+     *
+     * @return array<string, string>
+     */
+    public static function phases(): array
+    {
+        return [
+            'products'  => __('Updating products', 'cadco-theme'),
+            'files'     => __('Downloading files', 'cadco-theme'),
+            'images'    => __('Setting product images', 'cadco-theme'),
+            'resources' => __('Updating the resource library', 'cadco-theme'),
+            'cleanup'   => __('Cleaning up', 'cadco-theme'),
+        ];
+    }
+
+    /**
+     * Which phase a job belongs to and one line saying what it does, so the
+     * operator watching a run is told what is happening rather than shown a
+     * bare count.
+     *
+     * @param array<string, mixed> $job
+     * @return array{phase:string,label:string}
+     */
+    public static function describe_job(array $job): array
+    {
+        $op    = (string) ($job['op'] ?? '');
+        $model = static fn (): string => (string) ($job['row']['Model #'] ?? '');
+
+        switch ($op) {
+            case 'trash':
+                /* translators: %s: model number */
+                return ['phase' => 'products', 'label' => sprintf(__('Moving %s to the trash', 'cadco-theme'), (string) ($job['sku'] ?? ''))];
+            case 'create':
+                /* translators: %s: model number */
+                return ['phase' => 'products', 'label' => sprintf(__('Creating %s', 'cadco-theme'), $model())];
+            case 'update':
+                /* translators: %s: model number */
+                return ['phase' => 'products', 'label' => sprintf(__('Updating %s', 'cadco-theme'), $model())];
+            case 'rename':
+                /* translators: 1: old model number, 2: new model number */
+                return ['phase' => 'products', 'label' => sprintf(__('Renaming %1$s to %2$s', 'cadco-theme'), (string) ($job['old_sku'] ?? ''), $model())];
+            case 'untrash':
+                /* translators: %s: model number */
+                return ['phase' => 'products', 'label' => sprintf(__('Restoring %s', 'cadco-theme'), $model())];
+            case 'media-fetch':
+                $roles = [
+                    'image'      => __('image', 'cadco-theme'),
+                    'spec-sheet' => __('spec sheet', 'cadco-theme'),
+                    'manual'     => __('manual', 'cadco-theme'),
+                    'video'      => __('video', 'cadco-theme'),
+                ];
+                $kinds = array_map(static fn ($r): string => $roles[(string) $r] ?? (string) $r, (array) ($job['roles'] ?? []));
+
+                return ['phase' => 'files', 'label' => sprintf(
+                    /* translators: 1: kind of file, e.g. "manual", 2: model numbers */
+                    __('Downloading the %1$s for %2$s', 'cadco-theme'),
+                    self::and_list($kinds !== [] ? $kinds : [__('file', 'cadco-theme')]),
+                    self::and_list(array_map('strval', (array) ($job['models'] ?? [])), 3)
+                )];
+            case 'media-products':
+                $models = array_column((array) ($job['products'] ?? []), 'model');
+                $count  = count($models);
+
+                return ['phase' => 'images', 'label' => $count > 1
+                    ? sprintf(
+                        /* translators: 1: first model, 2: last model, 3: number of products */
+                        __('Setting product images for %1$s to %2$s (%3$d products)', 'cadco-theme'),
+                        (string) $models[0],
+                        (string) $models[$count - 1],
+                        $count
+                    )
+                    /* translators: %s: model number */
+                    : sprintf(__('Setting product images for %s', 'cadco-theme'), (string) ($models[0] ?? ''))];
+            case 'media-resources':
+                return ['phase' => 'resources', 'label' => sprintf(
+                    /* translators: %d: number of documents and videos */
+                    __('linking %d documents and videos to their products', 'cadco-theme'),
+                    count((array) ($job['only'] ?? []))
+                )];
+            case 'media-cleanup':
+                return ['phase' => 'cleanup', 'label' => __('Removing resources the workbook no longer lists', 'cadco-theme')];
+        }
+
+        return ['phase' => 'products', 'label' => $op];
+    }
+
+    /**
+     * Where a run stands after $done jobs: the phase of the next job, how far
+     * through that phase it is, what the next job is, and every phase in the
+     * queue with its own done/total.
+     *
+     * @param list<array<string, mixed>> $queue
+     * @return array{phase:string,phase_label:string,phase_done:int,phase_total:int,next:string,phases:list<array{key:string,label:string,done:int,total:int}>}
+     */
+    public static function progress(array $queue, int $done): array
+    {
+        $labels = self::phases();
+        $counts = [];
+
+        foreach (array_values($queue) as $i => $job) {
+            $phase = self::describe_job($job)['phase'];
+            $counts[$phase] ??= ['done' => 0, 'total' => 0];
+            $counts[$phase]['total']++;
+
+            if ($i < $done) {
+                $counts[$phase]['done']++;
+            }
+        }
+
+        $phases = [];
+
+        foreach ($labels as $key => $label) {
+            if (isset($counts[$key])) {
+                $phases[] = ['key' => $key, 'label' => $label] + $counts[$key];
+            }
+        }
+
+        $next = isset($queue[$done]) ? self::describe_job($queue[$done]) : null;
+
+        return [
+            'phase'       => $next['phase'] ?? 'done',
+            'phase_label' => $next !== null ? $labels[$next['phase']] : '',
+            'phase_done'  => $next !== null ? $counts[$next['phase']]['done'] : 0,
+            'phase_total' => $next !== null ? $counts[$next['phase']]['total'] : 0,
+            'next'        => $next['label'] ?? '',
+            'phases'      => $phases,
+        ];
+    }
+
+    /**
+     * "A, B and C"; past $max items, "A, B and 3 more".
+     *
+     * @param list<string> $items
+     */
+    private static function and_list(array $items, int $max = 0): string
+    {
+        $items = array_values(array_filter($items, static fn (string $s): bool => $s !== ''));
+
+        if ($max > 0 && count($items) > $max) {
+            /* translators: %d: number of further items */
+            $items = [...array_slice($items, 0, $max - 1), sprintf(__('%d more', 'cadco-theme'), count($items) - ($max - 1))];
+        }
+
+        if (count($items) < 2) {
+            return (string) ($items[0] ?? '');
+        }
+
+        $last = array_pop($items);
+
+        /* translators: 1: comma-separated items, 2: the last item */
+        return sprintf(__('%1$s and %2$s', 'cadco-theme'), implode(', ', $items), $last);
+    }
+
+    /**
      * Run one slice of a previously built queue.
      *
      * The queue is passed in rather than derived from a plan, and that is

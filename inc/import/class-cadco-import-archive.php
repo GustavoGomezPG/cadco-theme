@@ -399,36 +399,67 @@ final class CADCO_Import_Archive
                 continue;
             }
 
-            $path = $base_dir . '/' . $run_id;
-
-            $files = scandir($path);
-
-            if ($files === false) {
-                continue;
-            }
-
-            foreach ($files as $file) {
-                if ($file === '.' || $file === '..') {
-                    continue;
-                }
-
-                $file_path = $path . '/' . $file;
-
-                if (is_file($file_path) && !is_link($file_path)) {
-                    unlink($file_path);
-                }
-            }
-
-            // Fails harmlessly if an unexpected entry kept the directory
-            // from being empty — that entry was left alone above, on
-            // purpose, rather than deleted. Only report the run id as
-            // deleted when the directory is actually gone.
-            if (@rmdir($path)) {
+            if (self::remove_run_dir($base_dir . '/' . $run_id)) {
                 $deleted[] = $run_id;
             }
         }
 
         return $deleted;
+    }
+
+    /**
+     * Delete one run on the operator's request (History -> Delete): its
+     * archived workbook, plan, report and manifest. Products are never
+     * touched — a run is a record of an import, not the import itself.
+     *
+     * The same guards as prune(): the id must match the anchored pattern
+     * (no traversal), and the directory must be a real directory, not a
+     * symlink. Unlike prune() there is no one-hour floor, because the
+     * operator asked for this run by name; the caller refuses a run that is
+     * still being applied.
+     */
+    public static function delete(string $run_id): bool
+    {
+        if (!self::is_valid_run_id($run_id)) {
+            return false;
+        }
+
+        $path = self::base_dir() . '/' . $run_id;
+
+        if (is_link($path) || !is_dir($path)) {
+            return false;
+        }
+
+        return self::remove_run_dir($path);
+    }
+
+    /**
+     * Remove a run directory's own files, then the directory. Anything that
+     * is not a plain file (a symlink, a subdirectory nobody expects) is left
+     * alone, which also leaves the directory in place: true only when it is
+     * actually gone.
+     */
+    private static function remove_run_dir(string $path): bool
+    {
+        $files = scandir($path);
+
+        if ($files === false) {
+            return false;
+        }
+
+        foreach ($files as $file) {
+            if ($file === '.' || $file === '..') {
+                continue;
+            }
+
+            $file_path = $path . '/' . $file;
+
+            if (is_file($file_path) && !is_link($file_path)) {
+                unlink($file_path);
+            }
+        }
+
+        return @rmdir($path);
     }
 
     /**

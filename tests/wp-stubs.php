@@ -24,3 +24,10 @@ if (!function_exists('add_action')) {
         return true;
     }
 }
+
+if (!function_exists('__')) {
+    function __(string $text, string $domain = 'default'): string
+    {
+        return $text;
+    }
+}

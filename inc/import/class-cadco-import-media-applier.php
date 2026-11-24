@@ -1141,7 +1141,7 @@ final class CADCO_Import_Media_Applier
         $terms = self::remove_orphan_product_terms();
         $line  = $trashed === []
             ? 'Resources no longer cited: none'
-            : sprintf('Resources no longer cited, moved to the trash: %s', implode(', ', $trashed));
+            : sprintf('Resources no longer cited, moved to the trash (%d): %s', count($trashed), implode(', ', $trashed));
 
         return $terms > 0 ? $line . sprintf('; %d unused product tag(s) removed from the resource library', $terms) : $line;
     }

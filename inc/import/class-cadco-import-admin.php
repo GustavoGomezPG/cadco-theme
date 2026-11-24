@@ -35,6 +35,7 @@ final class CADCO_Import_Admin
         add_action('admin_enqueue_scripts', [self::class, 'assets']);
         add_action('wp_ajax_cadco_import_batch', [self::class, 'ajax_batch']);
         add_action('wp_ajax_cadco_import_label', [self::class, 'ajax_label']);
+        add_action('wp_ajax_cadco_import_delete_run', [self::class, 'ajax_delete_run']);
         add_action('wp_ajax_cadco_import_check_read', [self::class, 'ajax_check_read']);
         add_action('wp_ajax_cadco_import_check_validate', [self::class, 'ajax_check_validate']);
         add_action('wp_ajax_cadco_import_check_plan', [self::class, 'ajax_check_plan']);
@@ -109,6 +110,12 @@ final class CADCO_Import_Admin
                 'mediaDoneWithFailures' => __('{count} media item(s) could not be imported; see the list below.', 'cadco-theme'),
                 'labelSaved'       => __('Saved.', 'cadco-theme'),
                 'labelFailed'      => __('Could not save the label.', 'cadco-theme'),
+                'deleteConfirm'    => __('Delete this run? Its saved workbook and plan are removed and it can no longer be restored. Products are not affected.', 'cadco-theme'),
+                'deleteYes'        => __('Delete run', 'cadco-theme'),
+                'deleteCancel'     => __('Cancel', 'cadco-theme'),
+                'deleting'         => __('Deleting…', 'cadco-theme'),
+                'deleted'          => __('Run deleted.', 'cadco-theme'),
+                'deleteFailed'     => __('The run could not be deleted.', 'cadco-theme'),
                 /* translators: {read} and {total} are each replaced with a number of sheets, e.g. "4 of 4 sheets" */
                 'sheetsChecked'    => __('{read} of {total} sheets', 'cadco-theme'),
                 /* translators: {count} is replaced with the number of rows checked */
@@ -116,6 +123,53 @@ final class CADCO_Import_Admin
                 /* translators: {count} is replaced with the number of changes the plan contains */
                 'planChanges'      => __('{count} changes', 'cadco-theme'),
                 'checkFailed'      => __('The workbook could not be checked.', 'cadco-theme'),
+
+                // What the screen says while it works (the live status lines).
+                /* translators: {time} is an elapsed time, e.g. "1:05" */
+                'elapsed'          => __('Working for {time}', 'cadco-theme'),
+                /* translators: {time} is an elapsed time, e.g. "1:05" */
+                'took'             => __('Finished in {time}', 'cadco-theme'),
+                /* translators: {size} is a file size, {percent} a percentage */
+                'checkUploading'   => __('Uploading the workbook ({size}) — {percent}%', 'cadco-theme'),
+                'checkReading'     => __('Reading the sheets and rows of the workbook…', 'cadco-theme'),
+                'checkValidating'  => __('Checking every row against the import rules…', 'cadco-theme'),
+                'checkPlanning'    => __('Comparing the workbook with the products already on the site, and listing every change…', 'cadco-theme'),
+                /* translators: {count} is the number of changes the plan contains */
+                'checkReady'       => __('Check complete — {count} change(s) to review. Opening the review…', 'cadco-theme'),
+                /* translators: {count} is the number of problems found */
+                'checkReadyIssues' => __('Check complete — {count} problem(s) found. Opening the report…', 'cadco-theme'),
+                'runPreparing'     => __('Preparing: re-reading the checked workbook and listing the work to do…', 'cadco-theme'),
+                /* translators: {phase} is a step such as "Downloading files"; {done}/{total} are counts; {next} says what is being done */
+                'runNow'           => __('{phase} — {done} of {total}. Now: {next}…', 'cadco-theme'),
+                'runFinishing'     => __('Finishing: tidying categories and recording the run…', 'cadco-theme'),
+                'runComplete'      => __('Import complete', 'cadco-theme'),
+                'runCompleteIssues' => __('Import finished with problems', 'cadco-theme'),
+                'runStopped'       => __('Import stopped', 'cadco-theme'),
+                'runStoppedNote'   => __('Nothing after the last item in Recent activity was written. Fix the cause above, then click Apply plan again to continue.', 'cadco-theme'),
+                'runNothing'       => __('Nothing needed changing.', 'cadco-theme'),
+                /* translators: {count} is the number of changes applied */
+                'stageApplied'     => __('{count} change(s) applied', 'cadco-theme'),
+                'stageApplying'    => __('applying…', 'cadco-theme'),
+                'statusComplete'   => __('Complete', 'cadco-theme'),
+                'statusCurrent'    => __('Current', 'cadco-theme'),
+                'applied'          => __('Applied', 'cadco-theme'),
+                'applying'         => __('Applying…', 'cadco-theme'),
+                'appliedNotice'    => __('This plan has been applied. The figures below are what the check found before it was applied.', 'cadco-theme'),
+                'summary'          => [
+                    /* translators: {count} is a number of products */
+                    'created'   => __('{count} product(s) created', 'cadco-theme'),
+                    'updated'   => __('{count} product(s) updated', 'cadco-theme'),
+                    'renamed'   => __('{count} product(s) renamed', 'cadco-theme'),
+                    'trashed'   => __('{count} product(s) moved to the trash', 'cadco-theme'),
+                    'restored'  => __('{count} product(s) restored', 'cadco-theme'),
+                    'failed'    => __('{count} product(s) failed', 'cadco-theme'),
+                    'files'     => __('{count} file(s) downloaded', 'cadco-theme'),
+                    'images'    => __('{count} product(s) got new images', 'cadco-theme'),
+                    'resCreated' => __('{count} resource(s) added to the library', 'cadco-theme'),
+                    'resUpdated' => __('{count} resource(s) updated', 'cadco-theme'),
+                    'resRemoved' => __('{count} resource(s) moved to the trash', 'cadco-theme'),
+                    'mediaFailed' => __('{count} media item(s) could not be imported', 'cadco-theme'),
+                ],
             ],
         ]);
     }
@@ -1352,14 +1406,22 @@ final class CADCO_Import_Admin
             wp_send_json_error(['message' => __('The import run could not be read back. Please start again.', 'cadco-theme')], 500);
         }
 
-        // Downloads can take seconds each; stop a batch after ~20s so the
+        // Downloads can take seconds each; stop a batch after ~8s so the
         // request finishes well inside any host's limit (WP Engine cuts web
         // requests at 60s). The script resumes from the 'done' it is given.
         if (function_exists('set_time_limit')) {
             @set_time_limit(120);
         }
 
-        $batch = CADCO_Import_Applier::apply_jobs($queue, $offset, $size, 20.0);
+        // 8s, not the 20s a host would allow: the screen only learns what
+        // the run is doing when a batch returns, so shorter batches mean the
+        // operator is told more often. A single slow download still runs to
+        // its own timeout; the budget only stops the batch after it.
+        $batch = CADCO_Import_Applier::apply_jobs($queue, $offset, $size, 8.0);
+
+        // Where the run stands and what it does next, in words, for the
+        // screen's live status (assets/js/import-admin.js).
+        $batch['progress'] = CADCO_Import_Applier::progress($queue, $batch['done']);
 
         if ($batch['complete']) {
             $removed_terms = CADCO_Import_Applier::finalise();
@@ -1651,5 +1713,71 @@ final class CADCO_Import_Admin
         }
 
         wp_send_json_success(['label' => $label]);
+    }
+
+    /**
+     * History -> Delete: remove one archived run.
+     *
+     * Only the run's own record goes (workbook, plan, report, manifest);
+     * products, images and resources are untouched. A run still being
+     * applied — its queue is on disk and some operator's in-flight run
+     * points at it — is refused, or the next batch would find its workbook
+     * gone halfway through. A run that is merely loaded on someone's Review
+     * screen is fine to delete: that screen already reports an expired
+     * upload when Apply is pressed.
+     */
+    public static function ajax_delete_run(): void
+    {
+        check_ajax_referer(self::NONCE);
+
+        if (!current_user_can(self::CAPABILITY)) {
+            wp_send_json_error(['message' => __('Not allowed.', 'cadco-theme')], 403);
+        }
+
+        $run_id = self::request_string($_POST['run_id'] ?? null);
+
+        if (!CADCO_Import_Archive::is_valid_run_id($run_id) || CADCO_Import_Archive::get($run_id) === null) {
+            wp_send_json_error(['message' => __('That import run could not be found. It may already have been deleted.', 'cadco-theme')], 404);
+        }
+
+        if (self::run_in_progress($run_id)) {
+            wp_send_json_error(['message' => __('This run is being applied right now. Wait for it to finish, then delete it.', 'cadco-theme')], 409);
+        }
+
+        if (!CADCO_Import_Archive::delete($run_id)) {
+            wp_send_json_error(['message' => __('The run could not be deleted. Nothing was changed.', 'cadco-theme')], 500);
+        }
+
+        wp_send_json_success(['run_id' => $run_id]);
+    }
+
+    /**
+     * Whether any operator's in-flight apply is working from $run_id.
+     * ajax_batch() keeps each operator's run in a per-user transient, with
+     * 'queue_file' set from the first batch until the last.
+     */
+    private static function run_in_progress(string $run_id): bool
+    {
+        global $wpdb;
+
+        $names = $wpdb->get_col($wpdb->prepare(
+            "SELECT option_name FROM {$wpdb->options} WHERE option_name LIKE %s",
+            $wpdb->esc_like('_transient_cadco_import_run_') . '%'
+        ));
+
+        foreach ((array) $names as $name) {
+            $run = get_transient(substr((string) $name, strlen('_transient_')));
+
+            if (
+                is_array($run)
+                && isset($run['dir'], $run['queue_file'])
+                && basename((string) $run['dir']) === $run_id
+                && is_file((string) $run['queue_file'])
+            ) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

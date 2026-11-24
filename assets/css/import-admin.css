@@ -1570,3 +1570,239 @@
 		border-bottom: 1px solid rgba(17, 17, 17, .1);
 	}
 }
+
+/* ==========================================================================
+   Live status: what the import is doing right now (check and apply)
+   A line with a spinner and a running clock while a request is out, so the
+   screen is never still while work is happening; a green or red mark when
+   it ends.
+   ========================================================================== */
+
+.cadco-import .cadco-import-now {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	margin: var(--cadco-space-4) 0 0;
+	padding: 10px 12px;
+	background: var(--cadco-accent-100);
+	border-left: 3px solid var(--cadco-accent);
+	font-size: 14.5px;
+	line-height: 1.4;
+	color: var(--cadco-text);
+}
+
+.cadco-import .cadco-import-now:not(.is-working):not(.is-finished):not(.is-error) {
+	display: none;
+}
+
+.cadco-import .cadco-import-now.is-finished {
+	background: #e8f3eb;
+	border-left-color: var(--cadco-ok);
+}
+
+.cadco-import .cadco-import-now.is-error {
+	background: var(--cadco-danger-bg);
+	border-left-color: var(--cadco-danger);
+	color: var(--cadco-danger-ink);
+}
+
+.cadco-import .cadco-import-spinner {
+	flex: none;
+	width: 14px;
+	height: 14px;
+	border: 2px solid var(--cadco-accent-300);
+	border-top-color: var(--cadco-accent);
+	border-radius: 50%;
+	animation: cadco-import-spin .8s linear infinite;
+}
+
+.cadco-import .cadco-import-now.is-finished .cadco-import-spinner,
+.cadco-import .cadco-import-now.is-error .cadco-import-spinner {
+	animation: none;
+	border-radius: 0;
+	width: 9px;
+	height: 9px;
+	border: 0;
+	background: var(--cadco-ok);
+}
+
+.cadco-import .cadco-import-now.is-error .cadco-import-spinner {
+	background: var(--cadco-danger);
+}
+
+@keyframes cadco-import-spin {
+	to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.cadco-import .cadco-import-spinner { animation-duration: 2.4s; }
+}
+
+.cadco-import .cadco-import-checking-ready {
+	margin: var(--cadco-space-4) 0 0;
+}
+
+/* The apply run panel sits under the stage bar, full width. */
+.cadco-import .cadco-import-run {
+	margin-top: var(--cadco-space-6);
+}
+
+.cadco-import .cadco-import-run:focus {
+	outline: none;
+}
+
+.cadco-import .cadco-import-run-activity {
+	margin-top: var(--cadco-space-6);
+}
+
+.cadco-import .cadco-import-run-activity h3 {
+	margin: 0 0 6px;
+	font-family: var(--cadco-font-heading);
+	font-size: 13px;
+	font-weight: 600;
+	letter-spacing: .1em;
+	text-transform: uppercase;
+	color: var(--cadco-neutral-600);
+}
+
+.cadco-import .cadco-import-run-log {
+	margin: 0;
+	padding: 0;
+	list-style: none;
+	font-size: 12.5px;
+	line-height: 1.7;
+	color: var(--cadco-neutral-700);
+	overflow-wrap: anywhere;
+}
+
+.cadco-import .cadco-import-run-log:empty::before {
+	content: "—";
+	color: var(--cadco-neutral-500);
+}
+
+.cadco-import .cadco-import-run-log li.is-error,
+.cadco-import .cadco-import-run-summary li.is-error {
+	color: var(--cadco-danger-ink);
+}
+
+.cadco-import .cadco-import-run-keepopen {
+	margin: var(--cadco-space-4) 0 0;
+	font-size: 13px;
+	color: var(--cadco-neutral-600);
+}
+
+.cadco-import .cadco-import-run-summary {
+	margin: var(--cadco-space-6) 0 0;
+	padding-left: 18px;
+	font-size: 15px;
+	line-height: 1.7;
+}
+
+.cadco-import .cadco-import-run-next {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	margin: var(--cadco-space-4) 0 0;
+}
+
+/* ==========================================================================
+   History: delete a run (inline confirmation)
+   ========================================================================== */
+
+.cadco-import .cadco-import-history-col-date { width: 15%; }
+.cadco-import .cadco-import-history-col-label { width: 22%; }
+.cadco-import .cadco-import-history-col-result { width: 11%; }
+
+/* Shrinks to its buttons: Restore and the trash icon side by side. */
+.cadco-import .cadco-import-history-col-actions,
+.cadco-import .cadco-import-history-actions-cell {
+	width: 1%;
+	white-space: nowrap;
+}
+
+.cadco-import .cadco-import-history-actions {
+	display: flex;
+	align-items: stretch;
+	gap: 6px;
+}
+
+.cadco-import .cadco-import-history-actions .button {
+	margin: 0;
+}
+
+.cadco-import .button.cadco-import-history-delete {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-height: 0;
+	padding: 0 9px;
+	color: var(--cadco-neutral-600);
+}
+
+.cadco-import .button.cadco-import-history-delete .dashicons {
+	width: 18px;
+	height: 18px;
+	font-size: 18px;
+	line-height: 1;
+}
+
+.cadco-import .button.cadco-import-history-delete:hover,
+.cadco-import .button.cadco-import-history-delete:focus {
+	border-color: var(--cadco-danger);
+	color: var(--cadco-danger);
+}
+
+.cadco-import .cadco-import-history-confirm {
+	width: 260px;
+	white-space: normal;
+}
+
+.cadco-import .cadco-import-history-confirm p {
+	margin: 0 0 8px;
+	font-size: 13px;
+	line-height: 1.45;
+	white-space: normal;
+}
+
+.cadco-import .cadco-import-history-confirm .button.cadco-import-history-delete-confirm {
+	border-color: var(--cadco-danger);
+	background: var(--cadco-danger);
+	color: #fff;
+}
+
+.cadco-import .cadco-import-history-confirm .button.cadco-import-history-delete-confirm:hover,
+.cadco-import .cadco-import-history-confirm .button.cadco-import-history-delete-confirm:focus {
+	background: var(--cadco-danger-ink);
+	border-color: var(--cadco-danger-ink);
+	color: #fff;
+}
+
+.cadco-import .cadco-import-history-delete-cancel {
+	margin-left: 10px;
+}
+
+.cadco-import .cadco-import-history-confirm .cadco-import-history-delete-status:empty {
+	display: none;
+}
+
+.cadco-import tr.is-confirming-delete td {
+	background: var(--cadco-danger-bg);
+}
+
+.cadco-import tr.is-deleted {
+	opacity: .45;
+	transition: opacity .3s ease;
+}
+
+/* `hidden` must win over WordPress's `.button { display: inline-block }`,
+   or a control the script has hidden (Restore and Delete while a delete is
+   being confirmed) stays on screen. */
+.cadco-import [hidden] {
+	display: none !important;
+}
+
+/* History date: the date on one line, the time always on the next. */
+.cadco-import-history-day,
+.cadco-import-history-time {
+	white-space: nowrap;
+}

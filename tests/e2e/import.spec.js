@@ -1029,6 +1029,89 @@ test.describe('Product import', () => {
 		}
 	});
 
+	test('deleting a run asks first, then removes only that run', async ({ page }) => {
+		resetCatalogue();
+
+		try {
+			const fixture = buildFixture('history-run');
+			const filename = path.basename(fixture);
+
+			await page.goto(IMPORT_PATH);
+			await page.setInputFiles('input[type="file"]', fixture);
+			await expect(page.locator('#cadco-import-apply')).toBeEnabled();
+			await page.click('#cadco-import-apply');
+			await expect(page.locator('.cadco-import-status')).toContainText(/Done/i, { timeout: 30000 });
+
+			const runId = new URL(page.url()).searchParams.get('checked_run');
+			const productsBefore = productCount();
+			expect(runDirectoryExists(runId)).toBe(true);
+
+			await page.goto(`${IMPORT_PATH}&tab=history`);
+
+			const row = page.locator('table.cadco-import-history tbody tr').filter({ hasText: filename });
+			const del = row.locator('.cadco-import-history-delete');
+
+			// Cancel leaves everything as it was.
+			await del.click();
+			await expect(row.locator('.cadco-import-history-confirm')).toContainText(/Products are not affected/);
+			await row.locator('.cadco-import-history-delete-cancel').click();
+			await expect(del).toBeVisible();
+			expect(runDirectoryExists(runId)).toBe(true);
+
+			// Confirm deletes the run's files, removes the row, and leaves products alone.
+			await del.click();
+			await row.locator('.cadco-import-history-delete-confirm').click();
+			await expect(row.locator('.cadco-import-history-confirm')).toContainText(/Run deleted/);
+			await expect(page.locator('table.cadco-import-history tbody tr').filter({ hasText: filename })).toHaveCount(0, { timeout: 5000 });
+
+			expect(runDirectoryExists(runId)).toBe(false);
+			expect(productCount()).toBe(productsBefore);
+
+			await page.reload();
+			await expect(page.locator('table.cadco-import-history tbody tr').filter({ hasText: filename })).toHaveCount(0);
+		} finally {
+			resetCatalogue();
+		}
+	});
+
+	test('a run that is still being applied cannot be deleted', async ({ page }) => {
+		resetCatalogue();
+
+		try {
+			const fixture = buildFixture('history-run');
+
+			await page.goto(IMPORT_PATH);
+			await page.setInputFiles('input[type="file"]', fixture);
+			await expect(page.locator('#cadco-import-apply')).toBeEnabled();
+
+			const runId = new URL(page.url()).searchParams.get('checked_run');
+
+			// What the first apply batch leaves behind: a queue on disk that
+			// the operator's in-flight run points at.
+			wp(['eval', `
+				$key = 'cadco_import_run_' . get_users(['role' => 'administrator', 'orderby' => 'login', 'number' => 1, 'fields' => 'ID'])[0];
+				$run = get_transient($key);
+				$run = is_array($run) ? $run : [];
+				$dir = trailingslashit(wp_upload_dir()['basedir']) . 'cadco-imports/${runId}';
+				$run['dir'] = $dir;
+				$run['queue_file'] = $dir . '/queue.bin';
+				file_put_contents($run['queue_file'], serialize([]));
+				set_transient($key, $run, HOUR_IN_SECONDS);
+			`]);
+
+			await page.goto(`${IMPORT_PATH}&tab=history`);
+
+			const row = page.locator('table.cadco-import-history tbody tr').filter({ has: page.locator(`[data-run-id="${runId}"]`) });
+			await row.locator('.cadco-import-history-delete').click();
+			await row.locator('.cadco-import-history-delete-confirm').click();
+
+			await expect(row.locator('.cadco-import-history-delete-status')).toContainText(/being applied/);
+			expect(runDirectoryExists(runId)).toBe(true);
+		} finally {
+			resetCatalogue();
+		}
+	});
+
 	// Gap: CADCO_Import_Admin::handle_restore()/handle_restored_review() and
 	// the restore banner (CADCO_Import_View::restore_banner()) had never run
 	// end to end — ArchiveTest covers pruning and manifest handling, but
