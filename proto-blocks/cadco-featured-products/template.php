@@ -250,10 +250,11 @@ $reveal = $is_preview ? '' : 'data-proto-animate="manual" data-cadco-reveal-grou
                         class="cadco-featured-products__card group/card relative flex shrink-0 snap-center rounded-b-[20px] rounded-tr-[20px] pl-6 pr-6 pt-10 pb-10 md:h-[328.69px] md:w-[645px] md:pl-10 md:pr-6 md:pt-[61px] md:pb-[55px]"
                         <?php echo $i === 0 ? 'data-featured-active' : ''; ?>>
 
-                        <?php /* object-contain, not cover: these are product
-                                 renders on transparent grounds, and cropping one
-                                 to fill a square cuts the machine in half. */ ?>
-                        <div class="hidden w-[213px] shrink-0 md:block">
+                        <?php /* object-contain, not cover: cropping a product
+                                 photo to fill a square cuts the machine in half.
+                                 Shown at every width; on a phone it stacks above
+                                 the text (style.css). */ ?>
+                        <div class="cadco-featured-products__media w-[213px] shrink-0">
                             <?php if ($thumb) : ?>
                                 <?php echo wp_get_attachment_image($thumb, 'medium_large', false, [
                                     'class'    => 'h-[213px] w-[213px] object-contain',
@@ -265,19 +266,23 @@ $reveal = $is_preview ? '' : 'data-proto-animate="manual" data-cadco-reveal-grou
                         </div>
 
                         <div class="flex min-w-0 flex-1 flex-col md:ml-[57px] md:pt-[7px]">
-                            <h3 class="m-0 font-display text-[20px] font-bold leading-tight text-true-black md:text-[24px]">
+                            <h3 class="m-0 shrink-0 font-display text-[20px] font-bold leading-tight text-true-black md:text-[24px] cadco-featured-products__title"
+                                title="<?php echo esc_attr(get_the_title($product)); ?>">
                                 <?php echo esc_html(get_the_title($product)); ?>
                             </h3>
 
                             <?php if ($bullets !== []) : ?>
-                                <ul class="mt-4 mb-0 list-disc pl-5 font-display text-[15px] font-normal leading-6 text-true-black md:mt-5 md:text-[16px]">
+                                <?php /* The card is a fixed height from md up, and real spec bullets run
+                                         far longer than the design's: one line each there, so the
+                                         link below never falls out of the card. */ ?>
+                                <ul class="mt-4 mb-0 list-none pl-0 font-display text-[15px] font-normal leading-6 text-true-black md:mt-5 md:text-[16px] cadco-featured-products__bullets">
                                     <?php foreach ($bullets as $bullet) : ?>
                                         <li class="mb-0"><?php echo esc_html($bullet); ?></li>
                                     <?php endforeach; ?>
                                 </ul>
                             <?php endif; ?>
 
-                            <a class="mt-6 inline-flex items-center gap-3 self-start font-display text-[16px] font-bold text-true-black no-underline transition-colors duration-300 group-hover/card:text-cadco-blue hover:text-cadco-blue focus-visible:text-cadco-blue md:mt-auto md:text-[18px]"
+                            <a class="mt-6 inline-flex shrink-0 items-center gap-3 self-start font-display text-[16px] font-bold text-true-black no-underline transition-colors duration-300 group-hover/card:text-cadco-blue hover:text-cadco-blue focus-visible:text-cadco-blue md:mt-auto md:text-[18px]"
                                href="<?php echo esc_url(get_permalink($product)); ?>">
                                 <span><?php echo esc_html($linkLabel); ?></span>
                                 <?php /* The design's own long-tailed arrow, not the

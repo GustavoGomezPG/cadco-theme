@@ -137,7 +137,8 @@ function cadco_resolve_nav_description(array $attrs): string
  *
  * Items that point at a post or term store an id and kind rather than a URL, so
  * a stored permalink cannot go stale. Prefer resolving from the id; fall back to
- * the literal url a custom link carries.
+ * the literal url a custom link carries. An empty url or a bare "#" means the
+ * item has no page of its own and resolves to ''.
  */
 function cadco_resolve_nav_url(array $attrs): string
 {
@@ -158,7 +159,12 @@ function cadco_resolve_nav_url(array $attrs): string
         }
     }
 
-    return (string) ($attrs['url'] ?? '');
+    // A bare "#" is how the Navigation editor's link box makes a link with no
+    // destination (type # and press Enter): treat it as no page, so the header
+    // renders the item as a label that opens its menu (cadco-header).
+    $url = trim((string) ($attrs['url'] ?? ''));
+
+    return '#' === $url ? '' : $url;
 }
 
 /**

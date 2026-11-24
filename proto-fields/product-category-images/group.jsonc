@@ -1,0 +1,41 @@
+// What a product category carries beyond WooCommerce's own fields.
+//
+// card_image: the second picture. WooCommerce's Thumbnail (above it on the
+// same screen) is the lifestyle photograph the home page cards use; this is
+// the product shot on white the Products page cards use, falling back to the
+// Thumbnail.
+//
+// warranty_banner(_link): the warranty note beside a product's
+// specifications, set once per category instead of per product. Products
+// inherit it from the nearest category up their tree that has one.
+{
+  "key": "group_product_category_images",
+  "title": "Category images and warranty",
+  "location": [
+    [ { "param": "taxonomy", "operator": "==", "value": "product_cat" } ]
+  ],
+  "fields": [
+    {
+      "key": "field_product_category_card_image",
+      "label": "Products page image",
+      "name": "card_image",
+      "type": "image",
+      "instructions": "A product photo on a white or transparent background, shown on the Products page category cards. The Thumbnail above is the lifestyle photo for the home page cards. Leave empty to use the Thumbnail on both."
+    },
+    {
+      "key": "field_product_category_warranty_banner",
+      "label": "Warranty banner",
+      "name": "warranty_banner",
+      "type": "text",
+      "maxlength": 120,
+      "instructions": "Shown in a banner beside the specifications on every product in this category and its sub-categories, e.g. 3 Year Warranty on ALL Bakerlux Convection Ovens. A sub-category's own banner replaces its parent's. Leave empty for no banner."
+    },
+    {
+      "key": "field_product_category_warranty_link",
+      "label": "Warranty banner link",
+      "name": "warranty_banner_link",
+      "type": "url",
+      "instructions": "Optional. A page the banner links to, e.g. /warranty-info/."
+    }
+  ]
+}

@@ -31,15 +31,10 @@
 .cadco-featured-products__card {
 	width: var(--card-w, min(645px, 86vw));
 
-	/* The design's neighbour treatment: a translucent panel over the gradient,
-	   so the cards either side of centre read as backgrounded rather than
-	   greyed out. The centred one goes opaque. */
-	background-color: rgba(244, 244, 244, 0.73);
-	transition: background-color 400ms ease;
-}
-
-.cadco-featured-products__card[data-featured-active] {
-	background-color: #f4f4f4;
+	/* Solid white (round-one feedback): the product photos are shot on white,
+	   and on the design's translucent grey panel their white grounds showed as
+	   boxes. On white they sit in the card. */
+	background-color: #fff;
 }
 
 /* The track is focusable so it can be scrolled with the arrow keys; give that
@@ -50,11 +45,26 @@
 	outline-offset: 4px;
 }
 
-@media (prefers-reduced-motion: reduce) {
-	.cadco-featured-products__card {
-		transition: none;
+/* Phones: the photo stacks above the text instead of being dropped. */
+@media (max-width: 767px) {
+	.cadco-featured-products .cadco-featured-products__card {
+		flex-direction: column;
 	}
 
+	.cadco-featured-products .cadco-featured-products__media {
+		width: 100%;
+		margin-bottom: 20px;
+	}
+
+	.cadco-featured-products .cadco-featured-products__card .cadco-featured-products__media img {
+		display: block;
+		width: 100%;
+		height: 180px;
+		object-fit: contain;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
 	.cadco-featured-products__track {
 		scroll-behavior: auto;
 	}
@@ -107,4 +117,30 @@
      * at any device ratio or browser zoom.
      */
     box-shadow: 0 -2px 0 0 #000;
+}
+
+/*
+ * The card is a fixed height from md up, and real spec bullets run far longer
+ * than the design's sample copy. There the title stops at two lines and each
+ * bullet at one, so the "See all Features" link never falls out of the card;
+ * the full specification is one click away on the product page.
+ */
+@media (min-width: 768px) {
+	.cadco-featured-products__title {
+		display: -webkit-box;
+		-webkit-box-orient: vertical;
+		-webkit-line-clamp: 2;
+		overflow: hidden;
+	}
+
+	.cadco-featured-products__bullets {
+		min-height: 0;
+		overflow: hidden;
+	}
+
+	.cadco-featured-products__bullets li {
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
 }

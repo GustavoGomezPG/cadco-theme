@@ -108,6 +108,16 @@ if (class_exists('CADCO_Display_Settings')
    so they are never excluded by it. */
 $catalogueMeta = cadco_product_catalogue_meta_query();
 
+/* Display Settings can limit the row to the product's own children: then
+   there is no category fill, and a product without children has no row. */
+if (class_exists('CADCO_Display_Settings') && CADCO_Display_Settings::related_children_only()) {
+    $terms = [];
+
+    if (CADCO_Display_Settings::children_placement() !== CADCO_Display_Settings::PLACEMENT_RELATED) {
+        $found = [];
+    }
+}
+
 foreach ($terms as $term) {
     if (count($found) >= $limit) {
         break;

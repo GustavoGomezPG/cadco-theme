@@ -29,7 +29,7 @@
 (function () {
 	'use strict';
 
-	var PENDING = 'is-anim-pending';
+	var READY = 'is-anim-ready';   // lifts the CSS pre-animation state (style.css)
 
 	function ready(fn) {
 		if (document.readyState !== 'loading') { fn(); return; }
@@ -89,7 +89,7 @@
 		var heading = section.querySelector('[data-hero-heading]');
 		var cta     = section.querySelector('[data-hero-cta]');
 
-		var reveal = function () { section.classList.remove(PENDING); };
+		var reveal = function () { section.classList.add(READY); };
 
 		// No GSAP, or the visitor asked for less motion: show it, plainly.
 		var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;

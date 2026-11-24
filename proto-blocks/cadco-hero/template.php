@@ -109,17 +109,11 @@ $wrapper = get_block_wrapper_attributes([
 ?>
 <section <?php echo $wrapper; ?> style="<?php echo esc_attr($heightStyle . ';--cadco-glow:' . $glowColor); ?>"<?php echo $is_preview ? '' : ' data-cadco-hero'; ?>>
 
-    <?php if (! $is_preview) : ?>
-        <?php /* Marks the pre-animation state while the section is still being
-                 parsed, so the un-animated hero never gets a frame on screen —
-                 view.js runs from the footer, far too late for that. A script
-                 adds it, so JS-off visitors simply see the finished hero.
-                 The timeout is the last line of defence: if view.js never loads
-                 at all, nothing else would ever reveal the copy. Editor preview
-                 is excluded — a hidden hero cannot be edited. */ ?>
-        <script>(function(){var s=document.currentScript.parentNode;s.classList.add('is-anim-pending');
-        setTimeout(function(){s.classList.remove('is-anim-pending');},10000);})();</script>
-    <?php endif; ?>
+    <?php /* No inline script here: the pre-animation state is pure CSS
+             (style.css), keyed to html.cadco-js, so a page transition that
+             swaps this section in cannot show it un-animated for a frame.
+             data-cadco-hero is front-end only, so the editor preview, where a
+             hidden hero could not be edited, is never hidden. */ ?>
 
     <?php // ---------- Background ---------- ?>
     <?php if ($background === 'gradient') : ?>

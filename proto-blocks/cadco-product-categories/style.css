@@ -38,3 +38,13 @@
 :root .cadco-product-categories {
     box-shadow: 0 2px 0 0 #000;
 }
+
+/*
+ * A product photo on white (the "Product photo" card image) is shown whole and
+ * inset, the way the Products page design frames it, rather than cropped to
+ * fill the frame like the lifestyle photographs.
+ */
+.cadco-product-categories .cadco-product-categories__frame--cutout img {
+	object-fit: contain;
+	padding: 12%;
+}

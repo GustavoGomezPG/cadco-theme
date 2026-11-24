@@ -24,7 +24,6 @@
 $heading       = (string) ($attributes['heading'] ?? 'Specifications');
 $featuresLabel = (string) ($attributes['featuresLabel'] ?? 'Features');
 $showWarranty  = (bool) ($attributes['showWarranty'] ?? true);
-$warrantyText  = (string) ($attributes['warrantyText'] ?? '');
 $warrantyLink  = (string) ($attributes['warrantyLink'] ?? '');
 $showDownloads = (bool) ($attributes['showDownloads'] ?? true);
 $sheetLabel    = (string) ($attributes['specSheetLabel'] ?? 'Spec Sheet');
@@ -58,15 +57,25 @@ if (! $productId) {
 }
 
 $groups   = cadco_product_grouped_specs($productId);
+
+/* Details (material, colour, origin, lead time) sits in the right-hand column
+   with the features; the measurements, power and freight class stay left. */
+$sideGroups = array_values(array_filter($groups, static fn (array $g): bool => ($g['key'] ?? '') === 'details'));
+$groups     = array_values(array_filter($groups, static fn (array $g): bool => ($g['key'] ?? '') !== 'details'));
 $features = cadco_product_features($productId);
 $extra    = cadco_product_additional_info($productId);
+
+// The banner belongs to the product's category, not to this block.
+$banner       = $showWarranty ? cadco_product_warranty_banner($productId) : ['text' => '', 'url' => ''];
+$warrantyText = $banner['text'];
+$warrantyLink = '' !== $banner['url'] ? $banner['url'] : $warrantyLink;
 
 $sheet  = $showDownloads ? cadco_product_resources($productId, ['spec-sheet'], 1) : [];
 $manual = $showDownloads ? cadco_product_resources($productId, ['manual'], 1) : [];
 
 /* Nothing to say: no specifications, no features, no downloads. Rendering the
    band anyway would put a heading over an empty tinted rectangle. */
-if (! $groups && ! $features && ! $extra && ! $sheet && ! $manual && ! $showWarranty) {
+if (! $groups && ! $sideGroups && ! $features && ! $extra && ! $sheet && ! $manual && '' === $warrantyText) {
     return;
 }
 
@@ -74,6 +83,38 @@ $destination = static function (WP_Post $resource): string {
     return function_exists('cadco_resource_destination')
         ? (string) cadco_resource_destination($resource->ID)
         : (string) get_post_meta($resource->ID, 'cadco_resource_url', true);
+};
+
+/* One labelled spec group: its tag, then label/value rows or a line of text.
+   A closure, not a named function, so several instances never redeclare it. */
+$renderGroup = static function (array $group): void {
+    ?>
+                    <div>
+                        <?php /* A tag, not a heading of its own: the design labels the
+                                 group rather than titling a section, and the band
+                                 already has one heading above all of it. */ ?>
+                        <p class="m-0 inline-flex h-[34px] items-center rounded-[10px] bg-[#4a6a84] px-[19px] font-display text-[16px] font-bold leading-none text-white">
+                            <?php echo esc_html($group['label']); ?>
+                        </p>
+
+                        <?php if ($group['rows']) : ?>
+                            <dl class="cadco-specs__rows m-0 mt-4 font-display text-[16px] leading-[28px] text-true-black lg:leading-[37px]">
+                                <?php foreach ($group['rows'] as $label => $value) : ?>
+                                    <div class="m-0">
+                                        <dt class="inline font-bold"><?php echo esc_html($label); ?></dt>
+                                        <dd class="m-0 inline"><?php echo esc_html($value); ?></dd>
+                                    </div>
+                                <?php endforeach; ?>
+                            </dl>
+                        <?php endif; ?>
+
+                        <?php if ('' !== $group['text']) : ?>
+                            <p class="m-0 mt-4 max-w-[394px] font-display text-[16px] leading-[28px] text-true-black lg:leading-[37px]">
+                                <?php echo esc_html($group['text']); ?>
+                            </p>
+                        <?php endif; ?>
+                    </div>
+    <?php
 };
 
 $reveal = $is_preview ? '' : 'data-proto-animate="manual" data-cadco-reveal-group';
@@ -90,58 +131,19 @@ $wrapper = get_block_wrapper_attributes([
             <?php echo esc_html($heading); ?>
         </h2>
 
-        <?php /* 60/40: the specifications are the bulk of the band; the warranty
-                 note and the two downloads need a narrow column, not half. */ ?>
+        <?php /* Two equal columns, as the design has them: the spec groups stacked
+                 on the left; features, notes, warranty and downloads on the right. */ ?>
         <?php /* Layout lives in this block's style.css, not utility classes: the
                  columns are the block's own structure, and must not depend on
                  whether the site's Tailwind build has been recompiled. */ ?>
         <div class="cadco-specs__layout mt-10 lg:mt-[71px]">
 
-            <?php // ---------- Grouped specifications, two groups per row ---------- ?>
+            <?php // ---------- Grouped specifications, stacked ---------- ?>
             <div data-cadco-reveal="rise" class="cadco-specs__groups">
                 <?php foreach ($groups as $group) : ?>
-                    <div>
-                        <?php /* A tag, not a heading of its own: the design labels the
-                                 group rather than titling a section, and the band
-                                 already has one heading above all of it. */ ?>
-                        <p class="m-0 inline-flex h-[34px] items-center rounded-[10px] bg-[#4a6a84] px-[19px] font-display text-[16px] font-bold leading-none text-white">
-                            <?php echo esc_html($group['label']); ?>
-                        </p>
-
-                        <?php if ($group['rows']) : ?>
-                            <dl class="m-0 mt-4 font-display text-[16px] leading-[28px] text-true-black lg:leading-[37px]">
-                                <?php foreach ($group['rows'] as $label => $value) : ?>
-                                    <div class="m-0">
-                                        <dt class="inline font-bold"><?php echo esc_html($label); ?></dt>
-                                        <dd class="m-0 inline"><?php echo esc_html($value); ?></dd>
-                                    </div>
-                                <?php endforeach; ?>
-                            </dl>
-                        <?php endif; ?>
-
-                        <?php if ('' !== $group['text']) : ?>
-                            <p class="m-0 mt-4 max-w-[394px] font-display text-[16px] leading-[28px] text-true-black lg:leading-[37px]">
-                                <?php echo esc_html($group['text']); ?>
-                            </p>
-                        <?php endif; ?>
-                    </div>
+                    <?php $renderGroup($group); ?>
                 <?php endforeach; ?>
 
-                <?php /* Notes that are not specifications — water filtration, warranty
-                         terms, support — as a list across the whole column. */ ?>
-                <?php if ($extra) : ?>
-                    <div class="cadco-specs__wide">
-                        <p class="m-0 inline-flex h-[34px] items-center rounded-[10px] bg-[#4a6a84] px-[19px] font-display text-[16px] font-bold leading-none text-white">
-                            <?php esc_html_e('Additional Information', 'cadco-theme'); ?>
-                        </p>
-
-                        <ul class="cadco-specs__list m-0 mt-4 font-display text-[16px] leading-[28px] text-true-black">
-                            <?php foreach ($extra as $item) : ?>
-                                <li><?php echo esc_html($item); ?></li>
-                            <?php endforeach; ?>
-                        </ul>
-                    </div>
-                <?php endif; ?>
             </div>
 
             <?php // ---------- Features, warranty, downloads ---------- ?>
@@ -159,6 +161,27 @@ $wrapper = get_block_wrapper_attributes([
                         </ul>
                     </div>
                 <?php endif; ?>
+
+                <?php /* Notes that are not specifications — water filtration, warranty
+                         terms, support — read like the features, so they sit with
+                         them in the right-hand column. */ ?>
+                <?php if ($extra) : ?>
+                    <div>
+                        <p class="m-0 inline-flex h-[34px] items-center rounded-[10px] bg-[#4a6a84] px-[19px] font-display text-[16px] font-bold leading-none text-white">
+                            <?php esc_html_e('Additional Information', 'cadco-theme'); ?>
+                        </p>
+
+                        <ul class="cadco-specs__list m-0 mt-4 font-display text-[16px] leading-[28px] text-true-black">
+                            <?php foreach ($extra as $item) : ?>
+                                <li><?php echo esc_html($item); ?></li>
+                            <?php endforeach; ?>
+                        </ul>
+                    </div>
+                <?php endif; ?>
+
+                <?php foreach ($sideGroups as $group) : ?>
+                    <?php $renderGroup($group); ?>
+                <?php endforeach; ?>
 
                 <?php if ($showWarranty && '' !== trim($warrantyText)) : ?>
                     <?php

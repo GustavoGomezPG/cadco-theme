@@ -71,6 +71,51 @@ add_action('enqueue_block_assets', function () {
     wp_enqueue_style('proto-builder-canvas', get_stylesheet_directory_uri() . '/assets/editor/builder-canvas.css', [], filemtime($css));
 });
 
+/*
+ * The Navigation editor canvas, dressed as the site header (assets/editor/
+ * menu-editor.css explains). The logo and the button label are read from the
+ * cadco-header block in the header template part, the Site Editor's saved copy
+ * if there is one, so the editor shows the same ones the site does.
+ */
+add_action('enqueue_block_assets', function () {
+    if (!is_admin()) { return; }
+    $css = get_stylesheet_directory() . '/assets/editor/menu-editor.css';
+    if (!file_exists($css)) { return; }
+
+    wp_enqueue_style('cadco-menu-editor', get_stylesheet_directory_uri() . '/assets/editor/menu-editor.css', [], filemtime($css));
+
+    $markup = '';
+    $part   = function_exists('get_block_template') ? get_block_template(get_stylesheet() . '//header', 'wp_template_part') : null;
+    if ($part && !empty($part->content)) {
+        $markup = (string) $part->content;
+    } elseif (file_exists(get_stylesheet_directory() . '/parts/header.html')) {
+        $markup = (string) file_get_contents(get_stylesheet_directory() . '/parts/header.html');
+    }
+
+    $attrs = [];
+    foreach (parse_blocks($markup) as $block) {
+        if (($block['blockName'] ?? '') === 'proto-blocks/cadco-header') {
+            $attrs = $block['attrs'] ?? [];
+            break;
+        }
+    }
+
+    $vars = [];
+    $logoId = (int) ($attrs['logo']['id'] ?? 0);
+    $logo   = esc_url_raw(($logoId ? (string) wp_get_attachment_url($logoId) : '') ?: (string) ($attrs['logo']['url'] ?? ''));
+    if ($logo !== '') {
+        $vars[] = '--cadco-menu-logo:url("' . str_replace(['"', '\\'], ['%22', '%5C'], $logo) . '")';
+    }
+    $cta = trim(wp_strip_all_tags((string) ($attrs['cta']['text'] ?? '')));
+    if ($cta !== '') {
+        // A CSS string: escape the backslash and the quote, drop line breaks.
+        $vars[] = '--cadco-menu-cta:"' . str_replace(['\\', '"', "\n", "\r"], ['\\\\', '\\"', ' ', ''], $cta) . '"';
+    }
+    if ($vars) {
+        wp_add_inline_style('cadco-menu-editor', '.editor-styles-wrapper .is-root-container > .wp-block-navigation{' . implode(';', $vars) . '}');
+    }
+});
+
 // Builder-canvas editor JS (outer chrome — sidebar Page Title panel).
 add_action('enqueue_block_editor_assets', function () {
     $js = get_stylesheet_directory() . '/assets/editor/builder-canvas.js';
@@ -397,6 +442,21 @@ add_action('wp_body_open', function () {
 add_filter('proto_blocks_category_title', function () {
     return __('Cadco Blocks', 'cadco-theme');
 }, 20);
+
+/*
+ * `cadco-js` on <html>, set in <head> before anything is painted.
+ *
+ * Pre-animation states (the hero's hidden copy) are keyed to it in CSS rather
+ * than added by a script inside the section: page transitions swap <main> in
+ * without running the scripts inside it, so a hide added that way lands after
+ * the new page is already on screen and the copy flashes before it animates.
+ * <html> persists across transitions, so this class is there for every page,
+ * and a visitor with JS off never gets it and simply sees everything.
+ */
+add_action('wp_head', function () {
+    if (is_admin()) { return; }
+    echo "<script>document.documentElement.classList.add('cadco-js');</script>\n";
+}, 0);
 
 // >>> protoblocks-site-builder (managed — do not edit between these markers)
 foreach ((glob(__DIR__ . '/inc/pb-*.php') ?: []) as $pb_file) {

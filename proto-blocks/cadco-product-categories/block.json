@@ -100,6 +100,22 @@
         ],
         "help": "Always one column on phones."
       },
+      "imageSource": {
+        "type": "select",
+        "label": "Card image",
+        "default": "lifestyle",
+        "options": [
+          {
+            "key": "lifestyle",
+            "label": "Lifestyle photo (category Thumbnail)"
+          },
+          {
+            "key": "product",
+            "label": "Product photo (Products page image)"
+          }
+        ],
+        "help": "Both are set on each category under Products → Categories. A category without a product photo shows its Thumbnail instead."
+      },
       "surface": {
         "type": "select",
         "label": "Section background",

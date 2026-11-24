@@ -330,8 +330,10 @@ $wrapper = get_block_wrapper_attributes([
              listing would not. */ ?>
     <div class="mx-auto w-full max-w-[1440px] px-6 lg:px-10">
 
-        <?php // ---------- Breadcrumb and title ---------- ?>
-        <div class="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between lg:gap-10">
+        <?php // ---------- Breadcrumb and title ----------
+        // Stacked at every width: side by side, a deep trail and a long
+        // category name squeezed each other into several lines. ?>
+        <div class="flex flex-col gap-6">
             <?php if ($showCrumb) : ?>
                 <nav class="font-display text-[16px] leading-[19px] text-true-black"
                      aria-label="<?php esc_attr_e('Breadcrumb', 'cadco-theme'); ?>">
@@ -387,7 +389,7 @@ $wrapper = get_block_wrapper_attributes([
 
             <?php // ---------- Category rail ---------- ?>
             <?php if ($showRail) : ?>
-                <div class="lg:sticky lg:top-[120px] lg:self-start">
+                <div class="cadco-archive-rail-box lg:sticky lg:top-[120px] lg:self-start" data-cadco-rail>
                     <h2 class="m-0 font-display text-[26px] font-extrabold leading-[1.18] text-true-black lg:text-[32px]">
                         <?php echo esc_html($railName); ?>
                     </h2>

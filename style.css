@@ -77,6 +77,22 @@ body {
   box-sizing: border-box;
   width: 100%;
 }
+
+/* The header stays at the top while the page scrolls. Sticky on the template
+   part, not on the header block inside it: a sticky element only travels
+   within its parent, and the part is exactly as tall as the block. It sits
+   under WordPress's admin bar where that bar is fixed (above 600px). */
+.wp-site-blocks > header:has(.cadco-header) {
+  position: sticky;
+  top: var(--wp-admin--admin-bar--height, 0px);
+  z-index: 100;
+}
+
+@media (max-width: 600px) {
+  .wp-site-blocks > header:has(.cadco-header) {
+    top: 0;
+  }
+}
 .wp-site-blocks main {
   flex: 1 0 auto; /* take the leftover height */
 }
@@ -198,28 +214,39 @@ mark.has-inline-color {
    ---------------------------------------------------------------------------
 
    Marked parts start hidden so they can arrive as the section scrolls in (see
-   assets/js/cadco-reveal.js). The hiding is keyed to `data-proto-animate` in
-   the "manual" state, which is Proto-Blocks' reveal-runtime contract, and that
-   is what makes it safe to hide content at all:
+   assets/js/cadco-reveal.js). The hidden state is CSS, never a script, because
+   hiding from a script always flashes: the section is painted finished first.
 
-     - the runtime force-reveals any `manual` section that has not reached
-       `done` shortly after it enters view, so a script that never runs, throws,
-       or is served stale cannot leave a section blank
-     - it prints a <noscript> rule revealing everything when JS is off
-     - it reveals instantly under prefers-reduced-motion
-     - templates omit the attribute entirely in the editor, so the canvas is
-       never hiding anything an author is trying to edit
+   It is keyed to two things this theme alone writes:
 
-   cadco-reveal.js flips the section to `done` the moment GSAP has written its
-   start states inline, so these rules only ever apply in the window before the
-   script takes over.
+     - `html.cadco-js`, set in <head> (functions.php). With JS off it is never
+       set and nothing is hidden. <html> survives page transitions, so a
+       section swapped in by Taxi is hidden the instant it exists.
+     - `data-cadco-revealed` on the section, set by cadco-reveal.js in the same
+       tick GSAP writes its start states inline.
+
+   Not `data-proto-animate="manual"`: Proto-Blocks' runtime also writes that
+   attribute, forcing `done` 1.5s after a section enters view, so a rule keyed
+   to it lifted early on a slow load and the section flashed before animating.
+
+   The failsafe animation shows everything after 10s if cadco-reveal.js never
+   runs. Templates omit the group attribute in the editor, so the canvas never
+   hides anything an author is editing.
 
    `visibility` alongside `opacity` because GSAP animates them together through
    autoAlpha; opacity alone would leave the text selectable and reachable by
    find-in-page while invisible.
    --------------------------------------------------------------------------- */
-[data-proto-animate="manual"] [data-cadco-reveal]:not([data-cadco-reveal="items"]),
-[data-proto-animate="manual"] [data-cadco-reveal="items"] > * {
+html.cadco-js [data-cadco-reveal-group]:not([data-cadco-revealed]) [data-cadco-reveal]:not([data-cadco-reveal="items"]),
+html.cadco-js [data-cadco-reveal-group]:not([data-cadco-revealed]) [data-cadco-reveal="items"] > * {
 	opacity: 0;
 	visibility: hidden;
+	animation: cadco-reveal-failsafe 0s linear 10s forwards;
+}
+
+@keyframes cadco-reveal-failsafe {
+	to {
+		opacity: 1;
+		visibility: visible;
+	}
 }

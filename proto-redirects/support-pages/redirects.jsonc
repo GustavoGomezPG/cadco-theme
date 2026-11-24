@@ -1,0 +1,13 @@
+// The Support page was removed: "Support" in the menu is a label that opens
+// its mini menu, not a page. Its two child pages moved to the top level, so
+// their old addresses (and the parent's) point at the new ones.
+{
+  "title": "Support pages moved to the top level",
+  "enabled": true,
+  "defaults": { "ignoreCase": true, "ignoreTrailingSlash": true, "query": "pass" },
+  "rules": [
+    { "from": "/support/warranty-info", "to": "/warranty-info/" },
+    { "from": "/support/parts-ordering", "to": "/parts-ordering/" },
+    { "from": "/support", "to": "/warranty-info/" }
+  ]
+}

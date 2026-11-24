@@ -1,10 +1,10 @@
 /**
- * Cadco product specifications: the band's two columns, and the spec groups
- * two to a row.
+ * Cadco product specifications: the band's two columns.
  *
- * 60/40 on wide screens — the specifications are the bulk of the band, the
- * warranty note and the two download buttons only need a narrow column. Below
- * 1024px everything stacks; below 640px the groups stack too.
+ * Two equal columns from 1024px, as in the design (left column from 162, right
+ * from 721 in the 1440 frame): the spec groups stacked on the left; features,
+ * additional information, the warranty note and the downloads on the right.
+ * Below 1024px everything stacks in one column.
  */
 
 .cadco-product-specs .cadco-specs__layout {
@@ -18,25 +18,16 @@
 	display: grid;
 	grid-template-columns: minmax(0, 1fr);
 	align-items: start;
-	column-gap: 48px;
+	/* Packed at the top: when the right-hand column is the taller one, the
+	   groups keep their 42px spacing instead of spreading down to match it. */
+	align-content: start;
 	row-gap: 42px;
-}
-
-@media (min-width: 640px) {
-	.cadco-product-specs .cadco-specs__groups {
-		grid-template-columns: repeat(2, minmax(0, 1fr));
-	}
 }
 
 @media (min-width: 1024px) {
 	.cadco-product-specs .cadco-specs__layout {
-		grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+		grid-template-columns: repeat(2, minmax(0, 1fr));
 	}
-}
-
-/* A group that reads as prose spans both spec columns. */
-.cadco-product-specs .cadco-specs__wide {
-	grid-column: 1 / -1;
 }
 
 .cadco-product-specs .cadco-specs__list {
@@ -46,4 +37,10 @@
 
 .cadco-product-specs .cadco-specs__list li {
 	margin: 0 0 6px;
+}
+
+/* A clear gap between a spec's label and its value, so "Volts 120 V" reads
+   as two things rather than one run of text. */
+.cadco-product-specs .cadco-specs__rows dd {
+	margin-left: 0.5em;
 }

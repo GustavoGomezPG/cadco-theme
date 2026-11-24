@@ -24,7 +24,7 @@
         "label": "Columns",
         "min": 1,
         "max": 3,
-        "help": "One per route the reader can take. A button whose link begins tel: is drawn outlined with a handset; any other link is drawn solid.",
+        "help": "One per route the reader can take. A button whose link begins tel: is drawn outlined with a handset; any other link is drawn solid. The optional download button sits below it, outlined with a download icon; leave it empty to hide it. The logo is optional: when no column has one, the logo band is left out. The optional badge (a certification mark) sits under the buttons.",
         "fields": {
           "logo": {
             "type": "image",
@@ -42,6 +42,14 @@
           "cta": {
             "type": "link",
             "label": "Button"
+          },
+          "download": {
+            "type": "link",
+            "label": "Download button"
+          },
+          "badge": {
+            "type": "image",
+            "label": "Badge"
           }
         }
       }

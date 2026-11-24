@@ -40,6 +40,6 @@
 @media (min-width: 1024px) {
 	.cadco-product-hero .cadco-product-hero__media {
 		position: sticky;
-		top: 40px;
+		top: calc(var(--wp-admin--admin-bar--height, 0px) + 74px + 40px);
 	}
 }

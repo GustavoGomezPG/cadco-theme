@@ -30,6 +30,11 @@ $orderBy   = $attributes['orderBy'] ?? 'menu_order';
 $order     = strtoupper((string) ($attributes['order'] ?? 'ASC')) === 'DESC' ? 'DESC' : 'ASC';
 $hideEmpty = (bool) ($attributes['hideEmpty'] ?? false);
 
+// Lifestyle: WooCommerce's category Thumbnail (the home page cards). Product:
+// the category's "Products page image" custom field, a product shot on white
+// (proto-fields/product-category-images), falling back to the Thumbnail.
+$imageSource = ($attributes['imageSource'] ?? 'lifestyle') === 'product' ? 'product' : 'lifestyle';
+
 $showOverlap = (bool) ($attributes['showOverlap'] ?? true);
 $overlapH    = max(0, min(300, (int) ($attributes['overlapHeight'] ?? 111)));
 $overhang    = max(0, min(200, (int) ($attributes['overlapOverhang'] ?? 80)));
@@ -87,6 +92,8 @@ if (taxonomy_exists('product_cat')) {
         'orderby'    => $orderBy,
         'order'      => $order,
         'parent'     => ($scope === 'children' && $parentId > 0) ? $parentId : 0,
+        // WooCommerce's catch-all "Uncategorized" is never a card, empty or not.
+        'exclude'    => array_filter([(int) get_option('default_product_cat')]),
     ]);
 
     if (! is_wp_error($found)) {
@@ -165,7 +172,17 @@ $reveal = $is_preview ? '' : 'data-proto-animate="manual" data-cadco-reveal-grou
                         continue;
                     }
 
-                    $thumbId = (int) get_term_meta($term->term_id, 'thumbnail_id', true);
+                    $thumbId   = (int) get_term_meta($term->term_id, 'thumbnail_id', true);
+                    $isCutout  = false;
+
+                    if ($imageSource === 'product') {
+                        $cardImageId = (int) get_term_meta($term->term_id, 'card_image', true);
+
+                        if ($cardImageId > 0 && wp_attachment_is_image($cardImageId)) {
+                            $thumbId  = $cardImageId;
+                            $isCutout = true;
+                        }
+                    }
                     ?>
                     <li class="m-0">
                         <a class="group block overflow-hidden rounded-[15px] bg-paper no-underline shadow-[0_4px_10.6px_0_rgba(0,0,0,0.15)]"
@@ -174,7 +191,7 @@ $reveal = $is_preview ? '' : 'data-proto-animate="manual" data-cadco-reveal-grou
                             <?php /* The zoom is on the image inside this box, not on
                                      the card, so the photograph grows behind a fixed
                                      frame instead of the whole card swelling. */ ?>
-                            <div class="relative <?php echo esc_attr($frameAspect); ?> overflow-hidden bg-light-grey/40">
+                            <div class="relative <?php echo esc_attr($frameAspect); ?> overflow-hidden <?php echo $isCutout ? 'bg-paper cadco-product-categories__frame--cutout' : 'bg-light-grey/40'; ?>">
                                 <?php if ($thumbId > 0) : ?>
                                     <?php echo wp_get_attachment_image($thumbId, 'large', false, [
                                         'class'    => 'absolute inset-0 h-full w-full object-cover transition-transform duration-500 ease-out will-change-transform group-hover:scale-105 motion-reduce:transition-none motion-reduce:group-hover:scale-100',

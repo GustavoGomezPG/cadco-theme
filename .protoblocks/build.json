@@ -1466,6 +1466,59 @@
         "title": "About",
         "slug": "about",
         "postStatus": "publish"
+      },
+      "seo": {
+        "focusKeyword": {
+          "value": "foodservice",
+          "inferred": true,
+          "why": "the only topic word in the h1 'Built on Experience. Trusted in Foodservice.'; the brand name is already the site name"
+        },
+        "title": {
+          "value": "About Cadco, Trusted in Foodservice %%sep%% %%sitename%%",
+          "inferred": true,
+          "why": "page name first, then the h1's claim"
+        },
+        "description": {
+          "value": "Cadco brings foodservice experience to every kitchen, from a single food truck to a nationwide rollout, with reps across the United States and Canada.",
+          "inferred": true,
+          "why": "hero paragraph and the representation section, keyword in the first half"
+        },
+        "schemaPageType": {
+          "value": "AboutPage",
+          "inferred": true,
+          "why": "company about page"
+        },
+        "ogImage": {
+          "value": {
+            "file": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/about/og.png"
+          },
+          "inferred": true,
+          "why": "hero section pb-s2"
+        },
+        "organization": {
+          "value": {
+            "name": "Cadco, Ltd.",
+            "logo": {
+              "file": "/Users/gustavogomez/Local Sites/cadco/app/public/wp-content/themes/cadco-theme/.protoblocks/artifacts/cadco-logo.png"
+            }
+          },
+          "inferred": true,
+          "why": "site name and header logo (rasterised from the SVG); the footer has no social links"
+        },
+        "applied": "2026-11-23T17:41:23.116Z",
+        "ogImageId": 21716,
+        "appliedValues": {
+          "focuskw": "foodservice",
+          "title": "About Cadco, Trusted in Foodservice %%sep%% %%sitename%%",
+          "metadesc": "Cadco brings foodservice experience to every kitchen, from a single food truck to a nationwide rollout, with reps across the United States and Canada.",
+          "opengraph-title": "About Cadco, Trusted in Foodservice",
+          "opengraph-description": "Cadco brings foodservice experience to every kitchen, from a single food truck to a nationwide rollout, with reps across the United States and Canada.",
+          "opengraph-image-id": "21716",
+          "twitter-title": "About Cadco, Trusted in Foodservice",
+          "twitter-description": "Cadco brings foodservice experience to every kitchen, from a single food truck to a nationwide rollout, with reps across the United States and Canada.",
+          "twitter-image-id": "21716",
+          "schema_page_type": "AboutPage"
+        }
       }
     },
     {

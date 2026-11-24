@@ -73,12 +73,28 @@
    the gap to its neighbours far tighter than between one-line names. Rows
    are now at least 35px, a wrapped name gets a readable line height and its
    own padding, and every row is separated by the same gap. */
-.cadco-archive-rail {
-	gap: 10px;
+
+   Round-one feedback: the list needed clearer affordances, so each row is
+   now full width with a hairline between rows, and the names are a size
+   smaller. Three classes deep to outrank the scoped size utilities on the
+   links (.proto-blocks-scope .lg:text-[20px]). */
+.cadco-product-archive .cadco-archive-rail {
+	gap: 0;
+	border-top: 1px solid rgba(17, 17, 17, 0.14);
 }
 
-.cadco-archive-rail .cadco-archive-rail__link {
-	min-height: 35px;
-	padding-block: 4px;
-	line-height: 1.2;
+.cadco-product-archive .cadco-archive-rail .cadco-archive-rail__link {
+	width: 100%;
+	min-height: 0;
+	padding-block: 10px;
+	border-bottom: 1px solid rgba(17, 17, 17, 0.14);
+	font-size: 16px;
+	line-height: 1.3;
+}
+
+@media (min-width: 1024px) {
+	.cadco-product-archive .cadco-archive-rail .cadco-archive-rail__link {
+		justify-content: flex-end;
+		font-size: 17px;
+	}
 }

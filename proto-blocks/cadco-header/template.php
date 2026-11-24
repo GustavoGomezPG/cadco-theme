@@ -8,6 +8,12 @@
 
 $logo         = $attributes['logo'] ?? [];
 $cta          = $attributes['cta'] ?? [];
+
+// The logo by its attachment, not the stored URL: that URL carries the host the
+// part was saved on (cadco.local), which no database search-replace reaches
+// once it is in a theme file.
+$logoSrc = ! empty($logo['id']) ? (string) wp_get_attachment_url((int) $logo['id']) : '';
+$logoSrc = $logoSrc !== '' ? $logoSrc : (string) ($logo['url'] ?? '');
 $navMenu      = (int) ($attributes['navMenu'] ?? 0);
 $megaAttachTo = $attributes['megaAttachTo'] ?? '';
 $miniAttachTo = $attributes['miniAttachTo'] ?? '';
@@ -123,7 +129,7 @@ $panel_id = static function (string $key): string {
 <?php /* Sized by width on mobile so the mark is a predictable 110px whatever
                      aspect ratio the uploaded logo has; height leads on desktop. */ ?>
                 class="h-auto w-[110px] object-contain lg:h-14 lg:w-auto"
-                src="<?php echo esc_url($logo['url'] ?? ''); ?>"
+                src="<?php echo esc_url($logoSrc); ?>"
                 alt="<?php echo esc_attr($logo['alt'] ?? get_bloginfo('name')); ?>"
             />
         </a>
@@ -144,16 +150,26 @@ $panel_id = static function (string $key): string {
                     $hasMenu = $isMega || $isMini;
                     $target  = $isMega ? $panel_id($megaAttachTo) : ($isMini ? $panel_id($miniAttachTo) : '');
                     ?>
+                    <?php
+                    /* A menu item needs no page of its own: one with no URL (a
+                       Custom Link left empty in the Navigation editor) is a label.
+                       With a panel it is a button that opens the panel; without
+                       one it is plain text, never a link to the current page. */
+                    $itemUrl   = (string) ($item['url'] ?? '');
+                    $itemClass = 'block whitespace-nowrap py-6 text-[16px] leading-none text-white no-underline transition-opacity hover:opacity-70';
+                    $panelAttrs = $hasMenu
+                        ? ' aria-expanded="false" aria-controls="' . esc_attr($target) . '" data-cadco-trigger="' . esc_attr($target) . '"'
+                        : '';
+                    ?>
                     <li class="relative list-none" <?php echo $hasMenu ? 'data-cadco-has-panel' : ''; ?>>
-                        <a
-                            class="block whitespace-nowrap py-6 text-[16px] leading-none text-white no-underline transition-opacity hover:opacity-70"
-                            href="<?php echo esc_url($item['url'] ?? '#'); ?>"
-                            <?php if ($hasMenu) : ?>
-                                aria-expanded="false"
-                                aria-controls="<?php echo esc_attr($target); ?>"
-                                data-cadco-trigger="<?php echo esc_attr($target); ?>"
-                            <?php endif; ?>
-                        ><?php echo esc_html($label); ?></a>
+                        <?php if ($itemUrl !== '') : ?>
+                            <a class="<?php echo esc_attr($itemClass); ?>"
+                               href="<?php echo esc_url($itemUrl); ?>"<?php echo $panelAttrs; ?>><?php echo esc_html($label); ?></a>
+                        <?php elseif ($hasMenu) : ?>
+                            <button type="button" class="cadco-nav__label <?php echo esc_attr($itemClass); ?>"<?php echo $panelAttrs; ?>><?php echo esc_html($label); ?></button>
+                        <?php else : ?>
+                            <span class="<?php echo esc_attr($itemClass); ?>"><?php echo esc_html($label); ?></span>
+                        <?php endif; ?>
                     </li>
                 <?php endforeach; ?>
             </ul>
@@ -333,9 +349,10 @@ $panel_id = static function (string $key): string {
                                      separate controls. One full-width button made the only way to
                                      reach a section's own page a trip through its submenu, and gave
                                      no way to open the submenu without appearing to follow the link. */ ?>
+                            <?php if ((string) ($item['url'] ?? '') !== '') : ?>
                             <div class="flex items-stretch">
                                 <a class="flex-1 px-5 py-4 text-[17px] font-medium text-white no-underline transition-colors hover:bg-white/5"
-                                   href="<?php echo esc_url($item['url'] ?? '#'); ?>">
+                                   href="<?php echo esc_url($item['url']); ?>">
                                     <?php echo esc_html($label); ?>
                                 </a>
 
@@ -350,6 +367,19 @@ $panel_id = static function (string $key): string {
                                     </svg>
                                 </button>
                             </div>
+                            <?php else : ?>
+                            <?php /* No page of its own: the whole row opens the section. */ ?>
+                            <button type="button"
+                                    class="cadco-nav__label flex w-full cursor-pointer items-center justify-between border-0 bg-transparent px-5 py-4 text-left text-[17px] font-medium text-white transition-colors hover:bg-white/5"
+                                    aria-expanded="false"
+                                    aria-controls="cadco-acc-<?php echo esc_attr($section); ?>"
+                                    data-cadco-acc-toggle>
+                                <span><?php echo esc_html($label); ?></span>
+                                <svg class="cadco-acc__chevron h-5 w-5 shrink-0 text-white/70" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                                    <path d="M5.5 7.5L10 12l4.5-4.5" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                            </button>
+                            <?php endif; ?>
 
                             <div id="cadco-acc-<?php echo esc_attr($section); ?>" class="cadco-acc__panel" data-cadco-acc-panel>
                                 <div class="px-5 pb-5">
@@ -405,11 +435,15 @@ $panel_id = static function (string $key): string {
                                 </div>
                             </div>
                         </div>
-                    <?php else : ?>
+                    <?php elseif ((string) ($item['url'] ?? '') !== '') : ?>
                         <a class="block border-b border-white/10 px-5 py-4 text-[17px] font-medium text-white no-underline transition-colors last:border-b-0 hover:bg-white/5"
-                           href="<?php echo esc_url($item['url'] ?? '#'); ?>">
+                           href="<?php echo esc_url($item['url']); ?>">
                             <?php echo esc_html($label); ?>
                         </a>
+                    <?php else : ?>
+                        <span class="block border-b border-white/10 px-5 py-4 text-[17px] font-medium text-white last:border-b-0">
+                            <?php echo esc_html($label); ?>
+                        </span>
                     <?php endif; ?>
                 <?php endforeach; ?>
             </nav>

@@ -24,14 +24,13 @@
  * touching this file, and there is no per-element timing to keep in sync.
  *
  * NOTHING HERE CAN LEAVE CONTENT HIDDEN. The pre-hidden state lives in CSS
- * keyed to `[data-proto-animate="manual"]`, which is Proto-Blocks' reveal
- * runtime contract: the runtime force-reveals any `manual` element that has
- * not reached `done` shortly after it enters view, prints a <noscript> rule
- * that reveals everything when JS is off, and reveals instantly under reduced
- * motion. This script flips the section to `done` the moment GSAP has written
- * its start states inline -- ownership passes from the stylesheet to GSAP in
- * the same frame, so there is no gap to flash through and the runtime's
- * watchdog never has cause to fire mid-animation.
+ * (style.css), keyed to `html.cadco-js` and to the section not yet carrying
+ * `data-cadco-revealed`: with JS off there is no `cadco-js` and nothing is
+ * hidden, and a CSS failsafe animation shows everything after 10s if this
+ * script never runs. This script marks a section revealed the moment GSAP has
+ * written its start states inline -- ownership passes from the stylesheet to
+ * GSAP in the same frame, so there is no gap to flash through. Reduced motion
+ * marks every section revealed at once.
  *
  * Enqueued as `cadco-reveal` with proto-gsap, proto-scroll-trigger and
  * proto-split-text as dependencies. Absent any of them, every section simply
@@ -78,8 +77,19 @@
 		document.addEventListener('DOMContentLoaded', fn, { once: true });
 	}
 
-	/** Hand the section over to the runtime as revealed. */
+	/**
+	 * Hand the section over as revealed.
+	 *
+	 * `data-cadco-revealed` is what lifts the CSS pre-animation state
+	 * (style.css). It is ours alone: `data-proto-animate` is also written by
+	 * Proto-Blocks' runtime, which forces `done` 1.5s after a section enters
+	 * view whatever this script is doing -- keyed on that, the hidden state
+	 * lifted early on a slow load, showed the section, and this script then
+	 * hid it again to animate it in. Both are set in the same tick, after
+	 * GSAP has written its start states inline.
+	 */
 	function markDone(section) {
+		section.setAttribute('data-cadco-revealed', '');
 		section.setAttribute('data-proto-animate', 'done');
 	}
 

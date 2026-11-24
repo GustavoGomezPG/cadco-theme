@@ -31,7 +31,9 @@ $wrapper = get_block_wrapper_attributes([
     'class' => 'cadco-footer bg-true-black text-white',
 ]);
 
-$logoUrl = $logo['url'] ?? '';
+// By attachment first: the stored URL keeps the host the part was saved on.
+$logoUrl = ! empty($logo['id']) ? (string) wp_get_attachment_url((int) $logo['id']) : '';
+$logoUrl = $logoUrl !== '' ? $logoUrl : (string) ($logo['url'] ?? '');
 $logoAlt = $logo['alt'] ?? '';
 
 $ctaUrl    = $cta['url'] ?? '';

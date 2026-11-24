@@ -30,6 +30,13 @@ $milestones = $attributes['milestones'] ?? [];
 
 $scrub = (bool) ($attributes['scrub'] ?? true);
 
+/* Images are optional. A milestone without one shows its copy alone, and when
+   no milestone has one the rail's columns tighten to the copy, so the history
+   reads as a run of dates rather than a row of empty frames. The editor keeps
+   every image box so one can still be added. */
+$hasImage  = static fn ($item): bool => ! empty(($item['image'] ?? [])['url']);
+$anyImages = (bool) array_filter((array) $milestones, $hasImage);
+
 // $block is null in the editor preview.
 $is_preview = ! isset($block) || $block === null;
 
@@ -150,6 +157,7 @@ $wrapper = get_block_wrapper_attributes([
                 <?php $img = $item['image'] ?? []; ?>
                 <div data-proto-repeater-item
                      class="flex gap-5 rounded-[10px] border border-light-grey/60 bg-white p-4">
+                    <?php if ($is_preview || $hasImage($item)) : ?>
                     <div data-proto-field="image" class="h-[96px] w-[150px] shrink-0 overflow-hidden rounded-[6px] bg-light-grey/40">
                         <?php if (! empty($img['url'])) : ?>
                             <img src="<?php echo esc_url($img['url']); ?>"
@@ -157,6 +165,7 @@ $wrapper = get_block_wrapper_attributes([
                                  class="h-full w-full object-cover" />
                         <?php endif; ?>
                     </div>
+                    <?php endif; ?>
                     <div class="min-w-0"><?php $copy($item); ?></div>
                 </div>
             <?php endforeach; ?>
@@ -191,10 +200,20 @@ $wrapper = get_block_wrapper_attributes([
              * four items.
              */
             $cols = (int) ceil(count((array) $milestones) / 2);
+
+            /* Without images a pair stacked in one column put two dates on one
+               vertical, and the years read out of order. Then every milestone
+               gets its own half-column step along the rail, alternating below
+               and above, so the dates run left to right in sequence. */
+            $staggered = ! $anyImages && ! $is_preview;
+            $count     = count((array) $milestones);
+            $railCols  = $staggered ? $count + 1 : $cols;
             ?>
             <div data-proto-repeater="milestones"
                  class="grid grid-flow-col grid-rows-[232px_72px_232px]"
-                 style="grid-auto-columns:752px">
+                 style="<?php echo ($anyImages || $is_preview)
+                     ? 'grid-auto-columns:752px'
+                     : 'grid-auto-columns:220px;grid-template-rows:minmax(140px,auto) 72px minmax(140px,auto)'; ?>">
 
                 <?php // The rail: one line across every column, in the middle row. ?>
                 <?php /* "1 / -1" spans only the EXPLICIT grid, and these columns
@@ -204,10 +223,10 @@ $wrapper = get_block_wrapper_attributes([
                          so scaleX starts partial and transform-origin is left. */ ?>
                 <span data-timeline-rail
                       class="relative z-0 h-px origin-left self-center"
-                      style="grid-row:2;grid-column:1/span <?php echo (int) max(1, $cols); ?>;background:<?php echo esc_attr($railColor); ?>"
+                      style="grid-row:2;grid-column:1/span <?php echo (int) max(1, $railCols); ?>;background:<?php echo esc_attr($railColor); ?>"
                       aria-hidden="true"></span>
 
-                <?php for ($c = 1; $c <= $cols; $c++) : ?>
+                <?php for ($c = 1; $c <= ($staggered ? $count : $cols); $c++) : ?>
                     <span class="relative z-10 h-[14px] w-[14px] self-center justify-self-start rounded-full"
                           style="grid-row:2;grid-column:<?php echo (int) $c; ?>;background:<?php echo esc_attr($dotColor); ?>"
                           aria-hidden="true"></span>
@@ -216,32 +235,33 @@ $wrapper = get_block_wrapper_attributes([
                 <?php foreach ((array) $milestones as $i => $item) : ?>
                     <?php
                     $above = ($i % 2) === 1;              // the later of the pair sits above
-                    $col   = (int) floor($i / 2) + 1;
+                    $col   = $staggered ? $i + 1 : (int) floor($i / 2) + 1;
                     $img   = $item['image'] ?? [];
+                    $showImage = $is_preview || $hasImage($item);
                     ?>
                     <div data-proto-repeater-item
                          data-timeline-item
-                         class="flex <?php echo $above ? 'items-end' : 'items-start'; ?> <?php echo $above ? 'gap-[58px]' : ''; ?>"
-                         style="grid-row:<?php echo $above ? 1 : 3; ?>;grid-column:<?php echo $col; ?>">
+                         class="<?php echo $staggered ? 'cadco-timeline__item cadco-timeline__item--' . ($above ? 'above' : 'below') . ' ' : ''; ?>flex <?php echo $above ? 'items-end' : 'items-start'; ?> <?php echo ($above && $showImage) ? 'gap-[58px]' : ''; ?>"
+                         style="grid-row:<?php echo $above ? 1 : 3; ?>;grid-column:<?php echo $col; ?><?php echo $staggered ? ' / span 2;--cadco-timeline-rail:' . esc_attr($railColor) : ''; ?>">
 
                         <?php if ($above) : ?>
-                            <div data-proto-field="image" class="h-[163px] w-[353px] shrink-0 overflow-hidden rounded-[10px] bg-light-grey/40">
+                            <?php if ($showImage) : ?><div data-proto-field="image" class="h-[163px] w-[353px] shrink-0 overflow-hidden rounded-[10px] bg-light-grey/40">
                                 <?php if (! empty($img['url'])) : ?>
                                     <img src="<?php echo esc_url($img['url']); ?>"
                                          alt="<?php echo esc_attr($img['alt'] ?? ''); ?>"
                                          class="h-full w-full object-cover" loading="lazy" decoding="async" />
                                 <?php endif; ?>
-                            </div>
+                            </div><?php endif; ?>
                             <div class="w-[300px] shrink-0 pb-1"><?php $copy($item); ?></div>
                         <?php else : ?>
                             <div class="w-[353px] shrink-0 pt-1"><?php $copy($item); ?></div>
-                            <div data-proto-field="image" class="h-[163px] w-[353px] shrink-0 overflow-hidden rounded-[10px] bg-light-grey/40">
+                            <?php if ($showImage) : ?><div data-proto-field="image" class="h-[163px] w-[353px] shrink-0 overflow-hidden rounded-[10px] bg-light-grey/40">
                                 <?php if (! empty($img['url'])) : ?>
                                     <img src="<?php echo esc_url($img['url']); ?>"
                                          alt="<?php echo esc_attr($img['alt'] ?? ''); ?>"
                                          class="h-full w-full object-cover" loading="lazy" decoding="async" />
                                 <?php endif; ?>
-                            </div>
+                            </div><?php endif; ?>
                         <?php endif; ?>
                     </div>
                 <?php endforeach; ?>

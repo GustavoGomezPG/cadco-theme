@@ -1,0 +1,32 @@
+// The product categories were rebuilt by the workbook import, which gave many
+// of them new addresses ("Hotplates" became hot-plate, "Food Service Carts"
+// became foodservice-carts). The menu, footer and outside links still used the
+// old ones and landed on empty pages. Each old address points at the category
+// that replaced it; Meal Tray Delivery has no category of its own, so it goes
+// to Foodservice Carts.
+{
+  "title": "Old product category addresses",
+  "enabled": true,
+  "defaults": { "ignoreCase": true, "ignoreTrailingSlash": true, "query": "pass" },
+  "rules": [
+    { "from": "/products/convection-cook-hold-ovens/bakerlux-stations", "to": "/products/convection-cook-hold-ovens/bakerlux-station/" },
+    { "from": "/products/convection-cook-hold-ovens/caldolux-cook-hold", "to": "/products/convection-cook-hold-ovens/cook-hold-oven/" },
+    { "from": "/products/convection-cook-hold-ovens/convection-accessories", "to": "/products/convection-cook-hold-ovens/convection-oven-accessory/" },
+    { "from": "/products/fast-cooking-ovens/fast-cooking-accessories", "to": "/products/fast-cooking-ovens/varikwik-accessory/" },
+    { "from": "/products/food-service-carts/meal-tray-delivery", "to": "/products/foodservice-carts/" },
+    { "from": "/products/food-service-carts/grab-and-go", "to": "/products/foodservice-carts/grab-go/" },
+    { "from": "/products/food-service-carts/mobileserv", "to": "/products/foodservice-carts/mobileserv/" },
+    { "from": "/products/food-service-carts/beverage", "to": "/products/foodservice-carts/mobileserv-beverage-carts/" },
+    { "from": "/products/food-service-carts/demo", "to": "/products/foodservice-carts/demo-sampling-carts/" },
+    { "from": "/products/food-service-carts/locking", "to": "/products/foodservice-carts/locking-utility-carts/" },
+    { "from": "/products/food-service-carts/carts-accessories", "to": "/products/foodservice-carts/accessories-for-mobileserv-carts/" },
+    { "from": "/products/food-service-carts", "to": "/products/foodservice-carts/" },
+    { "from": "/products/countertop-equipment/hotplates", "to": "/products/countertop-equipment/hot-plate/" },
+    { "from": "/products/countertop-equipment/glass-ceramic-grills", "to": "/products/countertop-equipment/glass-ceramic-grill/" },
+    { "from": "/products/countertop-equipment/toasters", "to": "/products/countertop-equipment/toaster/" },
+    { "from": "/products/countertop-equipment/griddles", "to": "/products/countertop-equipment/griddle/" },
+    { "from": "/products/countertop-equipment/heavy-duty-warming-equipment", "to": "/products/countertop-equipment/heavy-duty-buffet-server/" },
+    { "from": "/products/countertop-equipment/medium-duty-warming-equipment", "to": "/products/countertop-equipment/medium-duty-buffet-server/" },
+    { "from": "/products/countertop-equipment/pass-through-warmers", "to": "/products/countertop-equipment/pass-through-warmer/" }
+  ]
+}

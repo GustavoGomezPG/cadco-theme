@@ -39,30 +39,20 @@
       },
       "showWarranty": {
         "type": "toggle",
-        "label": "Show the warranty note",
-        "default": true
-      },
-      "warrantyText": {
-        "type": "textarea",
-        "label": "Warranty note",
-        "default": "3 Year Warranty on ALL Bakerlux Convection Ovens",
-        "conditions": {
-          "visible": {
-            "showWarranty": true
-          }
-        },
-        "help": "The same note for every product. A per-product warranty would belong on the product, not here."
+        "label": "Show the category's warranty banner",
+        "default": true,
+        "help": "The banner text is set on the product's category (Products → Categories → Warranty banner) and passes down to its sub-categories. Products in a category without one show no banner."
       },
       "warrantyLink": {
         "type": "text",
-        "label": "Warranty note links to",
+        "label": "Default banner link",
         "default": "",
         "conditions": {
           "visible": {
             "showWarranty": true
           }
         },
-        "help": "Optional. A path or URL — e.g. /support/warranty-info/ — which turns the note into a link."
+        "help": "Used when the category gives its banner no link of its own. A path or URL, e.g. /warranty-info/."
       },
       "showDownloads": {
         "type": "toggle",

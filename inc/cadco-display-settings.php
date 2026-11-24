@@ -44,7 +44,7 @@ final class CADCO_Display_Settings
     }
 
     /**
-     * @return array{hide_children: bool, children_placement: string, children_heading: string}
+     * @return array{hide_children: bool, children_placement: string, children_heading: string, related_children_only: bool}
      */
     public static function defaults(): array
     {
@@ -55,11 +55,13 @@ final class CADCO_Display_Settings
             'hide_children'      => false,
             'children_placement' => self::PLACEMENT_RELATED,
             'children_heading'   => __('Accessories', 'cadco-theme'),
+            // Off: the row keeps filling from the product's categories.
+            'related_children_only' => false,
         ];
     }
 
     /**
-     * @return array{hide_children: bool, children_placement: string, children_heading: string}
+     * @return array{hide_children: bool, children_placement: string, children_heading: string, related_children_only: bool}
      */
     public static function all(): array
     {
@@ -75,6 +77,16 @@ final class CADCO_Display_Settings
     public static function hide_children(): bool
     {
         return self::all()['hide_children'];
+    }
+
+    /**
+     * Whether the Related Products row shows only the product's own children.
+     * A product with none then shows no row, rather than a row of unrelated
+     * products from the same category.
+     */
+    public static function related_children_only(): bool
+    {
+        return self::all()['related_children_only'];
     }
 
     public static function children_placement(): string
@@ -115,7 +127,7 @@ final class CADCO_Display_Settings
 
     /**
      * @param mixed $input
-     * @return array{hide_children: bool, children_placement: string, children_heading: string}
+     * @return array{hide_children: bool, children_placement: string, children_heading: string, related_children_only: bool}
      */
     public static function sanitise($input): array
     {
@@ -134,6 +146,7 @@ final class CADCO_Display_Settings
             'hide_children'      => !empty($input['hide_children']),
             'children_placement' => $placement,
             'children_heading'   => $heading !== '' ? $heading : $defaults['children_heading'],
+            'related_children_only' => !empty($input['related_children_only']),
         ];
     }
 
@@ -251,6 +264,25 @@ final class CADCO_Display_Settings
                                     '<code>' . esc_html($defaults['children_heading']) . '</code>'
                                 );
                                 ?>
+                            </p>
+                        </td>
+                    </tr>
+                </table>
+
+                <h2 class="title"><?php esc_html_e('Related Products', 'cadco-theme'); ?></h2>
+
+                <table class="form-table" role="presentation">
+                    <tr>
+                        <th scope="row"><?php esc_html_e('Products shown', 'cadco-theme'); ?></th>
+                        <td>
+                            <label>
+                                <input type="checkbox"
+                                       name="<?php echo esc_attr(self::OPTION); ?>[related_children_only]"
+                                       value="1" <?php checked($settings['related_children_only']); ?>>
+                                <?php esc_html_e('Only show the product\'s own child products', 'cadco-theme'); ?>
+                            </label>
+                            <p class="description">
+                                <?php esc_html_e('Hides the products the row otherwise adds from the same category. A product with no children shows no Related Products row.', 'cadco-theme'); ?>
                             </p>
                         </td>
                     </tr>

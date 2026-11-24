@@ -161,3 +161,22 @@
  * the header tall enough to bury the rest of a template. The menu is edited in
  * the Navigation editor, which is the one place it should be expanded.
  */
+
+/*
+ * A top-level menu item with no page of its own renders as a <button> that
+ * opens its panel (template.php). Strip the button chrome so it matches the
+ * links beside it: no border or fill, the nav's own typeface (family only, so
+ * the size and weight utilities on the element still apply), no horizontal pad.
+ */
+.cadco-header .cadco-nav__label {
+	font-family: inherit;
+	letter-spacing: inherit;
+	border: 0;
+	background: transparent;
+	cursor: pointer;
+}
+
+.cadco-header .cadco-nav .cadco-nav__label {
+	padding-left: 0;
+	padding-right: 0;
+}

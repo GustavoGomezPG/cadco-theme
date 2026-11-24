@@ -190,7 +190,7 @@ function cadco_product_grouped_specs(int $product_id): array
     $rest = array_diff_key($rows, $taken);
 
     if ($rest) {
-        $out[] = ['label' => __('Details', 'cadco-theme'), 'rows' => $rest, 'text' => ''];
+        $out[] = ['key' => 'details', 'label' => __('Details', 'cadco-theme'), 'rows' => $rest, 'text' => ''];
     }
 
     $freight = trim((string) get_post_meta($product_id, '_cadco_freight_class', true));
@@ -206,7 +206,7 @@ function cadco_product_grouped_specs(int $product_id): array
     }
 
     if ($freight !== '') {
-        $out[] = ['label' => __('Freight Class', 'cadco-theme'), 'rows' => [], 'text' => $freight];
+        $out[] = ['key' => 'freight', 'label' => __('Freight Class', 'cadco-theme'), 'rows' => [], 'text' => $freight];
     }
 
     return $out;
@@ -298,6 +298,58 @@ function cadco_product_card_lines(int $product_id): array
     }
 
     return $out;
+}
+
+/**
+ * The warranty banner for a product, set on its product category.
+ *
+ * Read from the category's "Warranty banner" field (proto-fields/
+ * product-category-images): the product's own categories first, then each
+ * one's parents, so "3 Year Warranty on ALL Bakerlux Convection Ovens" set on
+ * Bakerlux Pro reaches every oven in it. When the product sits in several
+ * categories the most specific one with a banner wins. No banner anywhere up
+ * the tree means none: a product line without a warranty claim shows nothing
+ * rather than another line's.
+ *
+ * @return array{text: string, url: string}
+ */
+function cadco_product_warranty_banner(int $product_id): array
+{
+    $none  = ['text' => '', 'url' => ''];
+    $terms = get_the_terms($product_id, 'product_cat');
+
+    if (! is_array($terms) || ! $terms) {
+        return $none;
+    }
+
+    $best      = $none;
+    $bestDepth = -1;
+
+    foreach ($terms as $term) {
+        // The term itself, then its parents nearest first.
+        $chain = array_merge([(int) $term->term_id], get_ancestors((int) $term->term_id, 'product_cat', 'taxonomy'));
+        $depth = count($chain);
+
+        foreach ($chain as $level => $termId) {
+            $text = trim((string) get_term_meta($termId, 'warranty_banner', true));
+
+            if ($text === '') {
+                continue;
+            }
+
+            // Deeper source term = more specific; nearer level wins within a chain.
+            $specificity = $depth - $level;
+
+            if ($specificity > $bestDepth) {
+                $best      = ['text' => $text, 'url' => trim((string) get_term_meta($termId, 'warranty_banner_link', true))];
+                $bestDepth = $specificity;
+            }
+
+            break;
+        }
+    }
+
+    return $best;
 }
 
 /**

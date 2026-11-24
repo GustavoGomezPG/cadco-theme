@@ -14,3 +14,32 @@
     /* Styles for content field */
 }
 
+
+/*
+ * Text-only timeline: each milestone has its own dot, and a short connector
+ * runs from the dot to the milestone's year -- down to the ones below the
+ * rail, up to the ones above -- so the eye knows which dot each date belongs
+ * to. The dot is 14px at the start of the milestone's column and sits in a
+ * 72px row, so its edge is 29px from either neighbouring row.
+ */
+.cadco-timeline__item {
+    position: relative;
+}
+
+.cadco-timeline__item::before {
+    content: "";
+    position: absolute;
+    left: 6px;
+    width: 2px;
+    height: 25px;
+    background: var(--cadco-timeline-rail, #4a6a8a);
+    pointer-events: none;
+}
+
+.cadco-timeline__item--below::before {
+    top: -29px;
+}
+
+.cadco-timeline__item--above::before {
+    bottom: -29px;
+}

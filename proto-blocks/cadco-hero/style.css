@@ -1,29 +1,44 @@
 /**
  * Cadco hero — pre-animation state.
  *
- * `is-anim-pending` is added by an inline script inside the section itself
- * (template.php) rather than from view.js, so it lands while the browser is
- * still parsing the section and there is never a frame of un-animated hero.
- * Because a script adds it, a visitor with JS off never gets it and sees the
- * finished hero — which is also why nothing here is in the base rules.
+ * In CSS, keyed to `html.cadco-js` (set in <head>, functions.php) and to the
+ * section not yet being `is-anim-ready`, so the hero is hidden the instant it
+ * exists however it arrives: a full load, or a page transition that swaps it
+ * in without running any script inside it. That second case is why this is not
+ * a class added by an inline script any more -- after a transition the script
+ * ran late, the finished hero showed for a frame, then vanished to animate in.
  *
- * view.js pins these same values inline via gsap.set() before removing the
- * class, so the hand-off from CSS to GSAP does not flash either.
+ * view.js pins these same values inline via gsap.set() and then adds
+ * `is-anim-ready` in the same tick, so the hand-off from CSS to GSAP does not
+ * flash either. With JS off there is no `cadco-js` and nothing is hidden.
+ *
+ * The failsafe animation is the last line of defence: if view.js never runs,
+ * the copy and image settle after 13s (it outlasts the font wait plus the intro gate, 3s + 9s).
  */
-.cadco-hero.is-anim-pending [data-hero-image] {
+html.cadco-js .cadco-hero[data-cadco-hero]:not(.is-anim-ready) [data-hero-image] {
 	transform: scale(1.18);
+	animation: cadco-hero-failsafe 0s linear 13s forwards;
 }
 
-.cadco-hero.is-anim-pending [data-hero-eyebrow],
-.cadco-hero.is-anim-pending [data-hero-cta] {
+html.cadco-js .cadco-hero[data-cadco-hero]:not(.is-anim-ready) [data-hero-eyebrow],
+html.cadco-js .cadco-hero[data-cadco-hero]:not(.is-anim-ready) [data-hero-cta] {
 	visibility: hidden;
+	animation: cadco-hero-failsafe 0s linear 13s forwards;
 }
 
 /* The heading is masked per line by SplitText once it runs. Until then hide the
    whole block — SplitText needs it laid out to measure, so visibility rather
    than display. */
-.cadco-hero.is-anim-pending [data-hero-heading] {
+html.cadco-js .cadco-hero[data-cadco-hero]:not(.is-anim-ready) [data-hero-heading] {
 	visibility: hidden;
+	animation: cadco-hero-failsafe 0s linear 13s forwards;
+}
+
+@keyframes cadco-hero-failsafe {
+	to {
+		visibility: visible;
+		transform: none;
+	}
 }
 
 /* SplitText's mask wrappers are inline-block; without this the descenders of a
@@ -34,13 +49,13 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-	.cadco-hero.is-anim-pending [data-hero-image] {
+	html.cadco-js .cadco-hero[data-cadco-hero]:not(.is-anim-ready) [data-hero-image] {
 		transform: none;
 	}
 
-	.cadco-hero.is-anim-pending [data-hero-eyebrow],
-	.cadco-hero.is-anim-pending [data-hero-heading],
-	.cadco-hero.is-anim-pending [data-hero-cta] {
+	html.cadco-js .cadco-hero[data-cadco-hero]:not(.is-anim-ready) [data-hero-eyebrow],
+	html.cadco-js .cadco-hero[data-cadco-hero]:not(.is-anim-ready) [data-hero-heading],
+	html.cadco-js .cadco-hero[data-cadco-hero]:not(.is-anim-ready) [data-hero-cta] {
 		visibility: visible;
 	}
 }
